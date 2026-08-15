@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 type FilterDrawerProps = {
   isOpen: boolean;
@@ -14,6 +16,8 @@ type FilterDrawerProps = {
 export function FilterDrawer({ isOpen, onClose, children }: FilterDrawerProps) {
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  useFocusTrap(isOpen, panelRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -45,7 +49,7 @@ export function FilterDrawer({ isOpen, onClose, children }: FilterDrawerProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+          transition={{ duration: reduceMotion ? 0 : 0.28 }}
         >
           <button
             type="button"
@@ -55,6 +59,8 @@ export function FilterDrawer({ isOpen, onClose, children }: FilterDrawerProps) {
           />
 
           <motion.aside
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -62,7 +68,7 @@ export function FilterDrawer({ isOpen, onClose, children }: FilterDrawerProps) {
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { x: "100%" }}
             transition={{
-              duration: reduceMotion ? 0.16 : 0.38,
+              duration: reduceMotion ? 0 : 0.38,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="absolute inset-y-0 right-0 flex h-dvh w-full flex-col bg-ivory sm:max-w-md sm:border-l sm:border-border"
@@ -75,7 +81,7 @@ export function FilterDrawer({ isOpen, onClose, children }: FilterDrawerProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Filtreleri kapat"
-                className="flex h-8 w-8 items-center justify-center text-charcoal"
+                className="flex h-11 w-11 items-center justify-center text-charcoal"
               >
                 <X size={18} strokeWidth={1.4} />
               </button>

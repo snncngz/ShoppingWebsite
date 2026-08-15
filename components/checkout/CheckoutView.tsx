@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/category/EmptyState";
+import { CartSkeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
-import { getProductById } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import { DEMO_ADDRESS, EXPRESS_SHIPPING_FEE } from "@/lib/auth";
 import {
   FREE_SHIPPING_THRESHOLD,
@@ -24,6 +25,7 @@ type PaymentMethod = "card" | "transfer" | "cod";
 
 export function CheckoutView() {
   const { items, hydrated, clearCart } = useCart();
+  const { getById } = useCatalog();
   const { user } = useAuth();
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -51,14 +53,14 @@ export function CheckoutView() {
     () =>
       items
         .map((item) => {
-          const product = getProductById(item.productId);
+          const product = getById(item.productId);
           if (!product) {
             return null;
           }
           return { item, product };
         })
         .filter((line): line is NonNullable<typeof line> => Boolean(line)),
-    [items],
+    [getById, items],
   );
 
   const subtotal = lines.reduce(
@@ -93,13 +95,7 @@ export function CheckoutView() {
   };
 
   if (!hydrated) {
-    return (
-      <section className="bg-ivory px-6 py-24 lg:px-8">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-12 tracking-label text-taupe">Checkout</p>
-        </div>
-      </section>
-    );
+    return <CartSkeleton />;
   }
 
   if (confirmation) {
@@ -139,15 +135,9 @@ export function CheckoutView() {
           <EmptyState
             title="Sepetiniz Boş"
             message="Ödeme adımına geçmek için sepetinize ürün ekleyin."
+            actionHref="/sepet"
+            actionLabel="Sepete Dön"
           />
-          <p className="mt-8 text-center">
-            <Link
-              href="/sepet"
-              className="inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
-            >
-              Sepete Dön
-            </Link>
-          </p>
         </div>
       </section>
     );
@@ -339,7 +329,7 @@ export function CheckoutView() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={product.images[0]}
-                    alt=""
+                    alt={product.name}
                     className="h-16 w-12 bg-ivory object-cover"
                   />
                   <div className="min-w-0 flex-1">

@@ -12,7 +12,7 @@ export function Hero() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/placeholders/canta.svg"
-          alt=""
+          alt="VELORA sezon koleksiyonu, çanta detayı"
           className="h-full w-full origin-center scale-125 object-cover object-[center_28%]"
         />
         <div className="absolute inset-0 bg-black/40" />
@@ -22,7 +22,7 @@ export function Hero() {
         <motion.div
           initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: reduceMotion ? 0.2 : 0.85, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.85, ease: [0.22, 1, 0.36, 1] }}
           className="max-w-xl"
         >
           <p className="text-12 tracking-label text-ivory/80">New Season</p>

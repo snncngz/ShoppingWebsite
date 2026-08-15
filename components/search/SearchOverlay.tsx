@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 import { SearchPanel } from "@/components/search/SearchPanel";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 type SearchOverlayProps = {
   isOpen: boolean;
@@ -15,6 +16,8 @@ type SearchOverlayProps = {
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(isOpen, panelRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -42,12 +45,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     <AnimatePresence>
       {isOpen ? (
         <motion.div
+          ref={panelRef}
+          tabIndex={-1}
           className="fixed inset-0 z-[70] bg-ivory"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{
-            duration: reduceMotion ? 0.12 : 0.28,
+            duration: reduceMotion ? 0 : 0.28,
             ease: [0.22, 1, 0.36, 1],
           }}
           role="dialog"
@@ -60,7 +65,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
             transition={{
-              duration: reduceMotion ? 0.12 : 0.32,
+              duration: reduceMotion ? 0 : 0.32,
               ease: [0.22, 1, 0.36, 1],
             }}
           >
@@ -75,7 +80,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Aramayı kapat"
-                className="flex h-10 w-10 items-center justify-center text-charcoal transition-colors hover:text-black"
+                className="flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:text-black"
               >
                 <X size={20} strokeWidth={1.4} />
               </button>

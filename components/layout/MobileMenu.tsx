@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import { BRAND_NAME } from "@/lib/constants";
 import { mobileAccordions, mobileUtilityLinks } from "@/lib/navigation";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 type MobileMenuProps = {
   isOpen: boolean;
@@ -18,6 +19,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  useFocusTrap(isOpen, panelRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -46,7 +49,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+          transition={{ duration: reduceMotion ? 0 : 0.28 }}
         >
           <button
             type="button"
@@ -56,6 +59,8 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
           />
 
           <motion.aside
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -63,7 +68,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
             animate={{ x: 0, opacity: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { x: "-100%" }}
             transition={{
-              duration: reduceMotion ? 0.16 : 0.38,
+              duration: reduceMotion ? 0 : 0.38,
               ease: [0.22, 1, 0.36, 1],
             }}
             className="absolute inset-y-0 left-0 flex h-dvh w-full flex-col bg-ivory sm:max-w-md sm:border-r sm:border-border"
@@ -73,7 +78,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Menüyü kapat"
-                className="flex h-10 w-10 items-center justify-center text-charcoal"
+                className="flex h-11 w-11 items-center justify-center text-charcoal"
               >
                 <X size={20} strokeWidth={1.4} />
               </button>
@@ -83,7 +88,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               >
                 {BRAND_NAME}
               </p>
-              <span className="h-10 w-10" aria-hidden="true" />
+              <span className="h-11 w-11" aria-hidden="true" />
             </div>
 
             <nav className="flex-1 overflow-y-auto px-6 pb-8 pt-4">
@@ -110,7 +115,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         </span>
                         <motion.span
                           animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: 0.22 }}
+                          transition={{ duration: reduceMotion ? 0 : 0.22 }}
                           className="text-taupe"
                         >
                           <ChevronDown size={20} strokeWidth={1.4} />
@@ -124,7 +129,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             initial={{ height: 0, opacity: 0 }}
                             animate={{ height: "auto", opacity: 1 }}
                             exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: reduceMotion ? 0.12 : 0.28 }}
+                            transition={{ duration: reduceMotion ? 0 : 0.28 }}
                             className="overflow-hidden"
                           >
                             <ul className="flex flex-col gap-3 pb-6 pl-1">

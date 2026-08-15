@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 import { EmptyState } from "@/components/category/EmptyState";
 
 export default function ProductNotFound() {
@@ -9,15 +7,9 @@ export default function ProductNotFound() {
         <EmptyState
           title="Ürün bulunamadı"
           message="Aradığınız parça koleksiyonda yer almıyor veya bağlantı güncel değil."
+          actionHref="/"
+          actionLabel="Anasayfaya Dön"
         />
-        <p className="mt-8 text-center">
-          <Link
-            href="/"
-            className="text-12 tracking-nav text-charcoal transition-colors hover:text-black"
-          >
-            Anasayfaya Dön
-          </Link>
-        </p>
       </div>
     </section>
   );

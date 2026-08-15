@@ -10,7 +10,7 @@ export function StarRating({ rating, reviewCount }: StarRatingProps) {
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1" aria-label={`${rating} / 5`}>
+      <div className="flex items-center gap-1" role="img" aria-label={`${rating} / 5`}>
         {Array.from({ length: 5 }, (_, index) => (
           <Star
             key={index}

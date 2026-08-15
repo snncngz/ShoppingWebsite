@@ -9,7 +9,7 @@ export function AboutPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholders/canta.svg"
-            alt=""
+            alt="VELORA çanta, butik vitrin görseli"
             className="h-full w-full origin-center scale-125 object-cover object-[center_28%]"
           />
           <div className="absolute inset-0 bg-black/40" />
@@ -65,7 +65,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/tshirt.svg"
-              alt=""
+              alt="VELORA tişört silueti"
               className="h-full w-full object-cover object-top"
             />
           </div>
@@ -149,7 +149,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/parfum.svg"
-              alt=""
+              alt="VELORA parfüm flakonu"
               className="h-full w-full object-cover object-center"
             />
           </div>
@@ -162,7 +162,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/kemer.svg"
-              alt=""
+              alt="VELORA deri kemer detayı"
               className="h-full w-full origin-[center_48%] scale-125 object-cover object-[center_48%]"
             />
           </div>

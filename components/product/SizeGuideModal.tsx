@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
+
+import { useFocusTrap } from "@/lib/use-focus-trap";
 
 const SIZE_ROWS = [
   { size: "S", chest: "88–92", waist: "72–76", length: "168–172" },
@@ -21,6 +23,8 @@ type SizeGuideModalProps = {
 export function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(isOpen, panelRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -52,7 +56,7 @@ export function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.24 }}
+          transition={{ duration: reduceMotion ? 0 : 0.24 }}
         >
           <button
             type="button"
@@ -62,6 +66,8 @@ export function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
           />
 
           <motion.div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -81,7 +87,7 @@ export function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center text-charcoal"
+                className="flex h-11 w-11 items-center justify-center text-charcoal"
               >
                 <X size={18} strokeWidth={1.4} />
               </button>

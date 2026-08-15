@@ -11,18 +11,19 @@ import { FilterDrawer } from "@/components/category/FilterDrawer";
 import { FilterPanel } from "@/components/category/FilterPanel";
 import { SortSelect } from "@/components/category/SortSelect";
 import { ProductCard } from "@/components/product/ProductCard";
-import type { BreadcrumbItem } from "@/lib/category-pages";
+import { useCatalog } from "@/context/CatalogContext";
+import { getCategoryPage, type BreadcrumbItem } from "@/lib/category-pages";
 import {
   createEmptyFilters,
   filterProducts,
   getFilterOptions,
-  hasActiveFilters,
   sortProducts,
   type SortValue,
 } from "@/lib/filters";
 import type { Product } from "@/types";
 
 export type CategoryPageProps = {
+  slug: string;
   title: string;
   description: string;
   breadcrumbs: BreadcrumbItem[];
@@ -32,13 +33,21 @@ export type CategoryPageProps = {
 };
 
 export function CategoryPage({
+  slug,
   title,
   description,
   breadcrumbs,
-  products,
+  products: initialProducts,
   showPerfumeFilters,
   showClothingSizes,
 }: CategoryPageProps) {
+  const { products: catalog, hydrated, getCategoryOverride } = useCatalog();
+  const config = getCategoryPage(slug);
+  const categoryOverride = getCategoryOverride(slug);
+  const products =
+    hydrated && config ? catalog.filter(config.match) : initialProducts;
+  const heading = categoryOverride?.title ?? title;
+  const copy = categoryOverride?.description ?? description;
   const [filters, setFilters] = useState(createEmptyFilters);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -69,7 +78,6 @@ export function CategoryPage({
   }, [products, filters, sort]);
 
   const catalogIsEmpty = products.length === 0;
-  const filtersActive = hasActiveFilters(filters);
   const noFilterResults = !catalogIsEmpty && visibleProducts.length === 0;
   const showSizeFilter = !showPerfumeFilters;
 
@@ -93,75 +101,80 @@ export function CategoryPage({
       <div className="mx-auto max-w-7xl">
         <Breadcrumbs items={breadcrumbs} />
 
-        <header className="mt-8 max-w-2xl">
-          <h1 className="font-heading text-32 text-black lg:text-48">{title}</h1>
-          <p className="mt-4 text-16 text-charcoal">{description}</p>
-        </header>
-
-        <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
-          <p className="text-14 text-taupe">{visibleProducts.length} ürün</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="inline-flex h-12 items-center gap-2 border border-border px-4 text-12 tracking-nav text-charcoal lg:hidden"
-              onClick={() => setDrawerOpen(true)}
-            >
-              <SlidersHorizontal size={14} strokeWidth={1.4} />
-              Filtrele
-            </button>
-            <SortSelect value={sort} onChange={setSort} />
+        {categoryOverride?.hidden ? (
+          <div className="mt-8">
+            <EmptyState
+              title="Bu kategori yayında değil"
+              message="Kategori admin panelinden gizlendi."
+              actionHref="/"
+              actionLabel="Anasayfaya Dön"
+            />
           </div>
-        </div>
+        ) : (
+          <>
+            <header className="mt-8 max-w-2xl">
+              <h1 className="font-heading text-32 text-black lg:text-48">{heading}</h1>
+              <p className="mt-4 text-16 text-charcoal">{copy}</p>
+            </header>
 
-        <FilterChips filters={filters} onChange={setFilters} onClear={clearFilters} />
-
-        <div className="mt-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
-          <aside className="hidden lg:block">
-            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
-              <p className="text-12 tracking-label text-black">Filtrele</p>
-              {filterPanel}
-            </div>
-          </aside>
-
-          <div>
-            {catalogIsEmpty ? (
-              <EmptyState
-                title="Bu kategoride henüz ürün bulunmuyor"
-                message="Koleksiyon yakında VELORA dilinde tamamlanacak."
-              />
-            ) : noFilterResults ? (
-              <EmptyState
-                title="Sonuç bulunamadı"
-                message="Seçtiğiniz filtrelere uygun ürün yok. Filtreleri temizleyerek yeniden deneyin."
-              />
-            ) : (
-              <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
-                {visibleProducts.map((product) => (
-                  <li key={product.id}>
-                    <ProductCard product={product} />
-                  </li>
-                ))}
-              </ul>
-            )}
-
-            {filtersActive && noFilterResults ? (
-              <div className="mt-6 text-center">
+            <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
+              <p className="text-14 text-taupe">{visibleProducts.length} ürün</p>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={clearFilters}
-                  className="text-12 tracking-nav text-charcoal transition-colors hover:text-black"
+                  className="inline-flex h-12 items-center gap-2 border border-border px-4 text-12 tracking-nav text-charcoal lg:hidden"
+                  onClick={() => setDrawerOpen(true)}
                 >
-                  Filtreleri Temizle
+                  <SlidersHorizontal size={14} strokeWidth={1.4} />
+                  Filtrele
                 </button>
+                <SortSelect value={sort} onChange={setSort} />
               </div>
-            ) : null}
-          </div>
-        </div>
+            </div>
+
+            <FilterChips filters={filters} onChange={setFilters} onClear={clearFilters} />
+
+            <div className="mt-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
+              <aside className="hidden lg:block">
+                <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
+                  <p className="text-12 tracking-label text-black">Filtrele</p>
+                  {filterPanel}
+                </div>
+              </aside>
+
+              <div>
+                {catalogIsEmpty ? (
+                  <EmptyState
+                    title="Bu kategoride henüz ürün bulunmuyor"
+                    message="Koleksiyon yakında VELORA dilinde tamamlanacak."
+                  />
+                ) : noFilterResults ? (
+                  <EmptyState
+                    title="Sonuç bulunamadı"
+                    message="Seçtiğiniz filtrelere uygun ürün yok. Filtreleri temizleyerek yeniden deneyin."
+                    actionLabel="Filtreleri Temizle"
+                    onAction={clearFilters}
+                  />
+                ) : (
+                  <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
+                    {visibleProducts.map((product) => (
+                      <li key={product.id}>
+                        <ProductCard product={product} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
-      <FilterDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        {filterPanel}
-      </FilterDrawer>
+      {categoryOverride?.hidden ? null : (
+        <FilterDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          {filterPanel}
+        </FilterDrawer>
+      )}
     </section>
   );
 }

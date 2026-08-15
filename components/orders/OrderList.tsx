@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { EmptyState } from "@/components/category/EmptyState";
 import { OrderDetailModal } from "@/components/orders/OrderDetailModal";
 import { demoOrders } from "@/data/orders";
 import { formatOrderDate, formatOrderNumber, ORDER_STATUS_LABELS } from "@/lib/orders";
@@ -9,6 +10,21 @@ import type { Order } from "@/types";
 
 export function OrderList() {
   const [selected, setSelected] = useState<Order | null>(null);
+
+  if (demoOrders.length === 0) {
+    return (
+      <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-3xl">
+          <EmptyState
+            title="Henüz siparişiniz yok"
+            message="Tamamladığınız siparişler burada listelenir."
+            actionHref="/"
+            actionLabel="Alışverişe Devam Et"
+          />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">

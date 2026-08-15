@@ -15,7 +15,7 @@ export function FeaturedCollection({ products }: FeaturedCollectionProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholders/parfum.svg"
-            alt=""
+            alt="VELORA parfüm koleksiyonu"
             className="h-full w-full object-cover object-[center_30%] lg:scale-110"
           />
         </div>

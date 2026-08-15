@@ -190,6 +190,7 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
           <button
             type="button"
             onClick={handleAddToBag}
+            aria-live="polite"
             className="inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
           >
             {added ? (

@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 import { orderAddresses } from "@/data/orders";
-import { getProductById } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { formatOrderDate, formatOrderNumber, ORDER_STATUS_LABELS } from "@/lib/orders";
 import { formatPrice } from "@/lib/utils";
 import type { Order } from "@/types";
@@ -17,9 +18,12 @@ type OrderDetailModalProps = {
 };
 
 export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
+  const { getById } = useCatalog();
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
   const isOpen = Boolean(order);
+  useFocusTrap(isOpen, panelRef);
 
   useEffect(() => {
     if (!isOpen) {
@@ -50,7 +54,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.24 }}
+          transition={{ duration: reduceMotion ? 0 : 0.24 }}
         >
           <button
             type="button"
@@ -59,6 +63,8 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
             onClick={onClose}
           />
           <motion.div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -78,7 +84,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center text-charcoal"
+                className="flex h-11 w-11 items-center justify-center text-charcoal"
               >
                 <X size={18} strokeWidth={1.4} />
               </button>
@@ -97,7 +103,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
 
             <ul className="mt-8 flex flex-col gap-4 border-t border-border pt-6">
               {order.items.map((item) => {
-                const product = getProductById(item.productId);
+                const product = getById(item.productId);
                 if (!product) {
                   return null;
                 }
@@ -107,7 +113,7 @@ export function OrderDetailModal({ order, onClose }: OrderDetailModalProps) {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={product.images[0]}
-                      alt=""
+                      alt={product.name}
                       className="h-20 w-16 bg-off-white object-cover"
                     />
                     <div className="min-w-0 flex-1">

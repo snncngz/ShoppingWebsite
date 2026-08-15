@@ -30,7 +30,7 @@ export function BrandStory() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholders/pantolon.svg"
-            alt=""
+            alt="VELORA pantolon silueti"
             className="h-full w-full object-cover object-top lg:scale-105 lg:object-[center_12%]"
           />
         </div>

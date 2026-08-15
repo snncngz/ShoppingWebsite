@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 import { useCart } from "@/context/CartContext";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { getVariantConfig } from "@/lib/variants";
 import type { Product } from "@/types";
 
@@ -25,6 +26,8 @@ export function QuickAddModal({
   const { addItem } = useCart();
   const reduceMotion = useReducedMotion();
   const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(isOpen, panelRef);
   const config = getVariantConfig(product);
   const [color, setColor] = useState<string | null>(
     config.colors.length === 1 ? config.colors[0] : null,
@@ -93,7 +96,7 @@ export function QuickAddModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.24 }}
+          transition={{ duration: reduceMotion ? 0 : 0.24 }}
         >
           <button
             type="button"
@@ -102,6 +105,8 @@ export function QuickAddModal({
             onClick={onClose}
           />
           <motion.div
+            ref={panelRef}
+            tabIndex={-1}
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
@@ -123,7 +128,7 @@ export function QuickAddModal({
                 type="button"
                 onClick={onClose}
                 aria-label="Kapat"
-                className="flex h-8 w-8 items-center justify-center text-charcoal"
+                className="flex h-11 w-11 items-center justify-center text-charcoal"
               >
                 <X size={18} strokeWidth={1.4} />
               </button>

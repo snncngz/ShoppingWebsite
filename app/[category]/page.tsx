@@ -27,6 +27,12 @@ export async function generateMetadata({
   return {
     title: config.title,
     description: config.description,
+    openGraph: {
+      title: `${config.title} · ${BRAND_NAME}`,
+      description: config.description,
+      type: "website",
+      locale: "tr_TR",
+    },
   };
 }
 
@@ -47,6 +53,7 @@ export default async function CategoryRoute({
   return (
     <CategoryPage
       key={config.slug}
+      slug={config.slug}
       title={config.title}
       description={config.description}
       breadcrumbs={config.breadcrumbs}

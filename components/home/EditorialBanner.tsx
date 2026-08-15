@@ -7,7 +7,7 @@ export function EditorialBanner() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/placeholders/kemer.svg"
-          alt=""
+          alt="VELORA imza kemer detayı"
           className="h-full w-full origin-[center_48%] scale-150 object-cover object-[center_48%]"
         />
         <div className="absolute inset-0 bg-black/45" />

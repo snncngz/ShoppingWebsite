@@ -1,16 +1,16 @@
 "use client";
 
-import Link from "next/link";
-
 import { EmptyState } from "@/components/category/EmptyState";
+import { CartSkeleton } from "@/components/ui/Skeleton";
 import { useCart } from "@/context/CartContext";
-import { getProductById } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import {
   FREE_SHIPPING_THRESHOLD,
   getShippingFee,
 } from "@/lib/cart";
 import { formatPrice } from "@/lib/utils";
 import { Minus, Plus, X } from "lucide-react";
+import Link from "next/link";
 
 export function CartView() {
   const {
@@ -18,11 +18,13 @@ export function CartView() {
     incrementItem,
     decrementItem,
     removeItem,
+    hydrated,
   } = useCart();
+  const { getById, hydrated: catalogHydrated } = useCatalog();
 
   const lines = items
     .map((item) => {
-      const product = getProductById(item.productId);
+      const product = getById(item.productId);
       if (!product) {
         return null;
       }
@@ -47,6 +49,10 @@ export function CartView() {
   const shipping = getShippingFee(subtotal);
   const total = subtotal + shipping;
 
+  if (!hydrated || !catalogHydrated) {
+    return <CartSkeleton />;
+  }
+
   if (lines.length === 0) {
     return (
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
@@ -54,15 +60,9 @@ export function CartView() {
           <EmptyState
             title="Sepetiniz Boş"
             message="Koleksiyondan bir parça eklediğinizde burada görünecek."
+            actionHref="/"
+            actionLabel="Alışverişe Devam Et"
           />
-          <p className="mt-8 text-center">
-            <Link
-              href="/"
-              className="inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
-            >
-              Alışverişe Devam Et
-            </Link>
-          </p>
         </div>
       </section>
     );
@@ -92,7 +92,7 @@ export function CartView() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image}
-                      alt=""
+                      alt={product.name}
                       className="h-full w-full object-cover"
                     />
                   </Link>
@@ -120,7 +120,7 @@ export function CartView() {
                         type="button"
                         aria-label="Kaldır"
                         onClick={() => removeItem(item.id)}
-                        className="flex h-8 w-8 items-center justify-center text-taupe hover:text-black"
+                        className="flex h-11 w-11 items-center justify-center text-taupe hover:text-black"
                       >
                         <X size={16} strokeWidth={1.4} />
                       </button>

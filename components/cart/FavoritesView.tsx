@@ -1,17 +1,27 @@
 "use client";
 
-import Link from "next/link";
-
 import { EmptyState } from "@/components/category/EmptyState";
 import { ProductCard } from "@/components/product/ProductCard";
+import { ProductGridSkeleton } from "@/components/ui/Skeleton";
+import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { getProductById } from "@/data/products";
 
 export function FavoritesView() {
-  const { ids } = useWishlist();
+  const { ids, hydrated } = useWishlist();
+  const { getById, hydrated: catalogHydrated } = useCatalog();
   const products = ids
-    .map((id) => getProductById(id))
+    .map((id) => getById(id))
     .filter((product): product is NonNullable<typeof product> => Boolean(product));
+
+  if (!hydrated || !catalogHydrated) {
+    return (
+      <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <ProductGridSkeleton count={4} />
+        </div>
+      </section>
+    );
+  }
 
   if (products.length === 0) {
     return (
@@ -20,15 +30,9 @@ export function FavoritesView() {
           <EmptyState
             title="Favorileriniz Henüz Boş"
             message="Beğendiğiniz ürünleri favorilerinize ekleyin."
+            actionHref="/"
+            actionLabel="Alışverişe Devam Et"
           />
-          <p className="mt-8 text-center">
-            <Link
-              href="/"
-              className="inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
-            >
-              Alışverişe Devam Et
-            </Link>
-          </p>
         </div>
       </section>
     );

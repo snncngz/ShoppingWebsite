@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { RecentSearches } from "@/components/search/RecentSearches";
 import { SearchResults } from "@/components/search/SearchResults";
 import { useRecentSearches } from "@/components/search/useRecentSearches";
-import { products } from "@/data/products";
+import { useCatalog } from "@/context/CatalogContext";
 import {
   getSearchHref,
   normalizeSearchQuery,
@@ -31,11 +31,12 @@ export function SearchPanel({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { terms, remember } = useRecentSearches();
+  const { products } = useCatalog();
   const [query, setQuery] = useState(initialQuery);
   const trimmed = normalizeSearchQuery(query);
   const results = useMemo(
     () => searchProducts(products, trimmed),
-    [trimmed],
+    [products, trimmed],
   );
 
   useEffect(() => {
@@ -108,7 +109,7 @@ export function SearchPanel({
                     <button
                       type="button"
                       onClick={() => setQuery(term)}
-                      className="text-left text-16 text-charcoal transition-colors hover:text-black"
+                      className="min-h-11 text-left text-16 text-charcoal transition-colors hover:text-black"
                     >
                       {term}
                     </button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { motion, useReducedMotion } from "framer-motion";
 import { Heart, Menu, Search, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 
@@ -18,11 +19,12 @@ import {
 } from "@/lib/navigation";
 
 const iconButtonClass =
-  "relative flex h-10 w-10 items-center justify-center text-charcoal transition-colors hover:text-black";
+  "relative flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:text-black";
 
 export function Navbar() {
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
+  const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
   const [openMegaId, setOpenMegaId] = useState<MegaMenuContent["id"] | null>(
     null,
@@ -120,7 +122,7 @@ export function Navbar() {
             setOpenMegaId(null);
           }
         }}
-        className={`sticky top-0 z-50 border-b border-border transition-[padding,background-color,box-shadow,backdrop-filter] duration-300 ${
+        className={`sticky top-0 z-50 border-b border-border transition-[padding,background-color,box-shadow,backdrop-filter] duration-300 motion-reduce:transition-none ${
           scrolled
             ? "bg-ivory/85 shadow-sm backdrop-blur-md"
             : "bg-ivory"
@@ -237,21 +239,43 @@ export function Navbar() {
             <Link
               href="/favoriler"
               className={iconButtonClass}
-              aria-label="Favoriler"
+              aria-label={
+                wishlistCount > 0
+                  ? `Favoriler, ${wishlistCount} ürün`
+                  : "Favoriler"
+              }
             >
               <Heart size={18} strokeWidth={1.4} />
               {wishlistCount > 0 ? (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-charcoal px-1 text-[10px] leading-none text-ivory">
+                <motion.span
+                  key={wishlistCount}
+                  initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.18 }}
+                  className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-md bg-charcoal px-1 text-[10px] leading-none text-ivory"
+                  aria-live="polite"
+                >
                   {wishlistCount}
-                </span>
+                </motion.span>
               ) : null}
             </Link>
-            <Link href="/sepet" className={iconButtonClass} aria-label="Sepet">
+            <Link
+              href="/sepet"
+              className={iconButtonClass}
+              aria-label={itemCount > 0 ? `Sepet, ${itemCount} ürün` : "Sepet"}
+            >
               <ShoppingBag size={18} strokeWidth={1.4} />
               {itemCount > 0 ? (
-                <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-md bg-charcoal px-1 text-[10px] leading-none text-ivory">
+                <motion.span
+                  key={itemCount}
+                  initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.18 }}
+                  className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-md bg-charcoal px-1 text-[10px] leading-none text-ivory"
+                  aria-live="polite"
+                >
                   {itemCount}
-                </span>
+                </motion.span>
               ) : null}
             </Link>
           </div>

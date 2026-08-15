@@ -55,8 +55,8 @@ export function CategoryGrid() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={category.image}
-                    alt=""
-                    className={`h-full w-full ${category.imageClass} object-cover transition-transform duration-700 ease-out group-hover:scale-105`}
+                    alt={`${category.name} kategorisi`}
+                    className={`h-full w-full ${category.imageClass} object-cover transition-transform duration-700 ease-out group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100`}
                   />
                   <div className="absolute inset-0 bg-black/15 transition-colors duration-500 group-hover:bg-black/35" />
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between px-6 py-6">

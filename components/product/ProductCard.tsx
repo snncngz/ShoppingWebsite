@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
 
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Heart } from "lucide-react";
 import Link from "next/link";
 
@@ -26,6 +26,7 @@ const aspectClass = {
 export function ProductCard({ product, variant = "default" }: ProductCardProps) {
   const { addItem } = useCart();
   const { hasItem, toggleItem } = useWishlist();
+  const reduceMotion = useReducedMotion();
   const wished = hasItem(product.id);
   const [quickOpen, setQuickOpen] = useState(false);
   const [added, setAdded] = useState(false);
@@ -73,7 +74,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
   if (variant === "compact") {
     return (
-      <article className="group flex gap-4">
+      <article className="group flex min-w-0 gap-4">
         <Link
           href={href}
           className="relative h-32 w-24 shrink-0 overflow-hidden bg-off-white"
@@ -82,8 +83,8 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={primary}
-            alt=""
-            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+            alt={product.name}
+            className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
           />
         </Link>
         <div className="min-w-0 pt-1">
@@ -100,20 +101,21 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   }
 
   return (
-    <article className="group">
+    <article className="group min-w-0">
       <div className={`relative overflow-hidden bg-off-white ${aspectClass[variant]}`}>
         <Link href={href} className="absolute inset-0 block" aria-label={product.name}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={primary}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-0"
+            alt={product.name}
+            className="absolute inset-0 h-full w-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:opacity-100"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={secondary}
             alt=""
-            className="absolute inset-0 h-full w-full object-cover object-[center_18%] scale-105 opacity-0 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-100"
+            aria-hidden
+            className="absolute inset-0 h-full w-full object-cover object-[center_18%] scale-105 opacity-0 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-100 motion-reduce:hidden"
           />
         </Link>
 
@@ -132,27 +134,34 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             event.stopPropagation();
             toggleItem(product.id);
           }}
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100"
+          className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
         >
-          <Heart
-            size={16}
-            strokeWidth={1.4}
-            className={wished ? "fill-charcoal" : ""}
-          />
+          <motion.span
+            animate={reduceMotion ? undefined : { scale: wished ? 1.08 : 1 }}
+            transition={{ duration: reduceMotion ? 0 : 0.18 }}
+            className="inline-flex"
+          >
+            <Heart
+              size={16}
+              strokeWidth={1.4}
+              className={wished ? "fill-charcoal" : ""}
+            />
+          </motion.span>
         </button>
 
         <button
           type="button"
+          aria-label={added ? `${product.name} sepete eklendi` : `${product.name} hızlı ekle`}
           onClick={handleQuickAdd}
-          className="absolute inset-x-3 bottom-3 z-10 hidden h-12 bg-ivory text-12 tracking-nav text-black opacity-0 translate-y-2 transition-all duration-300 md:block md:group-hover:translate-y-0 md:group-hover:opacity-100"
+          className="absolute inset-x-3 bottom-3 z-10 hidden h-12 bg-ivory text-12 tracking-nav text-black opacity-0 translate-y-2 transition-all duration-300 md:block md:group-hover:translate-y-0 md:group-hover:opacity-100 md:focus-visible:translate-y-0 md:focus-visible:opacity-100"
         >
           <AnimatePresence mode="wait" initial={false}>
             <motion.span
               key={added ? "added" : "add"}
-              initial={{ opacity: 0, y: 6 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.18 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
+              transition={{ duration: reduceMotion ? 0 : 0.18 }}
               className="inline-flex items-center justify-center gap-2"
             >
               {added ? (
@@ -168,7 +177,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
         </button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 min-w-0">
         <p className="text-12 tracking-label text-taupe">{product.category}</p>
         <Link href={href} className="mt-1 block">
           <h3 className="font-heading text-18 text-black transition-colors group-hover:text-accent lg:text-24">

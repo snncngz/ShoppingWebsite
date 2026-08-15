@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
 import { SearchPage } from "@/components/search/SearchPage";
-import { BRAND_NAME } from "@/lib/constants";
 import { firstSearchParam, normalizeSearchQuery } from "@/lib/search";
 
 export const metadata: Metadata = {
   title: "Arama",
-  description: `${BRAND_NAME} koleksiyonunda arayın.`,
+  description:
+    "VELORA koleksiyonunda ürün, kategori veya parfüm arayın.",
 };
 
 export default async function SearchRoute({

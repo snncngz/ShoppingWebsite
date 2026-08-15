@@ -25,7 +25,7 @@ export function MegaMenu({ menu, isOpen, onMouseEnter, onMouseLeave }: MegaMenuP
           initial={reduceMotion ? { opacity: 1 } : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8 }}
-          transition={{ duration: reduceMotion ? 0.12 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] }}
           onMouseEnter={onMouseEnter}
           onMouseLeave={onMouseLeave}
           className="absolute inset-x-0 top-full z-40 hidden border-b border-border bg-ivory/95 shadow-sm backdrop-blur-md lg:block"

@@ -17,7 +17,9 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
             <li key={`${item.href}-${item.label}`} className="flex items-center gap-2">
               {index > 0 ? <span aria-hidden="true">/</span> : null}
               {isLast ? (
-                <span className="text-charcoal">{item.label}</span>
+                <span className="text-charcoal" aria-current="page">
+                  {item.label}
+                </span>
               ) : (
                 <Link href={item.href} className="transition-colors hover:text-black">
                   {item.label}

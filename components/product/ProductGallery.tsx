@@ -40,7 +40,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               type="button"
               aria-label="Önceki görsel"
               onClick={() => show(activeIndex - 1)}
-              className="absolute left-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center bg-ivory/90 text-charcoal"
+              className="absolute left-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center bg-ivory/90 text-charcoal"
             >
               <ChevronLeft size={16} strokeWidth={1.4} />
             </button>
@@ -48,7 +48,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
               type="button"
               aria-label="Sonraki görsel"
               onClick={() => show(activeIndex + 1)}
-              className="absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center bg-ivory/90 text-charcoal"
+              className="absolute right-3 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center bg-ivory/90 text-charcoal"
             >
               <ChevronRight size={16} strokeWidth={1.4} />
             </button>
@@ -74,6 +74,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                   <img
                     src={image}
                     alt=""
+                    aria-hidden
                     className="h-full w-full object-cover"
                   />
                 </button>
@@ -89,10 +90,14 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                 aria-label={`Görsel ${index + 1}`}
                 aria-current={index === activeIndex}
                 onClick={() => setActiveIndex(index)}
-                className={`h-2 w-2 rounded-md ${
-                  index === activeIndex ? "bg-charcoal" : "bg-border"
-                }`}
-              />
+                className="flex h-11 w-11 items-center justify-center"
+              >
+                <span
+                  className={`h-2 w-2 rounded-md ${
+                    index === activeIndex ? "bg-charcoal" : "bg-border"
+                  }`}
+                />
+              </button>
             ))}
           </div>
         </>
