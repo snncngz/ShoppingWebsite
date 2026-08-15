@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" role="img" aria-label="Aksesuar">
+  <rect width="800" height="1000" fill="#F7F5F0"/>
+  <text x="400" y="120" text-anchor="middle" fill="#8B6F47" font-family="Georgia, 'Times New Roman', serif" font-size="12" letter-spacing="0.42em">VELORA</text>
+  <g fill="none" stroke="#2A2825" stroke-width="1.25" stroke-linejoin="round" stroke-linecap="round">
+    <circle cx="400" cy="500" r="92"/>
+    <circle cx="400" cy="500" r="68"/>
+    <circle cx="400" cy="408" r="8"/>
+  </g>
+  <line x1="340" y1="760" x2="460" y2="760" stroke="#D8CFC0" stroke-width="1"/>
+  <text x="400" y="798" text-anchor="middle" fill="#A8998A" font-family="Georgia, 'Times New Roman', serif" font-size="13" letter-spacing="0.32em">AKSESUAR</text>
+</svg>
