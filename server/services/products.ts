@@ -4,6 +4,10 @@ import { badRequest, conflict, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
 import { toDecimal, toProductDto, productCategoryInclude } from "@/server/dto/catalog";
 import {
+  applyAbsoluteStock,
+  recordInitialStock,
+} from "@/server/services/inventory";
+import {
   hasField,
   optionalBoolean,
   optionalJsonObject,
@@ -264,36 +268,39 @@ export async function createProduct(
   await requireCategory(input.categoryId);
 
   try {
-    const product = await getPrisma().product.create({
-      data: {
-        name: input.name,
-        slug: input.slug,
-        description: input.description,
-        price: toDecimal(input.price),
-        oldPrice:
-          input.oldPrice === undefined ? undefined : input.oldPrice === null
-            ? null
-            : toDecimal(input.oldPrice),
-        discount: input.discount ?? null,
-        stock: input.stock,
-        subcategory: input.subcategory,
-        images: input.images,
-        colors: input.colors,
-        sizes: input.sizes,
-        rating: toDecimal(input.rating),
-        reviewCount: input.reviewCount,
-        isPopular: input.isPopular,
-        isNew: input.isNew,
-        isActive: input.isActive,
-        badge: input.badge,
-        perfumeDetails: (input.perfumeDetails ??
-          Prisma.JsonNull) as Prisma.InputJsonValue,
-        categoryId: input.categoryId,
-      },
-      include: PRODUCT_INCLUDE,
-    });
+    return await getPrisma().$transaction(async (tx) => {
+      const product = await tx.product.create({
+        data: {
+          name: input.name,
+          slug: input.slug,
+          description: input.description,
+          price: toDecimal(input.price),
+          oldPrice:
+            input.oldPrice === undefined ? undefined : input.oldPrice === null
+              ? null
+              : toDecimal(input.oldPrice),
+          discount: input.discount ?? null,
+          stock: input.stock,
+          subcategory: input.subcategory,
+          images: input.images,
+          colors: input.colors,
+          sizes: input.sizes,
+          rating: toDecimal(input.rating),
+          reviewCount: input.reviewCount,
+          isPopular: input.isPopular,
+          isNew: input.isNew,
+          isActive: input.isActive,
+          badge: input.badge,
+          perfumeDetails: (input.perfumeDetails ??
+            Prisma.JsonNull) as Prisma.InputJsonValue,
+          categoryId: input.categoryId,
+        },
+        include: PRODUCT_INCLUDE,
+      });
 
-    return toProductDto(product);
+      await recordInitialStock(tx, product.id, input.stock);
+      return toProductDto(product);
+    });
   } catch (error) {
     if (isUniqueSlugError(error)) {
       conflict("Product slug already exists");
@@ -321,7 +328,6 @@ export async function updateProduct(
     data.oldPrice = input.oldPrice === null ? null : toDecimal(input.oldPrice);
   }
   if (input.discount !== undefined) data.discount = input.discount;
-  if (input.stock !== undefined) data.stock = input.stock;
   if (input.subcategory !== undefined) data.subcategory = input.subcategory;
   if (input.images !== undefined) data.images = input.images;
   if (input.colors !== undefined) data.colors = input.colors;
@@ -340,12 +346,24 @@ export async function updateProduct(
   }
 
   try {
-    const product = await getPrisma().product.update({
-      where: { id },
-      data,
-      include: PRODUCT_INCLUDE,
+    return await getPrisma().$transaction(async (tx) => {
+      if (Object.keys(data).length > 0) {
+        await tx.product.update({
+          where: { id },
+          data,
+        });
+      }
+
+      if (input.stock !== undefined) {
+        await applyAbsoluteStock(tx, id, input.stock, "product_update");
+      }
+
+      const product = await tx.product.findUniqueOrThrow({
+        where: { id },
+        include: PRODUCT_INCLUDE,
+      });
+      return toProductDto(product);
     });
-    return toProductDto(product);
   } catch (error) {
     if (isUniqueSlugError(error)) {
       conflict("Product slug already exists");

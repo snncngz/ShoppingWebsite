@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { getAdminErrorMessage } from "@/lib/adminApi";
+import { listAdminInventory } from "@/lib/adminInventory";
 import { listAdminOrders } from "@/lib/adminOrders";
 import {
   listAdminApiProducts,
@@ -12,9 +13,13 @@ import {
 } from "@/lib/adminProducts";
 import { clearAdminStore } from "@/lib/adminStore";
 import { formatPrice } from "@/lib/utils";
+import type { AdminInventoryItemDto } from "@/types/api";
 
 export function AdminDashboard() {
   const [rows, setRows] = useState<AdminProductListItem[]>([]);
+  const [lowStock, setLowStock] = useState<AdminInventoryItemDto[]>([]);
+  const [outOfStock, setOutOfStock] = useState<AdminInventoryItemDto[]>([]);
+  const [lowStockTotal, setLowStockTotal] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [latestTotal, setLatestTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -24,13 +29,18 @@ export function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      const [products, orders] = await Promise.all([
+      const [products, orders, low, out] = await Promise.all([
         listAdminApiProducts(),
         listAdminOrders({ page: 1, limit: 1 }),
+        listAdminInventory({ page: 1, limit: 20, stockStatus: "LOW_STOCK" }),
+        listAdminInventory({ page: 1, limit: 20, stockStatus: "OUT_OF_STOCK" }),
       ]);
       setRows(products);
       setOrderCount(orders.pagination.total);
       setLatestTotal(orders.items[0]?.total ?? 0);
+      setLowStock(low.items);
+      setOutOfStock(out.items);
+      setLowStockTotal(low.pagination.total);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -44,8 +54,6 @@ export function AdminDashboard() {
 
   const published = rows.filter((row) => !row.hidden);
   const hiddenCount = rows.filter((row) => row.hidden).length;
-  const lowStock = published.filter((product) => product.stock > 0 && product.stock <= 5);
-  const outOfStock = published.filter((product) => product.stock === 0);
 
   const handleReset = () => {
     if (
@@ -76,7 +84,7 @@ export function AdminDashboard() {
         <ul className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Stat label="Yayındaki ürün" value={String(published.length)} />
           <Stat label="Toplam ürün" value={String(rows.length)} />
-          <Stat label="Düşük stok" value={String(lowStock.length)} />
+          <Stat label="Düşük stok" value={String(lowStockTotal)} />
           <Stat label="Gizlenen" value={String(hiddenCount)} />
         </ul>
       )}
@@ -94,7 +102,7 @@ export function AdminDashboard() {
             <ul className="mt-4 flex flex-col gap-3">
               {outOfStock.map((product) => (
                 <li key={product.id} className="flex justify-between gap-4 text-14">
-                  <Link href={`/admin/urunler/${product.id}`} className="text-charcoal hover:text-black">
+                  <Link href="/admin/stok" className="text-charcoal hover:text-black">
                     {product.name}
                   </Link>
                   <span className="text-accent">Tükendi</span>
@@ -102,7 +110,7 @@ export function AdminDashboard() {
               ))}
               {lowStock.map((product) => (
                 <li key={product.id} className="flex justify-between gap-4 text-14">
-                  <Link href={`/admin/urunler/${product.id}`} className="text-charcoal hover:text-black">
+                  <Link href="/admin/stok" className="text-charcoal hover:text-black">
                     {product.name}
                   </Link>
                   <span className="text-taupe">{product.stock} adet</span>
@@ -110,6 +118,12 @@ export function AdminDashboard() {
               ))}
             </ul>
           )}
+          <Link
+            href="/admin/stok"
+            className="mt-6 inline-flex h-11 items-center text-12 tracking-nav text-charcoal hover:text-black"
+          >
+            Stokları gör
+          </Link>
         </section>
 
         <section className="border border-border bg-off-white p-6">

@@ -1,8 +1,10 @@
 import { OrderStatus, Prisma } from "@prisma/client";
 
+import { isAllowedOrderStatusTransition } from "@/lib/orderTransitions";
 import { badRequest, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
 import { decimalToNumber, toProductSummaryDto } from "@/server/dto/catalog";
+import { restoreStockForCancelledOrder } from "@/server/services/inventory";
 import {
   parseQueryPositiveInt,
   parseQueryString,
@@ -192,19 +194,35 @@ export async function updateAdminOrderStatus(
   orderId: string,
   status: OrderStatus,
 ): Promise<AdminOrderDetailDto> {
-  const existing = await getPrisma().order.findUnique({
-    where: { id: requireId(orderId) },
-    select: { id: true },
-  });
-  if (!existing) {
-    notFound("Order not found");
-  }
+  return getPrisma().$transaction(async (tx) => {
+    const existing = await tx.order.findUnique({
+      where: { id: requireId(orderId) },
+      include: { items: true },
+    });
+    if (!existing) {
+      notFound("Order not found");
+    }
 
-  const order = await getPrisma().order.update({
-    where: { id: existing.id },
-    data: { status },
-    include: adminOrderInclude,
-  });
+    if (existing.status !== status) {
+      if (!isAllowedOrderStatusTransition(existing.status, status)) {
+        badRequest("status transition is not allowed");
+      }
 
-  return toAdminOrderDetailDto(order);
+      if (status === OrderStatus.CANCELLED) {
+        await restoreStockForCancelledOrder(tx, existing);
+      }
+
+      await tx.order.update({
+        where: { id: existing.id },
+        data: { status },
+      });
+    }
+
+    const order = await tx.order.findUniqueOrThrow({
+      where: { id: existing.id },
+      include: adminOrderInclude,
+    });
+
+    return toAdminOrderDetailDto(order);
+  });
 }

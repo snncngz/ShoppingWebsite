@@ -174,5 +174,20 @@ GET    /api/admin/orders/:id
 PATCH  /api/admin/orders/:id   (body: { "status": "PROCESSING" })
 ```
 
-Status values are the Prisma `OrderStatus` whitelist (`PENDING`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`). Invalid status is 400. Missing order is 404. USER is 403; anonymous is 401. Cancel sets `CANCELLED`; orders are not deleted. Status updates do not change stock. Admin responses include customer `{ id, name, email }` only — never `passwordHash`. List `limit` is capped at 50. Admin UI: `/admin/siparisler`.
+Status values are the Prisma `OrderStatus` whitelist (`PENDING`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`). Transitions are restricted: `SHIPPED` only goes to `DELIVERED`; `DELIVERED` and `CANCELLED` are terminal. Invalid status is 400. Missing order is 404. USER is 403; anonymous is 401. Cancel sets `CANCELLED` and restores stock once (see Inventory). Orders are not deleted. Admin responses include customer `{ id, name, email }` only — never `passwordHash`. List `limit` is capped at 50. Admin UI: `/admin/siparisler`.
+
+## Inventory (FAZ 12.10)
+
+Stock changes go through `server/services/inventory.ts`. `Product.stock` remains the on-hand quantity and must stay `>= 0`. `Product.lowStockThreshold` defaults to 5.
+
+```text
+GET    /api/admin/inventory?page=&limit=&search=&lowStock=&stockStatus=
+GET    /api/admin/inventory/:productId
+PATCH  /api/admin/inventory/:productId   (body: { "stock"?, "lowStockThreshold"?, "reason"? })
+GET    /api/admin/inventory/:productId/movements?page=&limit=
+```
+
+ADMIN only. Anonymous 401, USER 403. Client cannot set movement `type` or signed `quantity`; the service chooses `RESTOCK` (increase), `ADJUSTMENT` (decrease), `SALE` (order), or `CANCELLATION` (cancel restore). `limit` is capped at 50. Low-stock filtering compares `stock` to `lowStockThreshold` in PostgreSQL.
+
+`POST /api/orders` decrements stock atomically (`UPDATE … WHERE stock >= qty`) and writes a `SALE` movement in the same transaction. Cancel restore is idempotent: a unique `(productId, type, referenceId)` row plus an existing `SALE` movement is required before stock is incremented. Admin UI: `/admin/stok`.
 

@@ -21,6 +21,14 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum InventoryMovementType {
+  SALE
+  RESTOCK
+  RETURN
+  CANCELLATION
+  ADJUSTMENT
+}
+
 model User {
   id           String   @id @default(uuid())
   name         String
@@ -57,8 +65,9 @@ model Product {
   price          Decimal  @db.Decimal(12, 2)
   oldPrice       Decimal? @db.Decimal(12, 2)
   discount       Int?
-  stock          Int      @default(0)
-  subcategory    String   @default("")
+  stock              Int      @default(0)
+  lowStockThreshold  Int      @default(5)
+  subcategory        String   @default("")
   images         String[]
   colors         String[]
   sizes          String[]
@@ -73,13 +82,31 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  orderItems    OrderItem[]
-  cartItems     CartItem[]
-  wishlistItems WishlistItem[]
+  category            Category             @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  orderItems          OrderItem[]
+  cartItems           CartItem[]
+  wishlistItems       WishlistItem[]
+  inventoryMovements  InventoryMovement[]
 
   @@index([categoryId])
   @@index([isActive])
+}
+
+model InventoryMovement {
+  id          String                 @id @default(uuid())
+  productId   String
+  quantity    Int
+  type        InventoryMovementType
+  reason      String                 @default("")
+  referenceId String?
+  createdAt   DateTime               @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@unique([productId, type, referenceId])
+  @@index([productId])
+  @@index([createdAt])
+  @@index([type])
 }
 
 model Order {

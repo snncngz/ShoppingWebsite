@@ -9,6 +9,7 @@ import {
   listAdminOrders,
   updateAdminOrderStatus,
 } from "@/lib/adminOrders";
+import { nextOrderStatuses } from "@/lib/orderTransitions";
 import {
   ADMIN_ORDER_STATUS_LABELS,
   ADMIN_ORDER_STATUSES,
@@ -246,7 +247,7 @@ export function AdminOrderList() {
                     }
                     className="mt-2 h-12 min-w-44 border border-border bg-ivory px-4 text-14"
                   >
-                    {ADMIN_ORDER_STATUSES.map((value) => (
+                    {nextOrderStatuses(detail.status).map((value) => (
                       <option key={value} value={value}>
                         {ADMIN_ORDER_STATUS_LABELS[value]}
                       </option>

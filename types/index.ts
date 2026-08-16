@@ -95,6 +95,10 @@ export type {
   OrderCustomerDto,
   AdminOrderListItemDto,
   AdminOrderDetailDto,
+  StockStatusDto,
+  InventoryMovementTypeDto,
+  AdminInventoryItemDto,
+  InventoryMovementDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
 export type { AuthUser, SafeUser, SessionUser, UserRole } from "@/types/auth";

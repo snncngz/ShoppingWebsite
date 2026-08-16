@@ -169,3 +169,32 @@ export type AdminOrderDetailDto = OrderDto & {
   user: OrderCustomerDto;
 };
 
+export type StockStatusDto = "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+
+export type InventoryMovementTypeDto =
+  | "SALE"
+  | "RESTOCK"
+  | "RETURN"
+  | "CANCELLATION"
+  | "ADJUSTMENT";
+
+export type AdminInventoryItemDto = {
+  id: string;
+  name: string;
+  slug: string;
+  stock: number;
+  lowStockThreshold: number;
+  stockStatus: StockStatusDto;
+  updatedAt: string;
+};
+
+export type InventoryMovementDto = {
+  id: string;
+  productId: string;
+  quantity: number;
+  type: InventoryMovementTypeDto;
+  reason: string;
+  referenceId: string | null;
+  createdAt: string;
+};
+

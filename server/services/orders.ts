@@ -3,6 +3,7 @@ import { OrderStatus, Prisma } from "@prisma/client";
 import { badRequest, conflict, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
 import { decimalToNumber, toProductSummaryDto } from "@/server/dto/catalog";
+import { decrementStockForSale } from "@/server/services/inventory";
 import { requireId } from "@/server/utils/validation";
 import type { OrderDto, OrderItemDto } from "@/types/api";
 
@@ -126,18 +127,11 @@ export async function createOrder(userId: string): Promise<OrderDto> {
     });
 
     for (const line of lines) {
-      const updated = await tx.product.updateMany({
-        where: {
-          id: line.productId,
-          isActive: true,
-          stock: { gte: line.quantity },
-        },
-        data: { stock: { decrement: line.quantity } },
+      await decrementStockForSale(tx, {
+        productId: line.productId,
+        quantity: line.quantity,
+        orderId: created.id,
       });
-
-      if (updated.count !== 1) {
-        conflict("Insufficient stock");
-      }
     }
 
     await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
