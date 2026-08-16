@@ -110,4 +110,21 @@ Delete rules: `Product` and `User` are `Restrict` on `Order` / `OrderItem` so hi
 
 Prices use `Decimal(12, 2)`. Product images/colors/sizes are `String[]`. Perfume notes are `Json`. Frontend `types.Product` is unchanged; map in `server/services` later.
 
-Storefront and admin still use `data/products.ts` and localStorage. Product/Category APIs are FAZ 12.3.
+Runtime path:
+
+```text
+Next.js
+   ↓
+app/api
+   ↓
+server/services
+   ↓
+server/db/prisma
+   ↓
+PostgreSQL
+```
+
+FAZ 11 (localStorage catalog) and FAZ 12 (Prisma/PostgreSQL) are still separate. Storefront and admin do not read the database yet.
+
+Development seed (`npx prisma db seed` / `npm run db:seed`) upserts one test user, category, product, cart, wishlist, and order identified by `db-seed@velora.test` and `db-seed-*` slugs. It does not touch `data/products.ts`. Re-run is safe. Extra verification rows are created and deleted by `npm run db:verify`.
+
