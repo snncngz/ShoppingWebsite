@@ -154,3 +154,25 @@ FAZ 12.5A: Storefront catalog (`CatalogProvider`) loads active products from `GE
 
 FAZ 12.5B: Search uses `GET /api/products?search=`. Category pages use `?category=` and `?sort=`. Product detail uses `?slug=` on the existing list endpoint. Color/size/stock chips stay client-side on the API result set because the Product API has no those query params.
 
+## Orders (FAZ 12.8 / 12.9)
+
+Authenticated users create and read their own orders:
+
+```text
+POST   /api/orders
+GET    /api/orders
+GET    /api/orders/:id
+```
+
+`POST /api/orders` runs in a single Prisma transaction: empty cart is 400, inactive/insufficient stock is 409, `unitPrice` is snapshotted from the product row, status starts as `PENDING`, stock is decremented, cart items are cleared. `GET /api/orders/:id` is owner-only; another user receives 404.
+
+Admin order management is a separate surface (`requireAdmin()`). It does not reuse the user list endpoint to collect other users' orders:
+
+```text
+GET    /api/admin/orders?page=&limit=&status=&search=
+GET    /api/admin/orders/:id
+PATCH  /api/admin/orders/:id   (body: { "status": "PROCESSING" })
+```
+
+Status values are the Prisma `OrderStatus` whitelist (`PENDING`, `PAID`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`). Invalid status is 400. Missing order is 404. USER is 403; anonymous is 401. Cancel sets `CANCELLED`; orders are not deleted. Status updates do not change stock. Admin responses include customer `{ id, name, email }` only — never `passwordHash`. List `limit` is capped at 50. Admin UI: `/admin/siparisler`.
+

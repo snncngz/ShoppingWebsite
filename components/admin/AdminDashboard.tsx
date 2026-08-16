@@ -5,16 +5,18 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 import { getAdminErrorMessage } from "@/lib/adminApi";
+import { listAdminOrders } from "@/lib/adminOrders";
 import {
   listAdminApiProducts,
   type AdminProductListItem,
 } from "@/lib/adminProducts";
 import { clearAdminStore } from "@/lib/adminStore";
-import { demoOrders } from "@/data/orders";
 import { formatPrice } from "@/lib/utils";
 
 export function AdminDashboard() {
   const [rows, setRows] = useState<AdminProductListItem[]>([]);
+  const [orderCount, setOrderCount] = useState(0);
+  const [latestTotal, setLatestTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -22,7 +24,13 @@ export function AdminDashboard() {
     setLoading(true);
     setError("");
     try {
-      setRows(await listAdminApiProducts());
+      const [products, orders] = await Promise.all([
+        listAdminApiProducts(),
+        listAdminOrders({ page: 1, limit: 1 }),
+      ]);
+      setRows(products);
+      setOrderCount(orders.pagination.total);
+      setLatestTotal(orders.items[0]?.total ?? 0);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -105,10 +113,10 @@ export function AdminDashboard() {
         </section>
 
         <section className="border border-border bg-off-white p-6">
-          <h2 className="text-12 tracking-label text-black">Demo siparişler</h2>
-          <p className="mt-4 text-14 text-charcoal">{demoOrders.length} kayıtlı demo sipariş</p>
+          <h2 className="text-12 tracking-label text-black">Siparişler</h2>
+          <p className="mt-4 text-14 text-charcoal">{orderCount} kayıtlı sipariş</p>
           <p className="mt-2 text-14 text-taupe">
-            Son sipariş toplamı {formatPrice(demoOrders[0]?.total ?? 0)}
+            Son sipariş toplamı {formatPrice(latestTotal)}
           </p>
           <Link
             href="/admin/siparisler"

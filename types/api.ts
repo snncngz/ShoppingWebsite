@@ -150,3 +150,22 @@ export type OrderDto = {
   items: OrderItemDto[];
 };
 
+export type OrderCustomerDto = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export type AdminOrderListItemDto = {
+  id: string;
+  status: OrderStatusDto;
+  total: number;
+  createdAt: string;
+  itemCount: number;
+  user: OrderCustomerDto;
+};
+
+export type AdminOrderDetailDto = OrderDto & {
+  user: OrderCustomerDto;
+};
+

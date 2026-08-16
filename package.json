@@ -14,6 +14,7 @@
     "test:auth": "tsx scripts/test-auth.ts",
     "test:cart": "tsx scripts/test-cart-wishlist.ts",
     "test:orders": "tsx scripts/test-orders.ts",
+    "test:admin-orders": "tsx scripts/test-admin-orders.ts",
     "db:verify": "tsx prisma/verify.ts"
   },
   "prisma": {

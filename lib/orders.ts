@@ -1,4 +1,5 @@
 import type { OrderStatus } from "@/types";
+import type { OrderStatusDto } from "@/types/api";
 
 import { NEXT_ORDER_SEQUENCE_START, ORDER_SEQ_KEY } from "@/lib/auth";
 
@@ -9,6 +10,24 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   delivered: "Teslim Edildi",
   cancelled: "İptal",
 };
+
+export const ADMIN_ORDER_STATUS_LABELS: Record<OrderStatusDto, string> = {
+  PENDING: "Beklemede",
+  PAID: "Ödendi",
+  PROCESSING: "Hazırlanıyor",
+  SHIPPED: "Kargoda",
+  DELIVERED: "Teslim Edildi",
+  CANCELLED: "İptal",
+};
+
+export const ADMIN_ORDER_STATUSES = [
+  "PENDING",
+  "PAID",
+  "PROCESSING",
+  "SHIPPED",
+  "DELIVERED",
+  "CANCELLED",
+] as const satisfies readonly OrderStatusDto[];
 
 export function formatOrderNumber(id: string): string {
   return id.startsWith("#") ? id : `#${id}`;
