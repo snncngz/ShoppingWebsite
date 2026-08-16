@@ -1,5 +1,11 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from "@/types/api";
-import type { CartDto, OrderDto, WishlistDto } from "@/types/api";
+import type {
+  CartDto,
+  OrderDto,
+  PaymentCreateDto,
+  PaymentDto,
+  WishlistDto,
+} from "@/types/api";
 import type { CartItem } from "@/types";
 
 export class ShopApiError extends Error {
@@ -158,7 +164,7 @@ export function getShopErrorMessage(error: unknown): string {
       return "Sipariş için giriş yapmanız gerekir.";
     }
     if (error.status === 409) {
-      return "Stok yetersiz veya ürün satışta değil.";
+      return "Stok yetersiz, ürün satışta değil veya sipariş ödenemez.";
     }
     if (error.status === 400) {
       return error.message === "Cart is empty"
@@ -179,6 +185,19 @@ export async function createOrder(): Promise<OrderDto> {
   return shopRequest<OrderDto>("/api/orders", {
     method: "POST",
   });
+}
+
+export async function createPayment(orderId: string): Promise<PaymentCreateDto> {
+  return shopRequest<PaymentCreateDto>("/api/payments", {
+    method: "POST",
+    body: JSON.stringify({ orderId }),
+  });
+}
+
+export async function fetchPayments(orderId: string): Promise<PaymentDto[]> {
+  return shopRequest<PaymentDto[]>(
+    `/api/payments?orderId=${encodeURIComponent(orderId)}`,
+  );
 }
 
 export async function fetchOrders(): Promise<OrderDto[]> {

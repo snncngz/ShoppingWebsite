@@ -5,6 +5,7 @@ import { badRequest, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
 import { decimalToNumber, toProductSummaryDto } from "@/server/dto/catalog";
 import { restoreStockForCancelledOrder } from "@/server/services/inventory";
+import { toAdminPaymentDtos } from "@/server/services/payment";
 import {
   parseQueryPositiveInt,
   parseQueryString,
@@ -42,6 +43,9 @@ const adminOrderInclude = {
       },
     },
     orderBy: [{ createdAt: "asc" as const }, { id: "asc" as const }],
+  },
+  payments: {
+    orderBy: [{ createdAt: "desc" as const }, { id: "desc" as const }],
   },
 } satisfies Prisma.OrderInclude;
 
@@ -92,6 +96,7 @@ function toAdminOrderDetailDto(order: AdminOrderRecord): AdminOrderDetailDto {
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map(toOrderItemDto),
     user: toCustomerDto(order.user),
+    payments: toAdminPaymentDtos(order.payments),
   };
 }
 

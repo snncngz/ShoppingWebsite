@@ -13,6 +13,12 @@ export type ServerEnv = {
   adminEmail: string | undefined;
   adminPassword: string | undefined;
   adminName: string | undefined;
+  paymentProvider: string | undefined;
+  paymentCurrency: string;
+  paymentWebhookSecret: string | undefined;
+  iyzicoApiKey: string | undefined;
+  iyzicoSecretKey: string | undefined;
+  iyzicoBaseUrl: string;
 };
 
 function readNodeEnv(): AppEnvironment {
@@ -41,6 +47,13 @@ export function getServerEnv(): ServerEnv {
     adminEmail: readOptional("ADMIN_EMAIL"),
     adminPassword: readOptional("ADMIN_PASSWORD"),
     adminName: readOptional("ADMIN_NAME"),
+    paymentProvider: readOptional("PAYMENT_PROVIDER"),
+    paymentCurrency: readOptional("PAYMENT_CURRENCY") ?? "TRY",
+    paymentWebhookSecret: readOptional("PAYMENT_WEBHOOK_SECRET"),
+    iyzicoApiKey: readOptional("IYZICO_API_KEY"),
+    iyzicoSecretKey: readOptional("IYZICO_SECRET_KEY"),
+    iyzicoBaseUrl:
+      readOptional("IYZICO_BASE_URL") ?? "https://sandbox-api.iyzipay.com",
   };
 }
 
@@ -70,4 +83,23 @@ export function requireAuthSecret(): string {
   }
 
   return authSecret;
+}
+
+export function requirePaymentWebhookSecret(): string {
+  const env = getServerEnv();
+  if (env.paymentWebhookSecret) {
+    return env.paymentWebhookSecret;
+  }
+  if (env.authSecret) {
+    return env.authSecret;
+  }
+  throw new Error("PAYMENT_WEBHOOK_SECRET is not set");
+}
+
+export function paymentCurrency(): string {
+  const currency = getServerEnv().paymentCurrency.toUpperCase();
+  if (currency !== "TRY") {
+    throw new Error("PAYMENT_CURRENCY must be TRY");
+  }
+  return currency;
 }

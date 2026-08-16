@@ -167,6 +167,31 @@ export type AdminOrderListItemDto = {
 
 export type AdminOrderDetailDto = OrderDto & {
   user: OrderCustomerDto;
+  payments: PaymentDto[];
+};
+
+export type PaymentStatusDto =
+  | "PENDING"
+  | "PROCESSING"
+  | "SUCCEEDED"
+  | "FAILED"
+  | "CANCELLED"
+  | "REFUNDED";
+
+export type PaymentDto = {
+  id: string;
+  orderId: string;
+  provider: string;
+  status: PaymentStatusDto;
+  amount: number;
+  currency: string;
+  checkoutUrl: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PaymentCreateDto = PaymentDto & {
+  orderStatus: OrderStatusDto;
 };
 
 export type StockStatusDto = "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";

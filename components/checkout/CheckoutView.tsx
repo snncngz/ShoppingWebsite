@@ -15,7 +15,7 @@ import {
   getShippingFee,
 } from "@/lib/cart";
 import { formatOrderNumber, nextCheckoutOrderNumber } from "@/lib/orders";
-import { createOrder, getShopErrorMessage } from "@/lib/shopApi";
+import { createOrder, createPayment, getShopErrorMessage } from "@/lib/shopApi";
 import { formatPrice } from "@/lib/utils";
 
 const fieldClass =
@@ -103,6 +103,11 @@ export function CheckoutView() {
 
     try {
       const order = await createOrder();
+      const payment = await createPayment(order.id);
+      if (payment.checkoutUrl) {
+        window.location.assign(payment.checkoutUrl);
+        return;
+      }
       clearCart();
       setConfirmation(formatOrderNumber(order.id));
     } catch (caught) {
@@ -278,66 +283,59 @@ export function CheckoutView() {
               <legend className="text-12 tracking-label text-black">
                 Ödeme Yöntemi
               </legend>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                {(
-                  [
-                    ["card", "Kredi Kartı"],
-                    ["transfer", "Banka Havalesi"],
-                    ["cod", "Kapıda Ödeme"],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    aria-pressed={paymentMethod === value}
-                    onClick={() => setPaymentMethod(value)}
-                    className={`h-12 flex-1 px-4 text-12 tracking-nav ${
-                      paymentMethod === value
-                        ? "border border-charcoal bg-charcoal text-ivory"
-                        : "border border-border text-charcoal hover:border-taupe"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {paymentMethod === "card" ? (
-                <div className="mt-6 grid gap-5 sm:grid-cols-2">
-                  <label className="text-12 tracking-label text-charcoal sm:col-span-2">
-                    Kart Üzerindeki İsim
-                    <input name="cardName" className={fieldClass} />
-                  </label>
-                  <label className="text-12 tracking-label text-charcoal sm:col-span-2">
-                    Kart Numarası
-                    <input name="cardNumber" inputMode="numeric" className={fieldClass} />
-                  </label>
-                  <label className="text-12 tracking-label text-charcoal">
-                    Son Kullanma
-                    <input name="cardExpiry" placeholder="AA/YY" className={fieldClass} />
-                  </label>
-                  <label className="text-12 tracking-label text-charcoal">
-                    CVC
-                    <input name="cardCvc" inputMode="numeric" className={fieldClass} />
-                  </label>
-                  <p className="text-12 text-taupe sm:col-span-2">
-                    Demo form — kart bilgileri gönderilmez, saklanmaz.
-                  </p>
-                </div>
-              ) : null}
-
-              {paymentMethod === "transfer" ? (
+              {isLoggedIn ? (
                 <p className="mt-6 text-14 text-taupe">
-                  Sipariş onayından sonra demo IBAN bilgisi e-posta ile iletilir.
-                  Gerçek bir havale işlemi yapılmaz.
+                  Kart bilgileri VELORA&apos;da tutulmaz. Onaydan sonra iyzico
+                  ödeme sayfasına yönlendirilirsiniz. Sipariş ancak doğrulanmış
+                  ödeme sonrası ödenmiş sayılır.
                 </p>
-              ) : null}
+              ) : (
+                <>
+                  <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                    {(
+                      [
+                        ["card", "Kredi Kartı"],
+                        ["transfer", "Banka Havalesi"],
+                        ["cod", "Kapıda Ödeme"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-pressed={paymentMethod === value}
+                        onClick={() => setPaymentMethod(value)}
+                        className={`h-12 flex-1 px-4 text-12 tracking-nav ${
+                          paymentMethod === value
+                            ? "border border-charcoal bg-charcoal text-ivory"
+                            : "border border-border text-charcoal hover:border-taupe"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
 
-              {paymentMethod === "cod" ? (
-                <p className="mt-6 text-14 text-taupe">
-                  Kapıda ödeme demo seçenektir. Teslimatta ücret tahsil edilmez.
-                </p>
-              ) : null}
+                  {paymentMethod === "card" ? (
+                    <p className="mt-6 text-14 text-taupe">
+                      Misafir ödeme demosudur. Kart bilgisi istenmez ve saklanmaz.
+                      Gerçek ödeme için giriş yapın.
+                    </p>
+                  ) : null}
+
+                  {paymentMethod === "transfer" ? (
+                    <p className="mt-6 text-14 text-taupe">
+                      Sipariş onayından sonra demo IBAN bilgisi e-posta ile iletilir.
+                      Gerçek bir havale işlemi yapılmaz.
+                    </p>
+                  ) : null}
+
+                  {paymentMethod === "cod" ? (
+                    <p className="mt-6 text-14 text-taupe">
+                      Kapıda ödeme demo seçenektir. Teslimatta ücret tahsil edilmez.
+                    </p>
+                  ) : null}
+                </>
+              )}
             </fieldset>
 
             {error ? <p className="text-14 text-accent">{error}</p> : null}
@@ -396,7 +394,11 @@ export function CheckoutView() {
               disabled={pending}
               className="mt-8 inline-flex h-12 w-full items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black disabled:opacity-60"
             >
-              {pending ? "Sipariş oluşturuluyor" : "Siparişi Onayla"}
+              {pending
+                ? "Yönlendiriliyor"
+                : isLoggedIn
+                  ? "Ödemeye Geç"
+                  : "Siparişi Onayla"}
             </button>
           </aside>
         </form>

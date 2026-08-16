@@ -26,6 +26,15 @@ import type {
 
 const PAGE_SIZE = 20;
 
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Bekliyor",
+  PROCESSING: "İşleniyor",
+  SUCCEEDED: "Başarılı",
+  FAILED: "Başarısız",
+  CANCELLED: "İptal",
+  REFUNDED: "İade",
+};
+
 export function AdminOrderList() {
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState("");
@@ -276,6 +285,24 @@ export function AdminOrderList() {
                   <dd className="text-charcoal">{formatPrice(detail.total)}</dd>
                 </div>
               </dl>
+
+              {detail.payments.length > 0 ? (
+                <ul className="mt-6 flex flex-col gap-2 border-t border-border pt-6 text-14">
+                  {detail.payments.map((payment) => (
+                    <li
+                      key={payment.id}
+                      className="flex flex-wrap items-center justify-between gap-3"
+                    >
+                      <span className="text-charcoal">
+                        {payment.provider} · {PAYMENT_STATUS_LABELS[payment.status] ?? payment.status}
+                      </span>
+                      <span className="text-taupe">
+                        {formatPrice(payment.amount)} {payment.currency}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
 
               <ul className="mt-8 flex flex-col gap-3 border-t border-border pt-6">
                 {detail.items.map((item) => (

@@ -99,6 +99,9 @@ export type {
   InventoryMovementTypeDto,
   AdminInventoryItemDto,
   InventoryMovementDto,
+  PaymentStatusDto,
+  PaymentDto,
+  PaymentCreateDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
 export type { AuthUser, SafeUser, SessionUser, UserRole } from "@/types/auth";

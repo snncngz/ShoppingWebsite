@@ -191,3 +191,17 @@ ADMIN only. Anonymous 401, USER 403. Client cannot set movement `type` or signed
 
 `POST /api/orders` decrements stock atomically (`UPDATE … WHERE stock >= qty`) and writes a `SALE` movement in the same transaction. Cancel restore is idempotent: a unique `(productId, type, referenceId)` row plus an existing `SALE` movement is required before stock is incremented. Admin UI: `/admin/stok`.
 
+## Payments (FAZ 12.11)
+
+Provider: **iyzico** (sandbox by default). Checkout UI does not talk to iyzico. Amount and currency come from the Order row, not the client.
+
+```text
+POST   /api/payments                 { "orderId": "..." }
+GET    /api/payments?orderId=
+GET    /api/payments/:id
+POST   /api/payments/webhook
+POST   /api/payments/iyzico/callback
+```
+
+Webhook HMAC-SHA256 of the raw body, header `x-payment-signature`. Invalid signature is 401. `PaymentEvent.eventId` is unique so duplicate events are ignored. Success sets `Payment SUCCEEDED` and `Order PAID` in one transaction. Stock is not decremented again (already done at order create). Failed payments leave the order `PENDING` so the user can retry. Models: `Payment`, `PaymentEvent`. Currency is `TRY`.
+
