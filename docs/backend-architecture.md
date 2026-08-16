@@ -100,8 +100,14 @@ Do not add these routes in 12.1.
 
 No real credentials belong in source or in `.env.example`.
 
-## Database (FAZ 12.2A)
+## Database (FAZ 12.2A / 12.2B)
 
 Prisma Client lives in `server/db/prisma.ts` and is created once (singleton for Next.js hot reload). Import it only from `server/` or `app/api/`.
 
-`prisma/schema.prisma` currently has no e-commerce models. Product, Category, User, Order, Cart, and Wishlist tables belong in FAZ 12.2B.
+Models: `User`, `Category`, `Product`, `Order`, `OrderItem`, `Cart`, `CartItem`, `Wishlist`, `WishlistItem`.
+
+Delete rules: `Product` and `User` are `Restrict` on `Order` / `OrderItem` so history is kept. Hide products with `Product.isActive`. `Category` delete is `Restrict` on `Product`. Cart and wishlist rows cascade when their parent user/cart/wishlist is removed.
+
+Prices use `Decimal(12, 2)`. Product images/colors/sizes are `String[]`. Perfume notes are `Json`. Frontend `types.Product` is unchanged; map in `server/services` later.
+
+Storefront and admin still use `data/products.ts` and localStorage. Product/Category APIs are FAZ 12.3.
