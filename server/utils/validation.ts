@@ -10,6 +10,7 @@ export function hasField(
 export function requireString(
   body: Record<string, unknown>,
   field: string,
+  maxLength = 200,
 ): string {
   const value = body[field];
 
@@ -17,12 +18,18 @@ export function requireString(
     badRequest(`${field} is required`);
   }
 
-  return value.trim();
+  const trimmed = value.trim();
+  if (trimmed.length > maxLength) {
+    badRequest(`${field} is too long`);
+  }
+
+  return trimmed;
 }
 
 export function optionalString(
   body: Record<string, unknown>,
   field: string,
+  maxLength = 2000,
 ): string | undefined {
   if (!hasField(body, field) || body[field] === undefined) {
     return undefined;
@@ -36,7 +43,12 @@ export function optionalString(
     badRequest(`${field} must be a string`);
   }
 
-  return body[field].trim();
+  const trimmed = body[field].trim();
+  if (trimmed.length > maxLength) {
+    badRequest(`${field} is too long`);
+  }
+
+  return trimmed;
 }
 
 export function optionalBoolean(
@@ -146,10 +158,14 @@ export function requireNonNegativeInt(
 export function requirePositiveInt(
   body: Record<string, unknown>,
   field: string,
+  max = 1_000_000,
 ): number {
   const value = requireInt(body, field);
   if (value < 1) {
     badRequest(`${field} must be >= 1`);
+  }
+  if (value > max) {
+    badRequest(`${field} must be <= ${max}`);
   }
   return value;
 }
@@ -171,6 +187,8 @@ export function optionalNonNegativeInt(
 export function optionalStringArray(
   body: Record<string, unknown>,
   field: string,
+  maxItems = 30,
+  maxItemLength = 500,
 ): string[] | undefined {
   if (!hasField(body, field) || body[field] === undefined) {
     return undefined;
@@ -181,7 +199,17 @@ export function optionalStringArray(
     badRequest(`${field} must be an array of strings`);
   }
 
-  return value;
+  if (value.length > maxItems) {
+    badRequest(`${field} must contain at most ${maxItems} items`);
+  }
+
+  return value.map((item, index) => {
+    const trimmed = item.trim();
+    if (trimmed.length > maxItemLength) {
+      badRequest(`${field}[${index}] is too long`);
+    }
+    return trimmed;
+  });
 }
 
 export function optionalJsonObject(
@@ -197,6 +225,10 @@ export function optionalJsonObject(
     badRequest(`${field} must be an object`);
   }
 
+  if (JSON.stringify(value).length > 20_000) {
+    badRequest(`${field} is too large`);
+  }
+
   return value as Record<string, unknown>;
 }
 
@@ -205,6 +237,9 @@ export function requireId(id: string): string {
   if (!value) {
     badRequest("id is required");
   }
+  if (value.length > 64) {
+    badRequest("id is invalid");
+  }
   return value;
 }
 
@@ -212,6 +247,7 @@ export function parseQueryPositiveInt(
   raw: string | null,
   field: string,
   fallback: number,
+  max = 10_000,
 ): number {
   if (raw === null || raw === "") {
     return fallback;
@@ -224,6 +260,9 @@ export function parseQueryPositiveInt(
   const value = Number(raw);
   if (value < 1) {
     badRequest(`${field} must be >= 1`);
+  }
+  if (value > max) {
+    badRequest(`${field} must be <= ${max}`);
   }
 
   return value;
@@ -251,11 +290,18 @@ export function parseQueryBoolean(
 
 export function parseQueryString(
   raw: string | null,
+  maxLength = 100,
 ): string | undefined {
   if (raw === null) {
     return undefined;
   }
 
   const value = raw.trim();
-  return value.length > 0 ? value : undefined;
+  if (value.length === 0) {
+    return undefined;
+  }
+  if (value.length > maxLength) {
+    badRequest("query parameter is too long");
+  }
+  return value;
 }

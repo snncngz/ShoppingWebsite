@@ -146,7 +146,7 @@ export function parseCreateProduct(body: Record<string, unknown>) {
   return {
     name: requireString(body, "name"),
     slug: requireString(body, "slug"),
-    description: optionalString(body, "description") ?? "",
+    description: optionalString(body, "description", 8000) ?? "",
     price: requireNonNegativeNumber(body, "price"),
     oldPrice: optionalNonNegativeNumber(body, "oldPrice"),
     discount: optionalNonNegativeInt(body, "discount"),
@@ -168,7 +168,7 @@ export function parseCreateProduct(body: Record<string, unknown>) {
 
 export function parsePatchProduct(body: Record<string, unknown>): ProductWriteInput {
   const patch: ProductWriteInput = {
-    description: optionalString(body, "description"),
+    description: optionalString(body, "description", 8000),
     price: optionalNonNegativeNumber(body, "price"),
     stock: optionalNonNegativeInt(body, "stock"),
     subcategory: optionalString(body, "subcategory"),
@@ -258,8 +258,15 @@ export async function listProducts(
   };
 }
 
-export async function getProductById(id: string): Promise<ProductDto> {
-  return toProductDto(await requireProduct(requireId(id)));
+export async function getProductById(
+  id: string,
+  options?: { includeInactive?: boolean },
+): Promise<ProductDto> {
+  const product = await requireProduct(requireId(id));
+  if (!product.isActive && !options?.includeInactive) {
+    notFound("Product not found");
+  }
+  return toProductDto(product);
 }
 
 export async function createProduct(

@@ -58,7 +58,7 @@ export function parseCreateCategory(body: Record<string, unknown>) {
   return {
     name: requireString(body, "name"),
     slug: requireString(body, "slug"),
-    description: optionalString(body, "description") ?? "",
+    description: optionalString(body, "description", 8000) ?? "",
     isActive: optionalBoolean(body, "isActive") ?? true,
   };
 }
@@ -67,7 +67,7 @@ export function parsePatchCategory(
   body: Record<string, unknown>,
 ): CategoryWriteInput {
   const patch: CategoryWriteInput = {
-    description: optionalString(body, "description"),
+    description: optionalString(body, "description", 8000),
     isActive: optionalBoolean(body, "isActive"),
   };
 
@@ -108,8 +108,20 @@ export async function listCategories(input: {
   return categories.map(toCategoryDto);
 }
 
-export async function getCategoryById(id: string): Promise<CategoryDetailDto> {
-  return toCategoryDetailDto(await requireCategory(requireId(id)));
+export async function getCategoryById(
+  id: string,
+  options?: { includeInactive?: boolean },
+): Promise<CategoryDetailDto> {
+  const category = await requireCategory(requireId(id));
+  if (!category.isActive && !options?.includeInactive) {
+    notFound("Category not found");
+  }
+
+  const dto = toCategoryDetailDto(category);
+  if (!options?.includeInactive) {
+    dto.products = dto.products.filter((product) => product.isActive);
+  }
+  return dto;
 }
 
 export async function createCategory(

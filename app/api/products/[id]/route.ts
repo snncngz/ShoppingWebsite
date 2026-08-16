@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-import { requireAdmin } from "@/server/auth/authorization";
+import { getCurrentUser, requireAdmin } from "@/server/auth/authorization";
 import { apiRoute } from "@/server/api/handler";
 import { jsonSuccess } from "@/server/api/http";
 import {
@@ -19,7 +19,10 @@ export const dynamic = "force-dynamic";
 
 export const GET = apiRoute(async (_request: NextRequest, context: IdContext) => {
   const { id } = await context.params;
-  return jsonSuccess(await getProductById(id));
+  const user = await getCurrentUser();
+  return jsonSuccess(
+    await getProductById(id, { includeInactive: user?.role === "ADMIN" }),
+  );
 });
 
 export const PATCH = apiRoute(async (request: NextRequest, context: IdContext) => {

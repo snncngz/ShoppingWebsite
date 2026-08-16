@@ -36,7 +36,7 @@ Error:
 }
 ```
 
-Codes: `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `METHOD_NOT_ALLOWED`, `INTERNAL_ERROR`.
+Codes: `BAD_REQUEST`, `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `CONFLICT`, `METHOD_NOT_ALLOWED`, `TOO_MANY_REQUESTS`, `INTERNAL_ERROR`.
 
 Production 500 responses never include stack traces. Unexpected errors are logged on the server.
 
@@ -204,4 +204,16 @@ POST   /api/payments/iyzico/callback
 ```
 
 Webhook HMAC-SHA256 of the raw body, header `x-payment-signature`. Invalid signature is 401. `PaymentEvent.eventId` is unique so duplicate events are ignored. Success sets `Payment SUCCEEDED` and `Order PAID` in one transaction. Stock is not decremented again (already done at order create). Failed payments leave the order `PENDING` so the user can retry. Models: `Payment`, `PaymentEvent`. Currency is `TRY`.
+
+## Security (FAZ 12.12)
+
+`app/admin` Proxy verifies the signed session, then loads the user role from PostgreSQL. Cookie `role` is not trusted. Anonymous visitors are sent to `/admin/giris`; USER is sent to `/`. `app/admin/(panel)/layout.tsx` repeats the database role check.
+
+Public catalog `GET` forces `isActive: true` unless the session user is `ADMIN`. Inactive product/category ids return `404` to anonymous and USER callers.
+
+`apiRoute()` applies in-memory rate limits (IP + path) and, when an `Origin` header is present, same-origin checks on mutating methods. Payment webhook and iyzico callback are exempt from the origin check. Failed logins are also limited per email. Error code `TOO_MANY_REQUESTS` (429) is part of the existing envelope.
+
+Response headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and a moderate `Content-Security-Policy` that still allows Next.js and the iyzico redirect (`form-action 'self' https:`).
+
+`npm run test:security` covers anonymous access, USER→admin, ownership, mass assignment, validation, payment tampering, catalog leaks, and login rate limits.
 

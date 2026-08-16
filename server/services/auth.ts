@@ -1,16 +1,26 @@
 import { Prisma } from "@prisma/client";
 
 import { badRequest, conflict, unauthorized } from "@/server/api/errors";
-import { requireAdmin, requireAuth, toSafeUser } from "@/server/auth/authorization";
+import { requireAuth, toSafeUser } from "@/server/auth/authorization";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { clearSession, createSession } from "@/server/auth/session";
 import { getPrisma } from "@/server/db/prisma";
+import { assertRateLimit } from "@/server/security/http-guards";
 import { hasField } from "@/server/utils/validation";
 import type { SafeUser } from "@/types/auth";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_LETTER = /[A-Za-z]/;
 const PASSWORD_NUMBER = /[0-9]/;
+const DUMMY_PASSWORD_HASH = `scrypt:${"00".repeat(16)}:${"00".repeat(64)}`;
+const CLIENT_OWNED_FIELDS = [
+  "role",
+  "userId",
+  "id",
+  "passwordHash",
+  "createdAt",
+  "updatedAt",
+] as const;
 
 function isUniqueEmailError(error: unknown): boolean {
   return (
@@ -74,8 +84,10 @@ export function parseRegisterInput(body: Record<string, unknown>): {
   email: string;
   password: string;
 } {
-  if (hasField(body, "role")) {
-    badRequest("role cannot be set by the client");
+  for (const field of CLIENT_OWNED_FIELDS) {
+    if (hasField(body, field)) {
+      badRequest(`${field} cannot be set by the client`);
+    }
   }
 
   return {
@@ -133,10 +145,11 @@ export async function loginUser(input: {
     where: { email: input.email },
   });
 
-  const passwordHash = user?.passwordHash ?? "scrypt:00:00";
+  const passwordHash = user?.passwordHash ?? DUMMY_PASSWORD_HASH;
   const matches = await verifyPassword(input.password, passwordHash);
 
   if (!user || !matches) {
+    assertRateLimit(`login-fail:${input.email}`, 10, 15 * 60 * 1000);
     unauthorized("Invalid email or password");
   }
 

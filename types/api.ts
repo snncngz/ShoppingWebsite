@@ -5,6 +5,7 @@ export const API_ERROR_CODES = [
   "NOT_FOUND",
   "CONFLICT",
   "METHOD_NOT_ALLOWED",
+  "TOO_MANY_REQUESTS",
   "INTERNAL_ERROR",
 ] as const;
 

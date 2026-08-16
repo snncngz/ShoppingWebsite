@@ -93,6 +93,10 @@ export function parseMergeWishlistItems(body: Record<string, unknown>): string[]
     badRequest("productIds must be an array of strings");
   }
 
+  if (productIds.length > 40) {
+    badRequest("productIds must contain at most 40 items");
+  }
+
   const ids: string[] = [];
   for (const value of productIds) {
     if (typeof value !== "string") {
@@ -100,6 +104,9 @@ export function parseMergeWishlistItems(body: Record<string, unknown>): string[]
     }
 
     const id = value.trim();
+    if (id.length > 64) {
+      badRequest("productIds contains an invalid id");
+    }
     if (id) {
       ids.push(id);
     }

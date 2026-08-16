@@ -36,6 +36,10 @@ export function methodNotAllowed(message = "Method not allowed"): never {
   throw new ApiError(405, "METHOD_NOT_ALLOWED", message);
 }
 
+export function tooManyRequests(message = "Too many requests"): never {
+  throw new ApiError(429, "TOO_MANY_REQUESTS", message);
+}
+
 export function internalError(message = "An unexpected error occurred"): never {
   throw new ApiError(500, "INTERNAL_ERROR", message);
 }

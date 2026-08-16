@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/server/auth/authorization";
+import { getCurrentUser, requireAdmin } from "@/server/auth/authorization";
 import { apiRoute } from "@/server/api/handler";
 import { HttpStatus, jsonSuccess } from "@/server/api/http";
 import {
@@ -12,10 +12,12 @@ import { asJsonObject, readJsonBody } from "@/server/utils/json";
 export const dynamic = "force-dynamic";
 
 export const GET = apiRoute(async (request) => {
-  const data = await listCategories(
-    readCategoryListQuery(request.nextUrl.searchParams),
-  );
-  return jsonSuccess(data);
+  const query = readCategoryListQuery(request.nextUrl.searchParams);
+  const user = await getCurrentUser();
+  if (user?.role !== "ADMIN") {
+    query.isActive = true;
+  }
+  return jsonSuccess(await listCategories(query));
 });
 
 export const POST = apiRoute(async (request) => {

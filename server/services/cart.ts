@@ -123,7 +123,7 @@ export function parseAddCartItem(body: Record<string, unknown>): {
   return {
     productId: requireString(body, "productId"),
     quantity: hasField(body, "quantity")
-      ? requirePositiveInt(body, "quantity")
+      ? requirePositiveInt(body, "quantity", 50)
       : 1,
   };
 }
@@ -132,7 +132,7 @@ export function parseUpdateCartItem(body: Record<string, unknown>): {
   quantity: number;
 } {
   return {
-    quantity: requirePositiveInt(body, "quantity"),
+    quantity: requirePositiveInt(body, "quantity", 50),
   };
 }
 
@@ -145,6 +145,10 @@ export function parseMergeCartItems(body: Record<string, unknown>): {
     badRequest("items must be an array");
   }
 
+  if (items.length > 40) {
+    badRequest("items must contain at most 40 entries");
+  }
+
   return items.map((entry, index) => {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       badRequest(`items[${index}] must be an object`);
@@ -154,7 +158,7 @@ export function parseMergeCartItems(body: Record<string, unknown>): {
     return {
       productId: requireString(record, "productId"),
       quantity: hasField(record, "quantity")
-        ? requirePositiveInt(record, "quantity")
+        ? requirePositiveInt(record, "quantity", 50)
         : 1,
     };
   });
