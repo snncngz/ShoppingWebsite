@@ -24,3 +24,12 @@ export function getPrisma(): PrismaClient {
 export async function checkDatabaseConnection(): Promise<void> {
   await getPrisma().$queryRaw`SELECT 1`;
 }
+
+export async function disconnectPrisma(): Promise<void> {
+  if (!globalForPrisma.prisma) {
+    return;
+  }
+
+  await globalForPrisma.prisma.$disconnect();
+  globalForPrisma.prisma = undefined;
+}

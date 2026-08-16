@@ -217,3 +217,15 @@ Response headers: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`
 
 `npm run test:security` covers anonymous access, USER→admin, ownership, mass assignment, validation, payment tampering, catalog leaks, and login rate limits.
 
+## Production readiness (FAZ 12.13)
+
+See [production.md](./production.md) and [deployment.md](./deployment.md).
+
+- Startup: `instrumentation.ts` validates production env (skipped during `next build`) and registers graceful Prisma disconnect on `SIGTERM`/`SIGINT`.
+- Logging: structured JSON via `server/logging/logger.ts`; API `X-Request-Id`; no secret values in logs.
+- Health: `GET /api/health` returns `environment` and HTTP 503 when the database is unavailable.
+- Seed is blocked in production; use `npm run create-admin`.
+- Production migrate: `npm run db:deploy` (`prisma migrate deploy`).
+- Scripts: `npm run typecheck`, `npm run ci`, `npm run test:smoke`.
+- CI starter: `.github/workflows/ci.yml` (typecheck + build).
+

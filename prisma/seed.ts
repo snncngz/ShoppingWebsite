@@ -8,6 +8,13 @@ import { upsertAdminUser } from "./upsert-admin";
 
 loadLocalEnv();
 
+if (process.env.NODE_ENV === "production") {
+  console.error(
+    "Refusing to run prisma seed in production. Use `npm run create-admin` for the admin account.",
+  );
+  process.exit(1);
+}
+
 export const DEV_SEED = {
   userEmail: "db-seed@velora.test",
   userName: "VELORA DB Seed",

@@ -21,6 +21,16 @@ export type ServerEnv = {
   iyzicoBaseUrl: string;
 };
 
+export class EnvValidationError extends Error {
+  readonly missing: string[];
+
+  constructor(message: string, missing: string[] = []) {
+    super(message);
+    this.name = "EnvValidationError";
+    this.missing = missing;
+  }
+}
+
 function readNodeEnv(): AppEnvironment {
   if (process.env.NODE_ENV === "production") {
     return "production";
@@ -61,7 +71,7 @@ export function requireDatabaseUrl(): string {
   const databaseUrl = getServerEnv().databaseUrl;
 
   if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
+    throw new EnvValidationError("DATABASE_URL is not set", ["DATABASE_URL"]);
   }
 
   return databaseUrl;
@@ -75,11 +85,14 @@ export function requireAuthSecret(): string {
   const authSecret = getServerEnv().authSecret;
 
   if (!authSecret) {
-    throw new Error("AUTH_SECRET is not set");
+    throw new EnvValidationError("AUTH_SECRET is not set", ["AUTH_SECRET"]);
   }
 
   if (isProduction() && authSecret.length < 32) {
-    throw new Error("AUTH_SECRET must be at least 32 characters in production");
+    throw new EnvValidationError(
+      "AUTH_SECRET must be at least 32 characters in production",
+      ["AUTH_SECRET"],
+    );
   }
 
   return authSecret;
@@ -90,16 +103,103 @@ export function requirePaymentWebhookSecret(): string {
   if (env.paymentWebhookSecret) {
     return env.paymentWebhookSecret;
   }
-  if (env.authSecret) {
+
+  const localHost =
+    env.apiBaseUrl.includes("localhost") ||
+    env.apiBaseUrl.includes("127.0.0.1");
+
+  // Development or local production smoke may reuse AUTH_SECRET.
+  // Hosted production must set PAYMENT_WEBHOOK_SECRET explicitly.
+  if ((!isProduction() || localHost) && env.authSecret) {
     return env.authSecret;
   }
-  throw new Error("PAYMENT_WEBHOOK_SECRET is not set");
+
+  throw new EnvValidationError("PAYMENT_WEBHOOK_SECRET is not set", [
+    "PAYMENT_WEBHOOK_SECRET",
+  ]);
 }
 
 export function paymentCurrency(): string {
   const currency = getServerEnv().paymentCurrency.toUpperCase();
   if (currency !== "TRY") {
-    throw new Error("PAYMENT_CURRENCY must be TRY");
+    throw new EnvValidationError("PAYMENT_CURRENCY must be TRY", [
+      "PAYMENT_CURRENCY",
+    ]);
   }
   return currency;
+}
+
+/**
+ * Fail closed in production runtime. Never logs secret values.
+ * Skipped during `next build` (NEXT_PHASE=phase-production-build).
+ * Local `next start` with localhost API_BASE_URL is allowed for smoke tests.
+ */
+export function assertProductionEnv(): void {
+  if (!isProduction()) {
+    return;
+  }
+
+  const env = getServerEnv();
+  const missing: string[] = [];
+  const localHost =
+    env.apiBaseUrl.includes("localhost") ||
+    env.apiBaseUrl.includes("127.0.0.1");
+
+  if (!env.databaseUrl) {
+    missing.push("DATABASE_URL");
+  }
+  if (!env.authSecret) {
+    missing.push("AUTH_SECRET");
+  } else if (env.authSecret.length < 32) {
+    throw new EnvValidationError(
+      "AUTH_SECRET must be at least 32 characters in production",
+      ["AUTH_SECRET"],
+    );
+  }
+
+  if (!env.paymentWebhookSecret && !localHost) {
+    missing.push("PAYMENT_WEBHOOK_SECRET");
+  }
+
+  if (!env.apiBaseUrl) {
+    missing.push("API_BASE_URL");
+  } else if (!localHost) {
+    try {
+      const url = new URL(env.apiBaseUrl);
+      if (url.protocol !== "https:") {
+        throw new EnvValidationError(
+          "API_BASE_URL must use https in production",
+          ["API_BASE_URL"],
+        );
+      }
+    } catch (error) {
+      if (error instanceof EnvValidationError) {
+        throw error;
+      }
+      throw new EnvValidationError("API_BASE_URL is invalid", ["API_BASE_URL"]);
+    }
+  }
+
+  const provider = (env.paymentProvider ?? "test").toLowerCase();
+  if (provider === "iyzico") {
+    if (!env.iyzicoApiKey) {
+      missing.push("IYZICO_API_KEY");
+    }
+    if (!env.iyzicoSecretKey) {
+      missing.push("IYZICO_SECRET_KEY");
+    }
+    if (!localHost && env.iyzicoBaseUrl.includes("sandbox")) {
+      throw new EnvValidationError(
+        "IYZICO_BASE_URL must not point at sandbox in production when PAYMENT_PROVIDER=iyzico",
+        ["IYZICO_BASE_URL"],
+      );
+    }
+  }
+
+  if (missing.length > 0) {
+    throw new EnvValidationError(
+      `Missing required production environment variables: ${missing.join(", ")}`,
+      missing,
+    );
+  }
 }

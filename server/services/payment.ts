@@ -17,6 +17,7 @@ import {
   PAYMENT_SIGNATURE_HEADER,
 } from "@/server/payments/signature";
 import { requireId, requireString } from "@/server/utils/validation";
+import { logger } from "@/server/logging/logger";
 import type {
   PaymentCreateDto,
   PaymentDto,
@@ -47,7 +48,7 @@ function logPayment(
     eventId?: string;
   },
 ) {
-  console.info("[velora-payment]", event, fields);
+  logger.info(event, fields);
 }
 
 function toPaymentDto(payment: {

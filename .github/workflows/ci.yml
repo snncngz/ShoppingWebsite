@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time placeholders only — not production secrets
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/ci?schema=public
+      AUTH_SECRET: ci-build-auth-secret-at-least-32-chars
+      API_BASE_URL: http://localhost:3000
+      PAYMENT_PROVIDER: test
+      PAYMENT_CURRENCY: TRY
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm run build

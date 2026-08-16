@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isProduction } from "@/server/config/env";
 import { ApiError } from "@/server/api/errors";
+import { getRequestId, logger } from "@/server/logging/logger";
 import type { ApiErrorResponse, ApiSuccessResponse } from "@/types/api";
 
 export const HttpStatus = {
@@ -16,13 +17,24 @@ export const HttpStatus = {
   CONFLICT: 409,
   TOO_MANY_REQUESTS: 429,
   INTERNAL_ERROR: 500,
+  SERVICE_UNAVAILABLE: 503,
 } as const;
+
+function apiHeaders(extra?: HeadersInit): Headers {
+  const headers = new Headers(extra);
+  headers.set("Cache-Control", "private, no-store");
+  const requestId = getRequestId();
+  if (requestId) {
+    headers.set("X-Request-Id", requestId);
+  }
+  return headers;
+}
 
 export function jsonSuccess<T>(
   data: T,
   status: number = HttpStatus.OK,
 ): NextResponse<ApiSuccessResponse<T>> {
-  return NextResponse.json({ success: true, data }, { status });
+  return NextResponse.json({ success: true, data }, { status, headers: apiHeaders() });
 }
 
 export function jsonError(
@@ -36,16 +48,32 @@ export function jsonError(
         message: error.message,
       },
     },
-    { status: error.status },
+    { status: error.status, headers: apiHeaders() },
   );
 }
 
 export function toErrorResponse(error: unknown): NextResponse<ApiErrorResponse> {
   if (error instanceof ApiError) {
+    if (error.status >= 500) {
+      logger.error("API error", {
+        code: error.code,
+        status: error.status,
+        message: error.message,
+      });
+    } else if (error.status === 401 || error.status === 403) {
+      logger.warn("API authz failure", {
+        code: error.code,
+        status: error.status,
+      });
+    }
     return jsonError(error);
   }
 
-  console.error("[velora-api]", error);
+  logger.error("Unhandled API exception", {
+    errorName: error instanceof Error ? error.name : "unknown",
+    errorMessage:
+      error instanceof Error ? error.message.slice(0, 300) : "unknown",
+  });
 
   const message = isProduction()
     ? "An unexpected error occurred"

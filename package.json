@@ -7,7 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "ci": "npm run typecheck && npm run build",
     "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "seed": "prisma db seed",
     "create-admin": "tsx prisma/create-admin.ts",
@@ -18,6 +22,7 @@
     "test:inventory": "tsx scripts/test-inventory.ts",
     "test:payments": "tsx scripts/test-payments.ts",
     "test:security": "tsx scripts/test-security.ts",
+    "test:smoke": "tsx scripts/test-smoke.ts",
     "db:verify": "tsx prisma/verify.ts"
   },
   "prisma": {

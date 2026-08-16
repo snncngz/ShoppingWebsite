@@ -29,8 +29,9 @@ export type ApiErrorResponse = {
 export type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
 
 export type HealthData = {
-  status: "ok";
+  status: "ok" | "degraded";
   database: "ok" | "unavailable";
+  environment: "development" | "production" | "test";
 };
 
 export type CategorySummaryDto = {
