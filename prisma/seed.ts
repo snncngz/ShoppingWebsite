@@ -1,4 +1,12 @@
+import { randomBytes } from "node:crypto";
+
 import { Prisma, PrismaClient, OrderStatus, UserRole } from "@prisma/client";
+
+import { hashPassword } from "../server/auth/password";
+import { loadLocalEnv } from "./load-env";
+import { upsertAdminUser } from "./upsert-admin";
+
+loadLocalEnv();
 
 export const DEV_SEED = {
   userEmail: "db-seed@velora.test",
@@ -14,14 +22,29 @@ const prisma = new PrismaClient();
 async function main() {
   const user = await prisma.user.upsert({
     where: { email: DEV_SEED.userEmail },
-    update: { name: DEV_SEED.userName, role: UserRole.CUSTOMER },
+    update: {
+      name: DEV_SEED.userName,
+      role: UserRole.USER,
+      passwordHash: await hashPassword(randomBytes(24).toString("hex")),
+    },
     create: {
       name: DEV_SEED.userName,
       email: DEV_SEED.userEmail,
-      passwordHash: "seed-placeholder-not-a-hash",
-      role: UserRole.CUSTOMER,
+      passwordHash: await hashPassword(randomBytes(24).toString("hex")),
+      role: UserRole.USER,
     },
   });
+
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminEmail && adminPassword) {
+    const admin = await upsertAdminUser(prisma, {
+      email: adminEmail,
+      password: adminPassword,
+      name: process.env.ADMIN_NAME?.trim() || "VELORA Admin",
+    });
+    console.log("Admin user ready:", admin.email);
+  }
 
   const category = await prisma.category.upsert({
     where: { slug: DEV_SEED.categorySlug },

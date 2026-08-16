@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/server/auth/authorization";
 import { apiRoute } from "@/server/api/handler";
 import { HttpStatus, jsonSuccess } from "@/server/api/http";
 import {
@@ -18,6 +19,7 @@ export const GET = apiRoute(async (request) => {
 });
 
 export const POST = apiRoute(async (request) => {
+  await requireAdmin();
   const body = asJsonObject(await readJsonBody(request));
   const product = await createProduct(parseCreateProduct(body));
   return jsonSuccess(product, HttpStatus.CREATED);

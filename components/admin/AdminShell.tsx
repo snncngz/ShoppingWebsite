@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import { LayoutDashboard, LogOut, Package, Store, Tag, Truck } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
-import { getAdminEmail, logoutAdmin } from "@/lib/adminStore";
+import { logoutRequest } from "@/lib/authApi";
 import { BRAND_NAME } from "@/lib/constants";
 
 const links = [
@@ -16,18 +16,25 @@ const links = [
   { href: "/admin/siparisler", label: "Siparişler", icon: Truck },
 ] as const;
 
-export function AdminShell({ children }: { children: ReactNode }) {
+export function AdminShell({
+  email,
+  children,
+}: {
+  email: string;
+  children: ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
 
-  useEffect(() => {
-    setEmail(getAdminEmail());
-  }, []);
-
-  const handleLogout = () => {
-    logoutAdmin();
-    router.replace("/admin/giris");
+  const handleLogout = async () => {
+    setPending(true);
+    try {
+      await logoutRequest();
+    } finally {
+      router.replace("/admin/giris");
+      router.refresh();
+    }
   };
 
   return (
@@ -72,7 +79,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </Link>
           <button
             type="button"
-            onClick={handleLogout}
+            disabled={pending}
+            onClick={() => {
+              void handleLogout();
+            }}
             className="inline-flex min-h-11 w-full items-center gap-3 px-3 text-14 text-charcoal hover:bg-warm-beige/40"
           >
             <LogOut size={16} strokeWidth={1.4} />
@@ -95,7 +105,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
             ))}
           </nav>
           <div className="hidden lg:block">
-            <p className="text-12 tracking-label text-taupe">Demo yönetim</p>
+            <p className="text-12 tracking-label text-taupe">Yönetim</p>
           </div>
           <div className="flex items-center gap-2 lg:hidden">
             <Link
@@ -106,7 +116,10 @@ export function AdminShell({ children }: { children: ReactNode }) {
             </Link>
             <button
               type="button"
-              onClick={handleLogout}
+              disabled={pending}
+              onClick={() => {
+                void handleLogout();
+              }}
               className="inline-flex h-11 items-center px-3 text-12 tracking-nav text-charcoal"
             >
               Çıkış

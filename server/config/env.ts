@@ -9,6 +9,10 @@ export type ServerEnv = {
   nodeEnv: AppEnvironment;
   apiBaseUrl: string;
   databaseUrl: string | undefined;
+  authSecret: string | undefined;
+  adminEmail: string | undefined;
+  adminPassword: string | undefined;
+  adminName: string | undefined;
 };
 
 function readNodeEnv(): AppEnvironment {
@@ -33,6 +37,10 @@ export function getServerEnv(): ServerEnv {
     nodeEnv: readNodeEnv(),
     apiBaseUrl: readOptional("API_BASE_URL") ?? "http://localhost:3000",
     databaseUrl: readOptional("DATABASE_URL"),
+    authSecret: readOptional("AUTH_SECRET"),
+    adminEmail: readOptional("ADMIN_EMAIL"),
+    adminPassword: readOptional("ADMIN_PASSWORD"),
+    adminName: readOptional("ADMIN_NAME"),
   };
 }
 
@@ -48,4 +56,18 @@ export function requireDatabaseUrl(): string {
 
 export function isProduction(): boolean {
   return getServerEnv().nodeEnv === "production";
+}
+
+export function requireAuthSecret(): string {
+  const authSecret = getServerEnv().authSecret;
+
+  if (!authSecret) {
+    throw new Error("AUTH_SECRET is not set");
+  }
+
+  if (isProduction() && authSecret.length < 32) {
+    throw new Error("AUTH_SECRET must be at least 32 characters in production");
+  }
+
+  return authSecret;
 }

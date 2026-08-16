@@ -101,13 +101,15 @@ export function AccountDashboard() {
           <p className="text-12 tracking-label text-taupe">Hesap Ayarları</p>
           <h2 className="mt-3 font-heading text-24 text-black">Oturum</h2>
           <p className="mt-3 text-14 text-taupe">
-            Demo oturumu tarayıcınızda saklanır. Çıkış yaptığınızda sepetiniz korunur.
+            Oturumunuz güvenli bir çerez ile tutulur. Çıkış yaptığınızda sepetiniz korunur.
           </p>
           <button
             type="button"
             onClick={() => {
-              logout();
-              router.push("/");
+              void logout().then(() => {
+                router.push("/");
+                router.refresh();
+              });
             }}
             className="mt-6 inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
           >

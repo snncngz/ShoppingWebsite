@@ -17,7 +17,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   useEffect(() => {
     if (!isLoading && !isLoggedIn) {
-      router.replace("/giris");
+      router.replace("/login");
     }
   }, [isLoading, isLoggedIn, router]);
 

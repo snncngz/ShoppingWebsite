@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
+import { getAuthErrorMessage } from "@/lib/authApi";
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none placeholder:text-taupe focus:border-taupe";
@@ -16,8 +17,9 @@ export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!email.trim() || !password) {
@@ -25,8 +27,18 @@ export function LoginForm() {
       return;
     }
 
-    login(email);
-    router.push("/hesabim");
+    setPending(true);
+    setError("");
+
+    try {
+      const user = await login(email, password);
+      router.push(user.role === "ADMIN" ? "/admin" : "/hesabim");
+      router.refresh();
+    } catch (caught) {
+      setError(getAuthErrorMessage(caught));
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
@@ -35,7 +47,7 @@ export function LoginForm() {
         <p className="text-12 tracking-label text-taupe">Account</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Giriş</h1>
         <p className="mt-4 text-14 text-taupe">
-          Demo hesap — herhangi bir e-posta ve şifre ile giriş yapabilirsiniz.
+          VELORA hesabınıza e-posta ve şifrenizle giriş yapın.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">
@@ -66,21 +78,16 @@ export function LoginForm() {
 
           <button
             type="submit"
-            className="mt-2 inline-flex h-12 items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black"
+            disabled={pending}
+            className="mt-2 inline-flex h-12 items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black disabled:opacity-60"
           >
-            Giriş Yap
-          </button>
-          <button
-            type="button"
-            className="inline-flex h-12 items-center justify-center border border-charcoal text-12 tracking-nav text-charcoal"
-          >
-            Google ile devam et
+            {pending ? "Giriş yapılıyor" : "Giriş Yap"}
           </button>
         </form>
 
         <p className="mt-8 text-14 text-taupe">
           Hesabınız yok mu?{" "}
-          <Link href="/kayit" className="text-charcoal underline-offset-4 hover:underline">
+          <Link href="/register" className="text-charcoal underline-offset-4 hover:underline">
             Kayıt ol
           </Link>
         </p>

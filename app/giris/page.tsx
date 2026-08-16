@@ -1,12 +1,5 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { LoginForm } from "@/components/auth/LoginForm";
-
-export const metadata: Metadata = {
-  title: "Giriş",
-  description: "VELORA hesabınıza giriş yapın.",
-};
-
-export default function LoginPage() {
-  return <LoginForm />;
+export default function GirisRedirectPage() {
+  redirect("/login");
 }

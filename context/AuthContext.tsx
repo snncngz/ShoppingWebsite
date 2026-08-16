@@ -8,21 +8,30 @@ import {
   type ReactNode,
 } from "react";
 
-import { AUTH_STORAGE_KEY, DEMO_USER } from "@/lib/auth";
+import { AUTH_STORAGE_KEY } from "@/lib/auth";
+import {
+  fetchCurrentUser,
+  loginRequest,
+  logoutRequest,
+  registerRequest,
+} from "@/lib/authApi";
+import { toStorefrontUser } from "@/lib/mappers/user";
 import { getSingletonContext } from "@/lib/singleton-context";
+import type { SafeUser, UserRole } from "@/types/auth";
 import type { User } from "@/types";
-
-type AuthState = {
-  user: User | null;
-};
 
 type AuthContextValue = {
   user: User | null;
+  role: UserRole | null;
   isLoggedIn: boolean;
   isLoading: boolean;
-  login: (email: string) => void;
-  register: (input: { firstName: string; email: string }) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<SafeUser>;
+  register: (input: {
+    name: string;
+    email: string;
+    password: string;
+  }) => Promise<SafeUser>;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = getSingletonContext<AuthContextValue | null>(
@@ -30,92 +39,59 @@ const AuthContext = getSingletonContext<AuthContextValue | null>(
   null,
 );
 
-function isUser(value: unknown): value is User {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  const user = value as Partial<User>;
-  return (
-    typeof user.id === "string" &&
-    typeof user.email === "string" &&
-    typeof user.firstName === "string" &&
-    typeof user.lastName === "string" &&
-    typeof user.createdAt === "string"
-  );
-}
-
-function parseAuth(raw: string | null): User | null {
-  if (!raw) {
-    return null;
-  }
-
-  const parsed: unknown = JSON.parse(raw);
-  if (!parsed || typeof parsed !== "object") {
-    return null;
-  }
-
-  const record = parsed as { user?: unknown; isLoggedIn?: unknown };
-  if (record.isLoggedIn === false) {
-    return null;
-  }
-
-  return isUser(record.user) ? record.user : isUser(parsed) ? parsed : null;
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [authUser, setAuthUser] = useState<SafeUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      setUser(parseAuth(window.localStorage.getItem(AUTH_STORAGE_KEY)));
-    } catch {
-      setUser(null);
-    }
+    window.localStorage.removeItem(AUTH_STORAGE_KEY);
 
-    setIsLoading(false);
+    let cancelled = false;
+
+    void fetchCurrentUser()
+      .then((user) => {
+        if (!cancelled) {
+          setAuthUser(user);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAuthUser(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
-    window.localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({ isLoggedIn: Boolean(user), user }),
-    );
-  }, [isLoading, user]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
-      user,
-      isLoggedIn: Boolean(user),
+      user: authUser ? toStorefrontUser(authUser) : null,
+      role: authUser?.role ?? null,
+      isLoggedIn: Boolean(authUser),
       isLoading,
-      login: (email) => {
-        setUser({
-          id: DEMO_USER.id,
-          email: email.trim(),
-          firstName: DEMO_USER.firstName,
-          lastName: DEMO_USER.lastName,
-          phone: DEMO_USER.phone,
-          createdAt: DEMO_USER.createdAt,
-        });
+      login: async (email, password) => {
+        const user = await loginRequest(email, password);
+        setAuthUser(user);
+        return user;
       },
-      register: ({ firstName, email }) => {
-        setUser({
-          id: DEMO_USER.id,
-          email: email.trim(),
-          firstName: firstName.trim() || DEMO_USER.firstName,
-          lastName: DEMO_USER.lastName,
-          phone: DEMO_USER.phone,
-          createdAt: new Date().toISOString(),
-        });
+      register: async (input) => {
+        const user = await registerRequest(input);
+        setAuthUser(user);
+        return user;
       },
-      logout: () => setUser(null),
+      logout: async () => {
+        await logoutRequest();
+        setAuthUser(null);
+      },
     }),
-    [isLoading, user],
+    [authUser, isLoading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -44,6 +44,7 @@ export async function adminRequest<T>(
       ...init,
       headers,
       cache: "no-store",
+      credentials: "include",
     });
   } catch {
     throw new AdminApiError(0, "INTERNAL_ERROR", "Sunucuya bağlanılamadı.");

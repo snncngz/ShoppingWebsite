@@ -87,3 +87,4 @@ export type {
   ProductSummaryDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
+export type { AuthUser, SafeUser, SessionUser, UserRole } from "@/types/auth";

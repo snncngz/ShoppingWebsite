@@ -7,11 +7,6 @@ export const ADMIN_CATEGORY_OVERRIDES_KEY = "velora-admin-category-overrides";
 export const ADMIN_NEW_CATEGORIES_KEY = "velora-admin-new-categories";
 export const CATALOG_CHANGE_EVENT = "velora-catalog-change";
 
-export const DEMO_ADMIN = {
-  email: "admin@velora.com",
-  password: "velora",
-} as const;
-
 export type ProductOverride = Partial<Omit<Product, "id">> & {
   hidden?: boolean;
 };
@@ -321,41 +316,6 @@ export function clearAdminStore() {
   window.localStorage.removeItem(ADMIN_CATEGORY_OVERRIDES_KEY);
   window.localStorage.removeItem(ADMIN_NEW_CATEGORIES_KEY);
   notifyCatalogChange();
-}
-
-export function isAdminLoggedIn(): boolean {
-  const raw = readJson(ADMIN_SESSION_KEY);
-  return isRecord(raw) && raw.loggedIn === true && typeof raw.email === "string";
-}
-
-export function getAdminEmail(): string | null {
-  const raw = readJson(ADMIN_SESSION_KEY);
-  if (isRecord(raw) && typeof raw.email === "string") {
-    return raw.email;
-  }
-
-  return null;
-}
-
-export function loginAdmin(email: string, password: string): boolean {
-  const normalized = email.trim().toLocaleLowerCase("tr-TR");
-  if (
-    normalized !== DEMO_ADMIN.email ||
-    password !== DEMO_ADMIN.password
-  ) {
-    return false;
-  }
-
-  writeJson(ADMIN_SESSION_KEY, {
-    loggedIn: true,
-    email: DEMO_ADMIN.email,
-    loggedInAt: new Date().toISOString(),
-  });
-  return true;
-}
-
-export function logoutAdmin() {
-  window.localStorage.removeItem(ADMIN_SESSION_KEY);
 }
 
 export function upsertProductOverride(

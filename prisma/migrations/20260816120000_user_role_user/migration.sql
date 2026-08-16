@@ -1,0 +1,4 @@
+-- Align UserRole with authentication: CUSTOMER → USER
+ALTER TYPE "UserRole" RENAME VALUE 'CUSTOMER' TO 'USER';
+
+ALTER TABLE "User" ALTER COLUMN "role" SET DEFAULT 'USER';

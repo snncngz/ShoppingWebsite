@@ -9,6 +9,9 @@
     "lint": "eslint",
     "postinstall": "prisma generate",
     "db:seed": "prisma db seed",
+    "seed": "prisma db seed",
+    "create-admin": "tsx prisma/create-admin.ts",
+    "test:auth": "tsx scripts/test-auth.ts",
     "db:verify": "tsx prisma/verify.ts"
   },
   "prisma": {
