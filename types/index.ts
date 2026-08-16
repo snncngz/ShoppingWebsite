@@ -70,3 +70,13 @@ export type Order = {
   status: OrderStatus;
   createdAt: string;
 };
+
+export type {
+  ApiErrorBody,
+  ApiErrorCode,
+  ApiErrorResponse,
+  ApiResponse,
+  ApiSuccessResponse,
+  HealthData,
+} from "@/types/api";
+export { API_ERROR_CODES } from "@/types/api";

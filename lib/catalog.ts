@@ -189,6 +189,7 @@ export function pickDiverse(items: Product[], count: number): Product[] {
 export const RESERVED_CATEGORY_SLUGS = new Set([
   ...CATEGORY_SLUGS,
   "admin",
+  "api",
   "giris",
   "kayit",
   "hesabim",
