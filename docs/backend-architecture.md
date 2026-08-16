@@ -128,3 +128,21 @@ FAZ 11 (localStorage catalog) and FAZ 12 (Prisma/PostgreSQL) are still separate.
 
 Development seed (`npx prisma db seed` / `npm run db:seed`) upserts one test user, category, product, cart, wishlist, and order identified by `db-seed@velora.test` and `db-seed-*` slugs. It does not touch `data/products.ts`. Re-run is safe. Extra verification rows are created and deleted by `npm run db:verify`.
 
+## Product and Category API (FAZ 12.3)
+
+```text
+GET    /api/products
+GET    /api/products/:id
+POST   /api/products
+PATCH  /api/products/:id
+DELETE /api/products/:id   (sets isActive = false)
+
+GET    /api/categories
+GET    /api/categories/:id
+POST   /api/categories
+PATCH  /api/categories/:id
+DELETE /api/categories/:id (sets isActive = false)
+```
+
+Route Handlers in `app/api/` call `server/services/products.ts` and `server/services/categories.ts`. JSON uses DTOs in `types/api.ts`; Prisma `Decimal` is converted to `number`. Admin and storefront still do not call these APIs.
+

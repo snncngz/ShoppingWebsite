@@ -31,3 +31,69 @@ export type HealthData = {
   status: "ok";
   database: "ok" | "unavailable";
 };
+
+export type CategorySummaryDto = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export type ProductSummaryDto = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+};
+
+export type ProductDto = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  oldPrice: number | null;
+  discount: number | null;
+  stock: number;
+  subcategory: string;
+  images: string[];
+  colors: string[];
+  sizes: string[];
+  rating: number;
+  reviewCount: number;
+  isPopular: boolean;
+  isNew: boolean;
+  isActive: boolean;
+  badge: string | null;
+  perfumeDetails: unknown;
+  categoryId: string;
+  category: CategorySummaryDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CategoryDto = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CategoryDetailDto = CategoryDto & {
+  products: ProductSummaryDto[];
+};
+
+export type PaginationDto = {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type PaginatedDto<T> = {
+  items: T[];
+  pagination: PaginationDto;
+};
+

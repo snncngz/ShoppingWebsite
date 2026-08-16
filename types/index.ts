@@ -77,6 +77,13 @@ export type {
   ApiErrorResponse,
   ApiResponse,
   ApiSuccessResponse,
+  CategoryDetailDto,
+  CategoryDto,
+  CategorySummaryDto,
   HealthData,
+  PaginatedDto,
+  PaginationDto,
+  ProductDto,
+  ProductSummaryDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
