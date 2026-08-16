@@ -143,6 +143,17 @@ export function requireNonNegativeInt(
   return value;
 }
 
+export function requirePositiveInt(
+  body: Record<string, unknown>,
+  field: string,
+): number {
+  const value = requireInt(body, field);
+  if (value < 1) {
+    badRequest(`${field} must be >= 1`);
+  }
+  return value;
+}
+
 export function optionalNonNegativeInt(
   body: Record<string, unknown>,
   field: string,

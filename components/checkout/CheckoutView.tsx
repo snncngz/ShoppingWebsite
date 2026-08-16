@@ -14,7 +14,8 @@ import {
   FREE_SHIPPING_THRESHOLD,
   getShippingFee,
 } from "@/lib/cart";
-import { nextCheckoutOrderNumber } from "@/lib/orders";
+import { formatOrderNumber, nextCheckoutOrderNumber } from "@/lib/orders";
+import { createOrder, getShopErrorMessage } from "@/lib/shopApi";
 import { formatPrice } from "@/lib/utils";
 
 const fieldClass =
@@ -26,9 +27,10 @@ type PaymentMethod = "card" | "transfer" | "cod";
 export function CheckoutView() {
   const { items, hydrated, clearCart } = useCart();
   const { getById } = useCatalog();
-  const { user } = useAuth();
+  const { user, isLoggedIn } = useAuth();
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [pending, setPending] = useState(false);
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("standard");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
   const [name, setName] = useState(
@@ -80,7 +82,7 @@ export function CheckoutView() {
     shippingMethod === "express" ? EXPRESS_SHIPPING_FEE : standardShipping;
   const total = subtotal + shipping;
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!name.trim() || !email.trim() || !phone.trim() || !address.trim() || !city.trim()) {
@@ -88,10 +90,26 @@ export function CheckoutView() {
       return;
     }
 
-    const orderNumber = nextCheckoutOrderNumber();
-    clearCart();
-    setConfirmation(orderNumber);
+    if (!isLoggedIn) {
+      const orderNumber = nextCheckoutOrderNumber();
+      clearCart();
+      setConfirmation(orderNumber);
+      setError("");
+      return;
+    }
+
+    setPending(true);
     setError("");
+
+    try {
+      const order = await createOrder();
+      clearCart();
+      setConfirmation(formatOrderNumber(order.id));
+    } catch (caught) {
+      setError(getShopErrorMessage(caught));
+    } finally {
+      setPending(false);
+    }
   };
 
   if (!hydrated) {
@@ -104,7 +122,11 @@ export function CheckoutView() {
         <div className="mx-auto max-w-3xl">
           <EmptyState
             title="Siparişiniz Alındı"
-            message="Demo siparişiniz başarıyla oluşturuldu."
+            message={
+              isLoggedIn
+                ? "Siparişiniz başarıyla oluşturuldu."
+                : "Demo siparişiniz başarıyla oluşturuldu."
+            }
           />
           <p className="mt-6 text-center font-heading text-24 text-black">
             {confirmation}
@@ -371,9 +393,10 @@ export function CheckoutView() {
             </dl>
             <button
               type="submit"
-              className="mt-8 inline-flex h-12 w-full items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black"
+              disabled={pending}
+              className="mt-8 inline-flex h-12 w-full items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black disabled:opacity-60"
             >
-              Siparişi Onayla
+              {pending ? "Sipariş oluşturuluyor" : "Siparişi Onayla"}
             </button>
           </aside>
         </form>

@@ -97,3 +97,56 @@ export type PaginatedDto<T> = {
   pagination: PaginationDto;
 };
 
+export type CartItemDto = {
+  id: string;
+  productId: string;
+  quantity: number;
+  product: ProductDto;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CartDto = {
+  id: string;
+  items: CartItemDto[];
+};
+
+export type WishlistItemDto = {
+  id: string;
+  productId: string;
+  product: ProductDto;
+  createdAt: string;
+};
+
+export type WishlistDto = {
+  id: string;
+  items: WishlistItemDto[];
+};
+
+export type OrderStatusDto =
+  | "PENDING"
+  | "PAID"
+  | "PROCESSING"
+  | "SHIPPED"
+  | "DELIVERED"
+  | "CANCELLED";
+
+export type OrderItemDto = {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+  product: ProductSummaryDto;
+  createdAt: string;
+};
+
+export type OrderDto = {
+  id: string;
+  status: OrderStatusDto;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+  items: OrderItemDto[];
+};
+

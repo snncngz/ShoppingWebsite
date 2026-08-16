@@ -37,3 +37,43 @@ export function isCartItem(value: unknown): value is CartItem {
     typeof item.size === "string"
   );
 }
+
+export function readGuestCartItems(raw: string | null): CartItem[] {
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const items = Array.isArray(parsed)
+      ? parsed
+      : parsed &&
+          typeof parsed === "object" &&
+          Array.isArray((parsed as { items?: unknown }).items)
+        ? (parsed as { items: unknown[] }).items
+        : [];
+    return items.filter(isCartItem);
+  } catch {
+    return [];
+  }
+}
+
+export function readGuestWishlistIds(raw: string | null): string[] {
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const ids = Array.isArray(parsed)
+      ? parsed
+      : parsed &&
+          typeof parsed === "object" &&
+          Array.isArray((parsed as { ids?: unknown }).ids)
+        ? (parsed as { ids: unknown[] }).ids
+        : [];
+    return ids.filter((id): id is string => typeof id === "string" && id.length > 0);
+  } catch {
+    return [];
+  }
+}

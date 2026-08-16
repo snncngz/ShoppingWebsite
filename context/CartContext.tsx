@@ -5,17 +5,29 @@ import {
   useEffect,
   useMemo,
   useReducer,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
+import { useAuth } from "@/context/AuthContext";
 import {
   CART_STORAGE_KEY,
   getCartLineKey,
   getCartQuantity,
-  isCartItem,
+  readGuestCartItems,
 } from "@/lib/cart";
+import { applyCartVariant, toFrontendCartItem } from "@/lib/mappers/cart";
 import { getSingletonContext } from "@/lib/singleton-context";
+import {
+  addCartItem as addCartItemApi,
+  clearRemoteCart,
+  deleteCartItem as deleteCartItemApi,
+  fetchCart,
+  mergeCart,
+  updateCartItem as updateCartItemApi,
+} from "@/lib/shopApi";
+import type { CartDto } from "@/types/api";
 import type { CartItem } from "@/types";
 
 type CartState = {
@@ -129,7 +141,13 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
       const nextId = getCartLineKey(current.productId, action.color, action.size);
       if (nextId === current.id) {
-        return state;
+        return {
+          items: state.items.map((item) =>
+            item.id === current.id
+              ? { ...item, color: action.color, size: action.size }
+              : item,
+          ),
+        };
       }
 
       const duplicate = state.items.find((item) => item.id === nextId);
@@ -166,33 +184,79 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
+function mapCart(cart: CartDto, productId?: string, color?: string, size?: string): CartItem[] {
+  const items = cart.items.map(toFrontendCartItem);
+  if (!productId || color === undefined || size === undefined) {
+    return items;
+  }
+
+  return applyCartVariant(items, productId, color, size);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { isLoggedIn, isLoading: authLoading } = useAuth();
   const [state, dispatch] = useReducer(cartReducer, { items: [] });
   const [hydrated, setHydrated] = useState(false);
+  const modeRef = useRef<"guest" | "user" | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(CART_STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        const items = Array.isArray(parsed)
-          ? parsed
-          : parsed &&
-              typeof parsed === "object" &&
-              Array.isArray((parsed as { items?: unknown }).items)
-            ? (parsed as { items: unknown[] }).items
-            : [];
-        dispatch({ type: "HYDRATE", items: items.filter(isCartItem) });
-      }
-    } catch {
-      // Ignore malformed storage.
+    if (authLoading) {
+      return;
     }
 
-    setHydrated(true);
-  }, []);
+    let cancelled = false;
+
+    async function syncSession() {
+      if (isLoggedIn) {
+        const guestItems = readGuestCartItems(
+          window.localStorage.getItem(CART_STORAGE_KEY),
+        );
+
+        try {
+          if (guestItems.length > 0) {
+            await mergeCart(guestItems);
+          }
+          window.localStorage.removeItem(CART_STORAGE_KEY);
+          const cart = await fetchCart();
+          if (!cancelled) {
+            dispatch({ type: "HYDRATE", items: mapCart(cart) });
+          }
+        } catch {
+          if (!cancelled) {
+            dispatch({ type: "HYDRATE", items: [] });
+          }
+        }
+
+        if (!cancelled) {
+          modeRef.current = "user";
+          setHydrated(true);
+        }
+        return;
+      }
+
+      if (modeRef.current === "user") {
+        dispatch({ type: "CLEAR" });
+        window.localStorage.removeItem(CART_STORAGE_KEY);
+      } else {
+        dispatch({
+          type: "HYDRATE",
+          items: readGuestCartItems(window.localStorage.getItem(CART_STORAGE_KEY)),
+        });
+      }
+
+      modeRef.current = "guest";
+      setHydrated(true);
+    }
+
+    void syncSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, isLoggedIn]);
 
   useEffect(() => {
-    if (!hydrated) {
+    if (!hydrated || authLoading || isLoggedIn) {
       return;
     }
 
@@ -200,7 +264,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       CART_STORAGE_KEY,
       JSON.stringify({ items: state.items }),
     );
-  }, [hydrated, state.items]);
+  }, [authLoading, hydrated, isLoggedIn, state.items]);
 
   const value = useMemo<CartContextValue>(
     () => ({
@@ -208,24 +272,99 @@ export function CartProvider({ children }: { children: ReactNode }) {
       itemCount: getCartQuantity(state.items),
       hydrated,
       addItem: ({ productId, color, size, quantity = 1 }) => {
-        dispatch({
-          type: "ADD",
-          productId,
-          color,
-          size,
-          quantity,
-        });
+        if (!isLoggedIn) {
+          dispatch({ type: "ADD", productId, color, size, quantity });
+          return;
+        }
+
+        void addCartItemApi({ productId, quantity })
+          .then((cart) => {
+            dispatch({
+              type: "HYDRATE",
+              items: mapCart(cart, productId, color, size),
+            });
+          })
+          .catch(() => undefined);
       },
-      removeItem: (id) => dispatch({ type: "REMOVE", id }),
-      incrementItem: (id) => dispatch({ type: "INCREMENT", id }),
-      decrementItem: (id) => dispatch({ type: "DECREMENT", id }),
-      setItemQuantity: (id, quantity) =>
-        dispatch({ type: "SET_QUANTITY", id, quantity }),
-      updateItemVariant: (id, color, size) =>
-        dispatch({ type: "UPDATE_VARIANT", id, color, size }),
-      clearCart: () => dispatch({ type: "CLEAR" }),
+      removeItem: (id) => {
+        if (!isLoggedIn) {
+          dispatch({ type: "REMOVE", id });
+          return;
+        }
+
+        void deleteCartItemApi(id)
+          .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+          .catch(() => undefined);
+      },
+      incrementItem: (id) => {
+        if (!isLoggedIn) {
+          dispatch({ type: "INCREMENT", id });
+          return;
+        }
+
+        const item = state.items.find((entry) => entry.id === id);
+        if (!item) {
+          return;
+        }
+
+        void updateCartItemApi(id, item.quantity + 1)
+          .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+          .catch(() => undefined);
+      },
+      decrementItem: (id) => {
+        const item = state.items.find((entry) => entry.id === id);
+        if (!item) {
+          return;
+        }
+
+        if (!isLoggedIn) {
+          dispatch({ type: "DECREMENT", id });
+          return;
+        }
+
+        if (item.quantity <= 1) {
+          void deleteCartItemApi(id)
+            .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+            .catch(() => undefined);
+          return;
+        }
+
+        void updateCartItemApi(id, item.quantity - 1)
+          .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+          .catch(() => undefined);
+      },
+      setItemQuantity: (id, quantity) => {
+        if (!isLoggedIn) {
+          dispatch({ type: "SET_QUANTITY", id, quantity });
+          return;
+        }
+
+        if (quantity <= 0) {
+          void deleteCartItemApi(id)
+            .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+            .catch(() => undefined);
+          return;
+        }
+
+        void updateCartItemApi(id, quantity)
+          .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+          .catch(() => undefined);
+      },
+      updateItemVariant: (id, color, size) => {
+        dispatch({ type: "UPDATE_VARIANT", id, color, size });
+      },
+      clearCart: () => {
+        if (!isLoggedIn) {
+          dispatch({ type: "CLEAR" });
+          return;
+        }
+
+        void clearRemoteCart()
+          .then((cart) => dispatch({ type: "HYDRATE", items: mapCart(cart) }))
+          .catch(() => undefined);
+      },
     }),
-    [hydrated, state.items],
+    [hydrated, isLoggedIn, state.items],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
