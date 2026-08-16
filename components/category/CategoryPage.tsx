@@ -13,15 +13,19 @@ import { FilterPanel } from "@/components/category/FilterPanel";
 import { SortSelect } from "@/components/category/SortSelect";
 import { ProductCard } from "@/components/product/ProductCard";
 import { CategorySkeleton } from "@/components/ui/Skeleton";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useCatalog } from "@/context/CatalogContext";
-import { getCategoryPage, type BreadcrumbItem } from "@/lib/category-pages";
+import { VIRTUAL_CATEGORY_SLUGS } from "@/lib/catalog";
+import { type BreadcrumbItem } from "@/lib/category-pages";
 import {
   createEmptyFilters,
   filterProducts,
   getFilterOptions,
-  sortProducts,
+  toApiSort,
   type SortValue,
 } from "@/lib/filters";
+import { getAdminErrorMessage } from "@/lib/adminApi";
+import { fetchStorefrontProductList } from "@/lib/storefrontApi";
 import type { Product } from "@/types";
 
 export type CategoryPageProps = {
@@ -29,7 +33,6 @@ export type CategoryPageProps = {
   title: string;
   description: string;
   breadcrumbs: BreadcrumbItem[];
-  products: Product[];
   showPerfumeFilters: boolean;
   showClothingSizes: boolean;
 };
@@ -39,15 +42,11 @@ export function CategoryPage({
   title,
   description,
   breadcrumbs,
-  products: initialProducts,
   showPerfumeFilters,
   showClothingSizes,
 }: CategoryPageProps) {
-  const { products: catalog, hydrated, getResolvedCategory } = useCatalog();
-  const staticConfig = getCategoryPage(slug);
+  const { hydrated, getResolvedCategory, error: catalogError, refresh } = useCatalog();
   const resolved = getResolvedCategory(slug);
-  const products =
-    hydrated && resolved ? catalog.filter(resolved.match) : initialProducts;
   const heading = resolved?.title ?? title;
   const copy = resolved?.description ?? description;
   const crumbs = resolved?.breadcrumbs ?? breadcrumbs;
@@ -56,6 +55,10 @@ export function CategoryPage({
   const [filters, setFilters] = useState(createEmptyFilters);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [apiProducts, setApiProducts] = useState<Product[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+  const [listError, setListError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     const media = window.matchMedia("(min-width: 1024px)");
@@ -69,20 +72,63 @@ export function CategoryPage({
     return () => media.removeEventListener("change", onChange);
   }, []);
 
+  useEffect(() => {
+    if (!hydrated || !resolved || resolved.hidden) {
+      return;
+    }
+
+    let cancelled = false;
+    setListLoading(true);
+    setListError("");
+
+    const category = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
+      ? undefined
+      : resolved.slug;
+
+    void fetchStorefrontProductList({
+      category,
+      sort: toApiSort(sort),
+    })
+      .then((items) => {
+        if (cancelled) {
+          return;
+        }
+        setApiProducts(
+          VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
+            ? items.filter(resolved.match)
+            : items,
+        );
+        setListLoading(false);
+      })
+      .catch((caught) => {
+        if (cancelled) {
+          return;
+        }
+        setApiProducts([]);
+        setListError(getAdminErrorMessage(caught));
+        setListLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, resolved, sort, reloadKey]);
+
   const options = useMemo(
     () =>
-      getFilterOptions(products, {
+      getFilterOptions(apiProducts, {
         showClothingSizes: clothingSizes,
         showPerfumeFilters: perfumeFilters,
       }),
-    [products, clothingSizes, perfumeFilters],
+    [apiProducts, clothingSizes, perfumeFilters],
   );
 
-  const visibleProducts = useMemo(() => {
-    return sortProducts(filterProducts(products, filters), sort, products);
-  }, [products, filters, sort]);
+  const visibleProducts = useMemo(
+    () => filterProducts(apiProducts, filters),
+    [apiProducts, filters],
+  );
 
-  const catalogIsEmpty = products.length === 0;
+  const catalogIsEmpty = apiProducts.length === 0;
   const noFilterResults = !catalogIsEmpty && visibleProducts.length === 0;
   const showSizeFilter = !perfumeFilters;
 
@@ -101,11 +147,21 @@ export function CategoryPage({
     />
   );
 
-  if (!hydrated && !staticConfig) {
+  if (!hydrated) {
     return <CategorySkeleton />;
   }
 
-  if (hydrated && (!resolved || resolved.hidden)) {
+  if (catalogError) {
+    return (
+      <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <ErrorState message={catalogError} onRetry={() => refresh()} />
+        </div>
+      </section>
+    );
+  }
+
+  if (!resolved || resolved.hidden) {
     notFound();
   }
 
@@ -119,55 +175,61 @@ export function CategoryPage({
           <p className="mt-4 text-16 text-charcoal">{copy}</p>
         </header>
 
-            <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
-              <p className="text-14 text-taupe">{visibleProducts.length} ürün</p>
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  className="inline-flex h-12 items-center gap-2 border border-border px-4 text-12 tracking-nav text-charcoal lg:hidden"
-                  onClick={() => setDrawerOpen(true)}
-                >
-                  <SlidersHorizontal size={14} strokeWidth={1.4} />
-                  Filtrele
-                </button>
-                <SortSelect value={sort} onChange={setSort} />
-              </div>
+        <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
+          <p className="text-14 text-taupe">
+            {listLoading ? "Yükleniyor" : `${visibleProducts.length} ürün`}
+          </p>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="inline-flex h-12 items-center gap-2 border border-border px-4 text-12 tracking-nav text-charcoal lg:hidden"
+              onClick={() => setDrawerOpen(true)}
+            >
+              <SlidersHorizontal size={14} strokeWidth={1.4} />
+              Filtrele
+            </button>
+            <SortSelect value={sort} onChange={setSort} />
+          </div>
+        </div>
+
+        <FilterChips filters={filters} onChange={setFilters} onClear={clearFilters} />
+
+        <div className="mt-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
+          <aside className="hidden lg:block">
+            <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
+              <p className="text-12 tracking-label text-black">Filtrele</p>
+              {filterPanel}
             </div>
+          </aside>
 
-            <FilterChips filters={filters} onChange={setFilters} onClear={clearFilters} />
-
-            <div className="mt-8 lg:grid lg:grid-cols-[16rem_minmax(0,1fr)] lg:gap-12">
-              <aside className="hidden lg:block">
-                <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2">
-                  <p className="text-12 tracking-label text-black">Filtrele</p>
-                  {filterPanel}
-                </div>
-              </aside>
-
-              <div>
-                {catalogIsEmpty ? (
-                  <EmptyState
-                    title="Bu kategoride henüz ürün bulunmuyor"
-                    message="Koleksiyon yakında VELORA dilinde tamamlanacak."
-                  />
-                ) : noFilterResults ? (
-                  <EmptyState
-                    title="Sonuç bulunamadı"
-                    message="Seçtiğiniz filtrelere uygun ürün yok. Filtreleri temizleyerek yeniden deneyin."
-                    actionLabel="Filtreleri Temizle"
-                    onAction={clearFilters}
-                  />
-                ) : (
-                  <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
-                    {visibleProducts.map((product) => (
-                      <li key={product.id}>
-                        <ProductCard product={product} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
+          <div>
+            {listLoading ? (
+              <CategorySkeleton />
+            ) : listError ? (
+              <ErrorState message={listError} onRetry={() => setReloadKey((key) => key + 1)} />
+            ) : catalogIsEmpty ? (
+              <EmptyState
+                title="Bu kategoride henüz ürün bulunmuyor"
+                message="Koleksiyon yakında VELORA dilinde tamamlanacak."
+              />
+            ) : noFilterResults ? (
+              <EmptyState
+                title="Sonuç bulunamadı"
+                message="Seçtiğiniz filtrelere uygun ürün yok. Filtreleri temizleyerek yeniden deneyin."
+                actionLabel="Filtreleri Temizle"
+                onAction={clearFilters}
+              />
+            ) : (
+              <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
+                {visibleProducts.map((product) => (
+                  <li key={product.id}>
+                    <ProductCard product={product} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
       <FilterDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>

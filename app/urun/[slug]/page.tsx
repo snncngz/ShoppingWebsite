@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 
 import { ProductView } from "@/components/product/ProductView";
-import { getProductBySlug, products } from "@/data/products";
 import { BRAND_NAME } from "@/lib/constants";
+import { fetchStorefrontProductBySlug } from "@/lib/storefrontApi";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 export function generateStaticParams() {
-  return products.map((product) => ({ slug: product.slug }));
+  return [];
 }
 
 export async function generateMetadata({
@@ -16,11 +17,13 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const found = await fetchStorefrontProductBySlug(slug);
 
-  if (!product) {
+  if (!found) {
     return { title: `Ürün · ${BRAND_NAME}` };
   }
+
+  const product = found.product;
 
   return {
     title: product.name,
@@ -43,7 +46,5 @@ export default async function ProductPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const product = getProductBySlug(slug) ?? null;
-
-  return <ProductView slug={slug} fallback={product} />;
+  return <ProductView slug={slug} fallback={null} />;
 }

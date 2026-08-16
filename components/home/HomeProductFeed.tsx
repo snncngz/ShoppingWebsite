@@ -1,5 +1,6 @@
 "use client";
 
+import { ErrorState } from "@/components/ui/ErrorState";
 import { FeaturedCollection } from "@/components/home/FeaturedCollection";
 import { ProductSection } from "@/components/home/ProductSection";
 import { Reveal } from "@/components/home/Reveal";
@@ -13,7 +14,31 @@ const featuredIds = [
 ] as const;
 
 export function HomeProductFeed() {
-  const { products, getById } = useCatalog();
+  const { products, getById, hydrated, error, refresh } = useCatalog();
+
+  if (!hydrated) {
+    return (
+      <section className="bg-ivory px-6 py-24 lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-12 tracking-label text-taupe">Yükleniyor</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="bg-ivory px-6 py-24 lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <ErrorState
+            message={error}
+            onRetry={() => refresh()}
+          />
+        </div>
+      </section>
+    );
+  }
+
   const popular = pickDiverse(
     products.filter((product) => product.isPopular),
     4,
@@ -25,6 +50,8 @@ export function HomeProductFeed() {
   const featured = featuredIds
     .map((id) => getById(id))
     .filter((product): product is NonNullable<typeof product> => Boolean(product));
+  const featuredProducts =
+    featured.length > 0 ? featured : pickDiverse(products, 3);
 
   return (
     <>
@@ -47,7 +74,7 @@ export function HomeProductFeed() {
         />
       </Reveal>
       <Reveal>
-        <FeaturedCollection products={featured} />
+        <FeaturedCollection products={featuredProducts} />
       </Reveal>
     </>
   );

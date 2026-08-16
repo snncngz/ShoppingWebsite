@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useCatalog } from "@/context/CatalogContext";
 import { getVisibleCategories, isStorefrontHrefVisible } from "@/lib/catalog";
 
-const categories = [
+const featuredCards = [
   {
     name: "Parfüm",
     href: "/parfum",
@@ -42,19 +42,33 @@ const categories = [
 ] as const;
 
 export function CategoryGrid() {
-  const { store } = useCatalog();
-  const featured = categories
-    .filter((category) => isStorefrontHrefVisible(category.href, store))
+  const { categories, hydrated, error } = useCatalog();
+
+  if (!hydrated) {
+    return (
+      <section className="bg-ivory px-6 py-24 lg:px-8 lg:py-32">
+        <div className="mx-auto max-w-7xl">
+          <p className="text-12 tracking-label text-taupe">Yükleniyor</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return null;
+  }
+
+  const visible = getVisibleCategories(categories);
+  const featured = featuredCards
+    .filter((category) => isStorefrontHrefVisible(category.href, categories))
     .map((category) => {
-      const match = getVisibleCategories(store).find(
-        (item) => item.href === category.href,
-      );
+      const match = visible.find((item) => item.href === category.href);
       return {
         ...category,
         name: match?.title ?? category.name,
       };
     });
-  const extras = getVisibleCategories(store)
+  const extras = visible
     .filter((category) => category.origin === "new")
     .map((category, index) => ({
       name: category.title,

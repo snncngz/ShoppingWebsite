@@ -91,6 +91,8 @@ export function getSearchHref(query: string): string {
   return `/arama?q=${encodeURIComponent(term)}`;
 }
 
+export const SEARCH_DEBOUNCE_MS = 300;
+
 export function firstSearchParam(
   value: string | string[] | undefined,
 ): string {

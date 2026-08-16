@@ -1,20 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 
 import { useRouter } from "next/navigation";
 
 import { EmptyState } from "@/components/category/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
-import { useCatalog } from "@/context/CatalogContext";
 import { AdminApiError, getAdminErrorMessage } from "@/lib/adminApi";
+import { listAdminApiCategories } from "@/lib/adminCategories";
 import {
   createAdminApiProduct,
   getAdminApiProduct,
   readPerfumeDetails,
   updateAdminApiProduct,
 } from "@/lib/adminProducts";
-import { getAdminCategoryNames, getPlaceholderForCategory } from "@/lib/catalog";
+import { getPlaceholderForCategory } from "@/lib/catalog";
 import { CATEGORY_NAMES } from "@/lib/constants";
 import { toSlug } from "@/lib/utils";
 import type { ProductDto } from "@/types/api";
@@ -139,7 +139,6 @@ export function AdminProductForm({ productId }: AdminProductFormProps) {
 
 function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const router = useRouter();
-  const { store } = useCatalog();
   const existing = product ?? undefined;
   const isCreate = !existing;
   const perfume = readPerfumeDetails(existing?.perfumeDetails);
@@ -181,14 +180,35 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
-
-  const categoryOptions = useMemo(() => {
-    const names = getAdminCategoryNames(store);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
+    const names: string[] = [...CATEGORY_NAMES];
     if (existing?.category.name && !names.includes(existing.category.name)) {
       return [existing.category.name, ...names];
     }
     return names;
-  }, [existing?.category.name, store]);
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    void listAdminApiCategories()
+      .then((categories) => {
+        if (cancelled) {
+          return;
+        }
+        const names = [
+          ...(existing?.category.name ? [existing.category.name] : []),
+          ...CATEGORY_NAMES,
+          ...categories.map((item) => item.name),
+        ];
+        setCategoryOptions([...new Set(names)]);
+      })
+      .catch(() => {
+        /* Keep the local fallback list if categories cannot be loaded. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [existing?.category.name]);
 
   const handleCategoryChange = (next: string) => {
     setCategory(next);

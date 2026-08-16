@@ -9,6 +9,8 @@ import { Newsletter } from "@/components/home/Newsletter";
 import { Reveal } from "@/components/home/Reveal";
 import { BRAND_NAME } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: { absolute: `${BRAND_NAME} — Sakin Lüks Butik` },
   description:

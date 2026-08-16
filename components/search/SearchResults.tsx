@@ -2,47 +2,45 @@
 
 import { EmptyState } from "@/components/category/EmptyState";
 import { ProductCard } from "@/components/product/ProductCard";
-import { useCatalog } from "@/context/CatalogContext";
+import { ErrorState } from "@/components/ui/ErrorState";
 import type { Product } from "@/types";
 
 type SearchResultsProps = {
   products: Product[];
+  loading?: boolean;
+  error?: string;
   variant?: "compact" | "default";
   onResultClick?: (product: Product) => void;
 };
 
 export function SearchResults({
   products,
+  loading = false,
+  error = "",
   variant = "compact",
   onResultClick,
 }: SearchResultsProps) {
-  const { products: catalog } = useCatalog();
+  if (loading) {
+    return (
+      <p className="py-16 text-center text-12 tracking-label text-taupe">
+        Yükleniyor
+      </p>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} />;
+  }
 
   if (products.length === 0) {
     if (variant === "default") {
-      const popular = catalog.filter((product) => product.isPopular).slice(0, 4);
-
       return (
-        <div>
-          <EmptyState
-            title="Sonuç bulunamadı"
-            message="Farklı bir kelime, kategori veya alt kategori deneyin."
-            actionHref="/"
-            actionLabel="Alışverişe Devam Et"
-          />
-          {popular.length > 0 ? (
-            <div className="mt-16">
-              <p className="text-12 tracking-label text-taupe">Popüler Ürünler</p>
-              <ul className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 md:gap-6 lg:grid-cols-4 lg:gap-8">
-                {popular.map((product) => (
-                  <li key={product.id}>
-                    <ProductCard product={product} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
+        <EmptyState
+          title="Sonuç bulunamadı"
+          message="Farklı bir kelime deneyin."
+          actionHref="/"
+          actionLabel="Alışverişe Devam Et"
+        />
       );
     }
 

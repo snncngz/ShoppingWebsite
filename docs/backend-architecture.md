@@ -124,7 +124,7 @@ server/db/prisma
 PostgreSQL
 ```
 
-FAZ 11 (localStorage catalog) and FAZ 12 (Prisma/PostgreSQL) are still separate. Storefront and admin do not read the database yet.
+FAZ 11 leftover localStorage catalog helpers remain in `lib/catalog.ts` for unused merge paths. Storefront runtime catalog comes from the API.
 
 Development seed (`npx prisma db seed` / `npm run db:seed`) upserts one test user, category, product, cart, wishlist, and order identified by `db-seed@velora.test` and `db-seed-*` slugs. It does not touch `data/products.ts`. Re-run is safe. Extra verification rows are created and deleted by `npm run db:verify`.
 
@@ -146,5 +146,11 @@ DELETE /api/categories/:id (sets isActive = false)
 
 Route Handlers in `app/api/` call `server/services/products.ts` and `server/services/categories.ts`. JSON uses DTOs in `types/api.ts`; Prisma `Decimal` is converted to `number`.
 
-FAZ 12.4A: Admin Product pages (`/admin/urunler`) call `/api/products`. Storefront still uses `data/products.ts`. Admin Category pages still use localStorage.
+FAZ 12.4A: Admin Product pages (`/admin/urunler`) call `/api/products`.
+
+FAZ 12.4B: Admin Category pages (`/admin/kategoriler`) call `/api/categories`.
+
+FAZ 12.5A: Storefront catalog (`CatalogProvider`) loads active products from `GET /api/products` and categories from `GET /api/categories`. Requests use `cache: "no-store"`; the client refreshes when the tab becomes visible. `data/products.ts` remains as demo/reference data and is not the runtime catalog.
+
+FAZ 12.5B: Search uses `GET /api/products?search=`. Category pages use `?category=` and `?sort=`. Product detail uses `?slug=` on the existing list endpoint. Color/size/stock chips stay client-side on the API result set because the Product API has no those query params.
 

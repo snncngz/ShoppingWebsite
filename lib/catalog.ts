@@ -9,6 +9,7 @@ import {
 import { CATEGORY_NAMES, type CategoryName } from "@/lib/constants";
 import type { DesktopNavItem, NavLink } from "@/lib/navigation";
 import type { Product } from "@/types";
+import type { CategoryDto } from "@/types/api";
 
 export const ORIGINAL_PRODUCT_IDS = new Set(sourceProducts.map((product) => product.id));
 
@@ -305,6 +306,90 @@ export function getResolvedCategory(
   return listResolvedCategories(store).find((category) => category.slug === slug);
 }
 
+export const VIRTUAL_CATEGORY_SLUGS = new Set(["yeni-gelenler", "cok-satanlar"]);
+
+export function resolveStorefrontCategories(
+  apiCategories: CategoryDto[],
+): ResolvedCategory[] {
+  const usedIds = new Set<string>();
+
+  const originals = CATEGORY_SLUGS.map((slug) => {
+    const config = categoryPages[slug];
+    const api =
+      apiCategories.find((item) => item.slug === slug) ??
+      apiCategories.find((item) => item.name === config.title);
+
+    if (api) {
+      usedIds.add(api.id);
+    }
+
+    const title = api?.name ?? config.title;
+    const description = api?.description?.trim()
+      ? api.description
+      : config.description;
+
+    return {
+      slug,
+      title,
+      name: config.title,
+      description,
+      href: hrefFromSlug(slug),
+      image: getPlaceholderForCategory(title),
+      origin: "original" as const,
+      hidden: VIRTUAL_CATEGORY_SLUGS.has(slug)
+        ? false
+        : api
+          ? !api.isActive
+          : false,
+      showPerfumeFilters: config.showPerfumeFilters,
+      showClothingSizes: config.showClothingSizes,
+      breadcrumbs: [
+        { label: "Anasayfa", href: "/" },
+        { label: title, href: hrefFromSlug(slug) },
+      ],
+      match: (product: Product) =>
+        config.match(product) ||
+        product.category === title ||
+        Boolean(api && product.category === api.name),
+    };
+  });
+
+  const extras = apiCategories
+    .filter((category) => category.isActive && !usedIds.has(category.id))
+    .filter((category) => !isReservedCategorySlug(category.slug))
+    .map((category) => {
+      const title = category.name;
+
+      return {
+        slug: category.slug,
+        title,
+        name: category.name,
+        description: category.description,
+        href: hrefFromSlug(category.slug),
+        image: getPlaceholderForCategory(category.name),
+        origin: "new" as const,
+        hidden: false,
+        showPerfumeFilters: category.name === "Parfüm" || title === "Parfüm",
+        showClothingSizes: false,
+        breadcrumbs: [
+          { label: "Anasayfa", href: "/" },
+          { label: title, href: hrefFromSlug(category.slug) },
+        ],
+        match: (product: Product) =>
+          product.category === category.name || product.category === title,
+      };
+    });
+
+  return [...originals, ...extras];
+}
+
+export function findResolvedCategory(
+  slug: string,
+  categories: ResolvedCategory[],
+): ResolvedCategory | undefined {
+  return categories.find((category) => category.slug === slug);
+}
+
 export function isCategoryHidden(
   slug: string,
   store: AdminStoreState = EMPTY_ADMIN_STORE,
@@ -314,14 +399,14 @@ export function isCategoryHidden(
 
 export function isStorefrontHrefVisible(
   href: string,
-  store: AdminStoreState = EMPTY_ADMIN_STORE,
+  categories: ResolvedCategory[],
 ): boolean {
   const slug = slugFromHref(href);
   if (!slug) {
     return true;
   }
 
-  const category = getResolvedCategory(slug, store);
+  const category = findResolvedCategory(slug, categories);
   if (!category) {
     return true;
   }
@@ -330,9 +415,9 @@ export function isStorefrontHrefVisible(
 }
 
 export function getVisibleCategories(
-  store: AdminStoreState = EMPTY_ADMIN_STORE,
+  categories: ResolvedCategory[],
 ): ResolvedCategory[] {
-  return listResolvedCategories(store).filter((category) => !category.hidden);
+  return categories.filter((category) => !category.hidden);
 }
 
 export function getAdminCategoryNames(
@@ -347,9 +432,9 @@ export function getAdminCategoryNames(
 
 export function getStorefrontCategoryHref(
   categoryName: string,
-  store: AdminStoreState = EMPTY_ADMIN_STORE,
+  categories: ResolvedCategory[],
 ): string {
-  const match = listResolvedCategories(store).find(
+  const match = categories.find(
     (category) =>
       category.name === categoryName || category.title === categoryName,
   );
@@ -363,10 +448,10 @@ export function getStorefrontCategoryHref(
 
 export function filterDesktopNav(
   items: DesktopNavItem[],
-  store: AdminStoreState = EMPTY_ADMIN_STORE,
+  categories: ResolvedCategory[],
 ): DesktopNavItem[] {
   const filtered = items.flatMap((item) => {
-    if (!isStorefrontHrefVisible(item.href, store)) {
+    if (!isStorefrontHrefVisible(item.href, categories)) {
       return [];
     }
 
@@ -375,12 +460,12 @@ export function filterDesktopNav(
     }
 
     const megaItems = item.mega.items.filter((entry) =>
-      isStorefrontHrefVisible(entry.href, store),
+      isStorefrontHrefVisible(entry.href, categories),
     );
 
     if (megaItems.length === 0) {
       const slug = slugFromHref(item.href);
-      const self = slug ? getResolvedCategory(slug, store) : undefined;
+      const self = slug ? findResolvedCategory(slug, categories) : undefined;
       if (self && !self.hidden) {
         return [{ ...item, mega: undefined }];
       }
@@ -396,7 +481,7 @@ export function filterDesktopNav(
     ];
   });
 
-  const extras: DesktopNavItem[] = getVisibleCategories(store)
+  const extras: DesktopNavItem[] = getVisibleCategories(categories)
     .filter((category) => category.origin === "new")
     .map((category) => ({
       id: category.slug,
@@ -409,10 +494,12 @@ export function filterDesktopNav(
 
 export function filterNavLinks(
   links: NavLink[],
-  store: AdminStoreState = EMPTY_ADMIN_STORE,
+  categories: ResolvedCategory[],
 ): NavLink[] {
-  const visible = links.filter((link) => isStorefrontHrefVisible(link.href, store));
-  const extras = getVisibleCategories(store)
+  const visible = links.filter((link) =>
+    isStorefrontHrefVisible(link.href, categories),
+  );
+  const extras = getVisibleCategories(categories)
     .filter((category) => category.origin === "new")
     .map((category) => ({ label: category.title, href: category.href }));
 

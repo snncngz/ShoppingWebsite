@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { SearchPage } from "@/components/search/SearchPage";
 import { firstSearchParam, normalizeSearchQuery } from "@/lib/search";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Arama",
   description:

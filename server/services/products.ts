@@ -31,6 +31,7 @@ export type ProductListInput = {
   limit: number;
   search?: string;
   category?: string;
+  slug?: string;
   isActive: boolean;
   sort: ProductSort;
 };
@@ -131,6 +132,7 @@ export function readProductListQuery(
     limit,
     search: parseQueryString(params.get("search")),
     category: parseQueryString(params.get("category")),
+    slug: parseQueryString(params.get("slug")),
     isActive: parseQueryBoolean(params.get("isActive"), "isActive", true),
     sort,
   };
@@ -218,6 +220,10 @@ export async function listProducts(
 
   if (input.category) {
     where.category = { slug: input.category };
+  }
+
+  if (input.slug) {
+    where.slug = input.slug;
   }
 
   if (input.search) {

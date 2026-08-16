@@ -11,6 +11,19 @@ export const SORT_OPTIONS = [
 
 export type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 
+export type ApiSortValue = "price_asc" | "price_desc" | "newest" | "name_asc";
+
+export function toApiSort(sort: SortValue): ApiSortValue {
+  switch (sort) {
+    case "price-asc":
+      return "price_asc";
+    case "price-desc":
+      return "price_desc";
+    default:
+      return "newest";
+  }
+}
+
 export type StockFilter = "in" | "out";
 
 export type FilterState = {

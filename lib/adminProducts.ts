@@ -1,11 +1,8 @@
 import { adminRequest } from "@/lib/adminApi";
+import { listAdminApiCategories } from "@/lib/adminCategories";
 import { toSlug } from "@/lib/utils";
 import type { PerfumeDetails } from "@/types";
-import type {
-  CategoryDto,
-  PaginatedDto,
-  ProductDto,
-} from "@/types/api";
+import type { CategoryDto, PaginatedDto, ProductDto } from "@/types/api";
 
 export type AdminProductListItem = {
   id: string;
@@ -58,10 +55,6 @@ async function fetchProductPages(isActive: boolean): Promise<ProductDto[]> {
   return items;
 }
 
-async function fetchCategoryPages(isActive: boolean): Promise<CategoryDto[]> {
-  return adminRequest<CategoryDto[]>(`/api/categories?isActive=${isActive}`);
-}
-
 export function toAdminProductListItem(product: ProductDto): AdminProductListItem {
   return {
     id: product.id,
@@ -90,17 +83,9 @@ export async function getAdminApiProduct(id: string): Promise<ProductDto> {
   return adminRequest<ProductDto>(`/api/products/${id}`);
 }
 
-async function listApiCategories(): Promise<CategoryDto[]> {
-  const [active, inactive] = await Promise.all([
-    fetchCategoryPages(true),
-    fetchCategoryPages(false),
-  ]);
-  return [...active, ...inactive];
-}
-
 async function resolveCategoryId(name: string): Promise<string> {
   const slug = toSlug(name) || "kategori";
-  const categories = await listApiCategories();
+  const categories = await listAdminApiCategories();
   const match = categories.find(
     (category) => category.name === name || category.slug === slug,
   );
@@ -120,7 +105,7 @@ async function resolveCategoryId(name: string): Promise<string> {
     });
     return created.id;
   } catch (error) {
-    const again = await listApiCategories();
+    const again = await listAdminApiCategories();
     const retry = again.find(
       (category) => category.name === name || category.slug === slug,
     );

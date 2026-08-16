@@ -18,17 +18,17 @@ type MobileMenuProps = {
 };
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
-  const { store } = useCatalog();
+  const { categories } = useCatalog();
   const [expanded, setExpanded] = useState<string | null>(null);
   const sections = mobileAccordions
     .map((section) => ({
       ...section,
-      items: filterNavLinks(section.items, store).filter((item) =>
+      items: filterNavLinks(section.items, categories).filter((item) =>
         section.items.some((original) => original.href === item.href),
       ),
     }))
     .filter((section) => section.items.length > 0);
-  const extraCategories = filterNavLinks([], store);
+  const extraCategories = filterNavLinks([], categories);
   const reduceMotion = useReducedMotion();
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);

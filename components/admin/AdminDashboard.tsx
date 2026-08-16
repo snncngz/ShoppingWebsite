@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 
 import Link from "next/link";
 
-import { useCatalog } from "@/context/CatalogContext";
 import { getAdminErrorMessage } from "@/lib/adminApi";
 import {
   listAdminApiProducts,
@@ -15,7 +14,6 @@ import { demoOrders } from "@/data/orders";
 import { formatPrice } from "@/lib/utils";
 
 export function AdminDashboard() {
-  const { refresh } = useCatalog();
   const [rows, setRows] = useState<AdminProductListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -44,14 +42,13 @@ export function AdminDashboard() {
   const handleReset = () => {
     if (
       !window.confirm(
-        "Yerel kategori override'ları silinsin mi? Veritabanındaki ürünler etkilenmez.",
+        "Yerel vitrin override'ları silinsin mi? Veritabanındaki ürün ve kategoriler etkilenmez.",
       )
     ) {
       return;
     }
 
     clearAdminStore();
-    refresh();
   };
 
   return (
@@ -59,8 +56,8 @@ export function AdminDashboard() {
       <p className="text-12 tracking-label text-taupe">Overview</p>
       <h1 className="mt-3 font-heading text-32 text-black">Panel</h1>
       <p className="mt-3 max-w-2xl text-14 text-taupe">
-        Ürün kayıtları PostgreSQL üzerindedir. Kategori ve storefront hâlâ
-        localStorage / `data/products.ts` kullanır.
+        Ürün ve kategori kayıtları PostgreSQL üzerindedir. Storefront hâlâ
+        `data/products.ts` kullanır.
       </p>
 
       {loading ? (

@@ -1,54 +1,114 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 
-import { useCatalog } from "@/context/CatalogContext";
-import { commitAdminStore, type CategoryOverride } from "@/lib/adminStore";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { AdminApiError, getAdminErrorMessage } from "@/lib/adminApi";
 import {
-  getPlaceholderForCategory,
-  isReservedCategorySlug,
-  listResolvedCategories,
-} from "@/lib/catalog";
+  createAdminApiCategory,
+  hideAdminApiCategory,
+  listAdminApiCategories,
+  setAdminApiCategoryActive,
+  updateAdminApiCategory,
+} from "@/lib/adminCategories";
+import { CATEGORY_SLUGS } from "@/lib/category-pages";
+import { isReservedCategorySlug } from "@/lib/catalog";
 import { toSlug } from "@/lib/utils";
+import type { CategoryDto } from "@/types/api";
+
+function isBlockedAdminSlug(slug: string): boolean {
+  if ((CATEGORY_SLUGS as readonly string[]).includes(slug)) {
+    return false;
+  }
+  return isReservedCategorySlug(slug);
+}
 
 export function AdminCategoryList() {
-  const { store, refresh } = useCatalog();
-  const rows = listResolvedCategories(store);
   const [creating, setCreating] = useState(false);
+  const [rows, setRows] = useState<CategoryDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const saveOverride = (slug: string, next: CategoryOverride) => {
-    commitAdminStore((current) => ({
-      ...current,
-      categoryOverrides: {
-        ...current.categoryOverrides,
-        [slug]: {
-          ...current.categoryOverrides[slug],
-          ...next,
-        },
-      },
-    }));
-    refresh();
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setRows(await listAdminApiCategories());
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const replaceRow = (updated: CategoryDto) => {
+    setRows((current) =>
+      [...current.filter((row) => row.id !== updated.id), updated].sort((a, b) =>
+        a.name.localeCompare(b.name, "tr"),
+      ),
+    );
   };
 
-  const toggleHidden = (slug: string, hidden: boolean) => {
-    saveOverride(slug, { hidden });
+  const toggleHidden = async (row: CategoryDto) => {
+    setPendingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await setAdminApiCategoryActive(row.id, !row.isActive);
+      replaceRow(updated);
+      setNotice(updated.isActive ? "Kategori yayınlandı." : "Kategori gizlendi.");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setPendingId(null);
+    }
   };
 
-  const removeNew = (slug: string) => {
-    if (!window.confirm("Bu kategori admin katalogundan silinsin mi?")) {
+  const removeRow = async (row: CategoryDto) => {
+    if (!window.confirm("Bu kategori gizlensin mi? Bağlı ürünler silinmez.")) {
       return;
     }
 
-    commitAdminStore((current) => {
-      const overrides = { ...current.categoryOverrides };
-      delete overrides[slug];
-      return {
-        ...current,
-        newCategories: current.newCategories.filter((item) => item.slug !== slug),
-        categoryOverrides: overrides,
-      };
-    });
-    refresh();
+    setPendingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await hideAdminApiCategory(row.id);
+      replaceRow(updated);
+      setNotice("Kategori gizlendi.");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setPendingId(null);
+    }
+  };
+
+  const saveRow = async (
+    row: CategoryDto,
+    next: { title: string; description: string },
+  ) => {
+    setPendingId(row.id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await updateAdminApiCategory(row.id, {
+        name: next.title,
+        description: next.description,
+      });
+      replaceRow(updated);
+      setNotice("Kategori kaydedildi.");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+      throw caught;
+    } finally {
+      setPendingId(null);
+    }
   };
 
   return (
@@ -58,8 +118,9 @@ export function AdminCategoryList() {
           <p className="text-12 tracking-label text-taupe">Taxonomy</p>
           <h1 className="mt-3 font-heading text-32 text-black">Kategoriler</h1>
           <p className="mt-3 max-w-2xl text-14 text-taupe">
-            Gizlenen kategoriler mağaza menüsünden, anasayfadan ve kategori
-            sayfasından kalkar. Orijinal `data/products.ts` değişmez.
+            Kategori kayıtları PostgreSQL üzerindedir. Gizle işlemi
+            `isActive=false` yapar; bağlı ürünler silinmez. Mağaza vitrini
+            hâlâ `data/products.ts` kullanır.
           </p>
         </div>
         <button
@@ -74,49 +135,65 @@ export function AdminCategoryList() {
       {creating ? (
         <div className="mt-8 border border-border bg-off-white p-6">
           <NewCategoryForm
+            existingSlugs={rows.map((row) => row.slug)}
             onCancel={() => setCreating(false)}
-            onCreated={() => {
+            onCreated={(category) => {
+              replaceRow(category);
               setCreating(false);
-              refresh();
+              setNotice("Kategori oluşturuldu.");
+              setError("");
             }}
           />
         </div>
       ) : null}
 
-      <ul className="mt-10 flex flex-col gap-6">
-        {rows.map((row) => (
-          <li key={row.slug} className="border border-border bg-off-white p-6">
-            <CategoryEditor
-              slug={row.slug}
-              title={row.title}
-              description={row.description}
-              hidden={row.hidden}
-              origin={row.origin}
-              onSave={(next) => saveOverride(row.slug, next)}
-              onToggle={() => toggleHidden(row.slug, !row.hidden)}
-              onDelete={row.origin === "new" ? () => removeNew(row.slug) : undefined}
-            />
-          </li>
-        ))}
-      </ul>
+      {notice ? <p className="mt-6 text-14 text-charcoal">{notice}</p> : null}
+      {error && !loading ? <p className="mt-6 text-14 text-accent">{error}</p> : null}
+
+      {loading ? (
+        <p className="mt-10 text-12 tracking-label text-taupe">Yükleniyor</p>
+      ) : error && rows.length === 0 ? (
+        <div className="mt-10">
+          <ErrorState message={error} onRetry={() => void load()} />
+        </div>
+      ) : (
+        <ul className="mt-10 flex flex-col gap-6">
+          {rows.map((row) => (
+            <li key={row.id} className="border border-border bg-off-white p-6">
+              <CategoryEditor
+                slug={row.slug}
+                title={row.name}
+                description={row.description}
+                hidden={!row.isActive}
+                disabled={pendingId === row.id}
+                onSave={(next) => saveRow(row, next)}
+                onToggle={() => void toggleHidden(row)}
+                onDelete={() => void removeRow(row)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
 
 function NewCategoryForm({
+  existingSlugs,
   onCreated,
   onCancel,
 }: {
-  onCreated: () => void;
+  existingSlugs: string[];
+  onCreated: (category: CategoryDto) => void;
   onCancel: () => void;
 }) {
-  const { store } = useCatalog();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [visible, setVisible] = useState(true);
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const title = name.trim();
     if (!title) {
@@ -130,38 +207,34 @@ function NewCategoryForm({
       return;
     }
 
-    if (
-      isReservedCategorySlug(slug) ||
-      listResolvedCategories(store).some((item) => item.slug === slug)
-    ) {
+    if (isBlockedAdminSlug(slug) || existingSlugs.includes(slug)) {
       setError("Bu kategori yolu zaten kullanılıyor.");
       return;
     }
 
-    commitAdminStore((current) => ({
-      ...current,
-      newCategories: [
-        ...current.newCategories,
-        {
-          id: `admin-cat-${slug}`,
-          slug,
-          name: title,
-          description: description.trim(),
-          image: getPlaceholderForCategory(title),
-        },
-      ],
-      categoryOverrides: {
-        ...current.categoryOverrides,
-        [slug]: {
-          hidden: !visible,
-        },
-      },
-    }));
-    onCreated();
+    setSaving(true);
+    setError("");
+    try {
+      const created = await createAdminApiCategory({
+        name: title,
+        slug,
+        description: description.trim(),
+        isActive: visible,
+      });
+      onCreated(created);
+    } catch (caught) {
+      if (caught instanceof AdminApiError && caught.code === "CONFLICT") {
+        setError("Bu kategori yolu zaten kullanılıyor.");
+      } else {
+        setError(getAdminErrorMessage(caught));
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={(event) => void handleSubmit(event)} className="flex flex-col gap-4">
       <p className="text-12 tracking-label text-black">Yeni kategori</p>
       <label className="text-12 tracking-label text-charcoal">
         Kategori adı
@@ -191,9 +264,10 @@ function NewCategoryForm({
       <div className="flex flex-wrap gap-3">
         <button
           type="submit"
-          className="inline-flex h-12 items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black"
+          disabled={saving}
+          className="inline-flex h-12 items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
         >
-          Oluştur
+          {saving ? "Kaydediliyor" : "Oluştur"}
         </button>
         <button
           type="button"
@@ -212,7 +286,7 @@ function CategoryEditor({
   title,
   description,
   hidden,
-  origin,
+  disabled,
   onSave,
   onToggle,
   onDelete,
@@ -221,47 +295,61 @@ function CategoryEditor({
   title: string;
   description: string;
   hidden: boolean;
-  origin: "original" | "new";
-  onSave: (next: { title: string; description: string }) => void;
+  disabled: boolean;
+  onSave: (next: { title: string; description: string }) => Promise<void>;
   onToggle: () => void;
-  onDelete?: () => void;
+  onDelete: () => void;
 }) {
   const [nextTitle, setNextTitle] = useState(title);
   const [nextDescription, setNextDescription] = useState(description);
+  const [saving, setSaving] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
 
   return (
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        onSave({
+        setError("");
+        setSuccess("");
+        setSaving(true);
+        void onSave({
           title: nextTitle.trim() || title,
-          description: nextDescription.trim() || description,
-        });
+          description: nextDescription.trim(),
+        })
+          .then(() => {
+            setSuccess("Kaydedildi.");
+          })
+          .catch((caught) => {
+            setError(getAdminErrorMessage(caught));
+          })
+          .finally(() => {
+            setSaving(false);
+          });
       }}
       className="flex flex-col gap-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-12 tracking-label text-taupe">
-          /{slug} · {origin === "original" ? "Orijinal" : "Admin"} ·{" "}
-          {hidden ? "Gizli" : "Yayında"}
+          /{slug} · {hidden ? "Gizli" : "Yayında"}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            disabled={disabled || saving}
             onClick={onToggle}
-            className="inline-flex h-11 items-center border border-charcoal px-4 text-12 tracking-nav text-charcoal hover:bg-charcoal hover:text-ivory"
+            className="inline-flex h-11 items-center border border-charcoal px-4 text-12 tracking-nav text-charcoal hover:bg-charcoal hover:text-ivory disabled:opacity-50"
           >
             {hidden ? "Yayınla" : "Gizle"}
           </button>
-          {onDelete ? (
-            <button
-              type="button"
-              onClick={onDelete}
-              className="inline-flex h-11 items-center px-4 text-12 tracking-nav text-accent"
-            >
-              Sil
-            </button>
-          ) : null}
+          <button
+            type="button"
+            disabled={disabled || saving}
+            onClick={onDelete}
+            className="inline-flex h-11 items-center px-4 text-12 tracking-nav text-accent disabled:opacity-50"
+          >
+            Sil
+          </button>
         </div>
       </div>
       <label className="text-12 tracking-label text-charcoal">
@@ -280,11 +368,14 @@ function CategoryEditor({
           className="mt-2 min-h-24 w-full border border-border bg-ivory px-4 py-3 text-14"
         />
       </label>
+      {error ? <p className="text-14 text-accent">{error}</p> : null}
+      {success ? <p className="text-14 text-charcoal">{success}</p> : null}
       <button
         type="submit"
-        className="inline-flex h-12 w-fit items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black"
+        disabled={disabled || saving}
+        className="inline-flex h-12 w-fit items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
       >
-        Kaydet
+        {saving ? "Kaydediliyor" : "Kaydet"}
       </button>
     </form>
   );

@@ -9,36 +9,27 @@ import {
   type ReactNode,
 } from "react";
 
-import { products as sourceProducts } from "@/data/products";
+import { usePathname } from "next/navigation";
+
+import { getAdminErrorMessage } from "@/lib/adminApi";
 import {
-  CATALOG_CHANGE_EVENT,
-  EMPTY_ADMIN_STORE,
-  loadAdminStore,
-  type AdminStoreState,
-  type CategoryOverride,
-} from "@/lib/adminStore";
-import {
-  getCategoryOverride as readCategoryOverride,
-  getMergedProductById,
-  getMergedProductBySlug,
-  getResolvedCategory,
+  findResolvedCategory,
   getStorefrontCategoryHref,
-  listResolvedCategories,
-  mergeCatalog,
+  resolveStorefrontCategories,
   type ResolvedCategory,
 } from "@/lib/catalog";
+import { fetchStorefrontCatalog } from "@/lib/storefrontApi";
 import { getSingletonContext } from "@/lib/singleton-context";
 import type { Product } from "@/types";
 
 type CatalogContextValue = {
   products: Product[];
+  categories: ResolvedCategory[];
   hydrated: boolean;
-  store: AdminStoreState;
+  error: string | null;
   getById: (id: string) => Product | undefined;
   getBySlug: (slug: string) => Product | undefined;
-  getCategoryOverride: (slug: string) => CategoryOverride | undefined;
   getResolvedCategory: (slug: string) => ResolvedCategory | undefined;
-  categories: ResolvedCategory[];
   categoryHref: (name: string) => string;
   refresh: () => void;
 };
@@ -49,52 +40,89 @@ const CatalogContext = getSingletonContext<CatalogContextValue | null>(
 );
 
 export function CatalogProvider({ children }: { children: ReactNode }) {
-  const [store, setStore] = useState<AdminStoreState>(EMPTY_ADMIN_STORE);
-  const [hydrated, setHydrated] = useState(false);
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ResolvedCategory[]>([]);
+  const [hydrated, setHydrated] = useState(isAdmin);
+  const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(() => {
-    setStore(loadAdminStore());
-  }, []);
+  const refresh = useCallback((silent = false) => {
+    if (isAdmin) {
+      setHydrated(true);
+      setError(null);
+      return;
+    }
 
-  useEffect(() => {
-    refresh();
-    setHydrated(true);
+    let cancelled = false;
+    if (!silent) {
+      setHydrated(false);
+    }
+    setError(null);
 
-    const onChange = () => refresh();
-    window.addEventListener("storage", onChange);
-    window.addEventListener(CATALOG_CHANGE_EVENT, onChange);
+    void fetchStorefrontCatalog()
+      .then((catalog) => {
+        if (cancelled) {
+          return;
+        }
+        setProducts(catalog.products);
+        setCategories(resolveStorefrontCategories(catalog.categories));
+        setError(null);
+        setHydrated(true);
+      })
+      .catch((caught) => {
+        if (cancelled) {
+          return;
+        }
+        setProducts([]);
+        setCategories([]);
+        setError(getAdminErrorMessage(caught));
+        setHydrated(true);
+      });
 
     return () => {
-      window.removeEventListener("storage", onChange);
-      window.removeEventListener(CATALOG_CHANGE_EVENT, onChange);
+      cancelled = true;
     };
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const cancel = refresh();
+    return cancel;
   }, [refresh]);
 
-  const products = useMemo(
-    () => mergeCatalog(sourceProducts, store),
-    [store],
-  );
+  useEffect(() => {
+    if (isAdmin) {
+      return;
+    }
 
-  const categories = useMemo(
-    () => listResolvedCategories(store),
-    [store],
-  );
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        refresh(true);
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isAdmin, refresh]);
 
   const value = useMemo<CatalogContextValue>(
     () => ({
       products,
-      hydrated,
-      store,
-      getById: (id: string) => getMergedProductById(id, store, sourceProducts),
-      getBySlug: (slug: string) =>
-        getMergedProductBySlug(slug, store, sourceProducts),
-      getCategoryOverride: (slug: string) => readCategoryOverride(slug, store),
-      getResolvedCategory: (slug: string) => getResolvedCategory(slug, store),
       categories,
-      categoryHref: (name: string) => getStorefrontCategoryHref(name, store),
-      refresh,
+      hydrated,
+      error,
+      getById: (id: string) => products.find((product) => product.id === id),
+      getBySlug: (slug: string) =>
+        products.find((product) => product.slug === slug),
+      getResolvedCategory: (slug: string) =>
+        findResolvedCategory(slug, categories),
+      categoryHref: (name: string) =>
+        getStorefrontCategoryHref(name, categories),
+      refresh: () => {
+        refresh();
+      },
     }),
-    [categories, hydrated, products, refresh, store],
+    [categories, error, hydrated, products, refresh],
   );
 
   return (

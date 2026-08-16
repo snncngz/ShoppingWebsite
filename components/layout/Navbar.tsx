@@ -22,8 +22,8 @@ const iconButtonClass =
 export function Navbar() {
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
-  const { store } = useCatalog();
-  const navItems = filterDesktopNav(desktopNavItems, store);
+  const { categories } = useCatalog();
+  const navItems = filterDesktopNav(desktopNavItems, categories);
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
   const [openMegaId, setOpenMegaId] = useState<string | null>(

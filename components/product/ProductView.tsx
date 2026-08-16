@@ -1,12 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import { Breadcrumbs } from "@/components/category/Breadcrumbs";
 import { EmptyState } from "@/components/category/EmptyState";
 import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { ProductDetailSkeleton } from "@/components/ui/Skeleton";
 import { useCatalog } from "@/context/CatalogContext";
-import { getRelatedProducts } from "@/lib/product-detail";
+import { getAdminErrorMessage } from "@/lib/adminApi";
+import { getCategoryHref } from "@/lib/category-pages";
+import {
+  fetchStorefrontProductBySlug,
+  fetchStorefrontProductPage,
+} from "@/lib/storefrontApi";
 import type { Product } from "@/types";
 
 type ProductViewProps = {
@@ -14,11 +22,69 @@ type ProductViewProps = {
   fallback: Product | null;
 };
 
-export function ProductView({ slug, fallback }: ProductViewProps) {
-  const { getBySlug, products, hydrated, categoryHref } = useCatalog();
-  const product = hydrated ? (getBySlug(slug) ?? null) : fallback;
+export function ProductView({ slug }: ProductViewProps) {
+  const { categoryHref } = useCatalog();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [related, setRelated] = useState<Product[]>([]);
+  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">(
+    "loading",
+  );
+  const [error, setError] = useState("");
 
-  if (!hydrated && !fallback) {
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    setError("");
+    setProduct(null);
+    setRelated([]);
+
+    void fetchStorefrontProductBySlug(slug)
+      .then(async (found) => {
+        if (cancelled) {
+          return;
+        }
+        if (!found) {
+          setStatus("missing");
+          return;
+        }
+
+        setProduct(found.product);
+        setStatus("ready");
+
+        try {
+          const relatedPage = await fetchStorefrontProductPage({
+            category: found.categorySlug,
+            limit: 8,
+            sort: "newest",
+          });
+          if (cancelled) {
+            return;
+          }
+          setRelated(
+            relatedPage.items
+              .filter((item) => item.id !== found.product.id)
+              .slice(0, 4),
+          );
+        } catch {
+          if (!cancelled) {
+            setRelated([]);
+          }
+        }
+      })
+      .catch((caught) => {
+        if (cancelled) {
+          return;
+        }
+        setError(getAdminErrorMessage(caught));
+        setStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [slug]);
+
+  if (status === "loading") {
     return (
       <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-7xl">
@@ -28,7 +94,17 @@ export function ProductView({ slug, fallback }: ProductViewProps) {
     );
   }
 
-  if (!product) {
+  if (status === "error") {
+    return (
+      <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <ErrorState message={error} />
+        </div>
+      </section>
+    );
+  }
+
+  if (status === "missing" || !product) {
     return (
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl">
@@ -43,8 +119,10 @@ export function ProductView({ slug, fallback }: ProductViewProps) {
     );
   }
 
-  const categoryLink = categoryHref(product.category);
-  const related = getRelatedProducts(product, products, 4);
+  const categoryLink =
+    categoryHref(product.category) === "/"
+      ? getCategoryHref(product.category)
+      : categoryHref(product.category);
 
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">

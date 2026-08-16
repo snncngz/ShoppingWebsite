@@ -5,7 +5,6 @@ import { AppProviders } from "@/context/AppProviders";
 import { BRAND_NAME } from "@/lib/constants";
 import { cormorant, inter } from "@/lib/fonts";
 
-import "@/data/products";
 import "@/styles/globals.css";
 
 export const metadata: Metadata = {

@@ -15,7 +15,7 @@ const socialLinks = [
 ] as const;
 
 export function Footer() {
-  const { store } = useCatalog();
+  const { categories } = useCatalog();
   return (
     <footer className="mt-auto border-t border-border bg-off-white">
       <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8 lg:py-24">
@@ -74,7 +74,7 @@ export function Footer() {
                 <p className="text-12 tracking-label text-black">{column.title}</p>
                 <ul className="mt-5 flex flex-col gap-3">
                   {(column.title === "Shop"
-                    ? filterNavLinks(column.links, store)
+                    ? filterNavLinks(column.links, categories)
                     : column.links
                   ).map((link) => (
                     <li key={`${link.href}-${link.label}`}>

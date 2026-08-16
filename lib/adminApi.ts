@@ -33,9 +33,14 @@ export async function adminRequest<T>(
     headers.set("Content-Type", "application/json");
   }
 
+  const url =
+    typeof window === "undefined" && path.startsWith("/")
+      ? new URL(path, process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").toString()
+      : path;
+
   let response: Response;
   try {
-    response = await fetch(path, {
+    response = await fetch(url, {
       ...init,
       headers,
       cache: "no-store",

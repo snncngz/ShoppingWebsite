@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { useRouter } from "next/navigation";
 
@@ -8,13 +8,15 @@ import { RecentSearches } from "@/components/search/RecentSearches";
 import { SearchResults } from "@/components/search/SearchResults";
 import { useRecentSearches } from "@/components/search/useRecentSearches";
 import { useCatalog } from "@/context/CatalogContext";
-import { listResolvedCategories } from "@/lib/catalog";
+import { getAdminErrorMessage } from "@/lib/adminApi";
 import {
   getSearchHref,
   normalizeSearchQuery,
   POPULAR_SEARCHES,
-  searchProducts,
+  SEARCH_DEBOUNCE_MS,
 } from "@/lib/search";
+import { fetchStorefrontProductPage } from "@/lib/storefrontApi";
+import type { Product } from "@/types";
 
 type SearchPanelProps = {
   initialQuery?: string;
@@ -32,16 +34,15 @@ export function SearchPanel({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { terms, remember } = useRecentSearches();
-  const { products, store } = useCatalog();
+  const { categories } = useCatalog();
   const [query, setQuery] = useState(initialQuery);
+  const [results, setResults] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const trimmed = normalizeSearchQuery(query);
-  const results = useMemo(
-    () => searchProducts(products, trimmed),
-    [products, trimmed],
-  );
   const popularSearches = POPULAR_SEARCHES.filter((term) => {
     const needle = term.toLocaleLowerCase("tr-TR");
-    const match = listResolvedCategories(store).find(
+    const match = categories.find(
       (category) =>
         category.name.toLocaleLowerCase("tr-TR") === needle ||
         category.title.toLocaleLowerCase("tr-TR") === needle,
@@ -60,6 +61,47 @@ export function SearchPanel({
 
     inputRef.current?.focus();
   }, [autoFocus]);
+
+  useEffect(() => {
+    if (!trimmed) {
+      setResults([]);
+      setLoading(false);
+      setError("");
+      return;
+    }
+
+    const controller = new AbortController();
+    setLoading(true);
+    setError("");
+
+    const timer = window.setTimeout(() => {
+      void fetchStorefrontProductPage({
+        search: trimmed,
+        limit: variant === "overlay" ? 8 : 20,
+        sort: "newest",
+      })
+        .then((data) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+          setResults(data.items);
+          setLoading(false);
+        })
+        .catch((caught) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+          setResults([]);
+          setError(getAdminErrorMessage(caught));
+          setLoading(false);
+        });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [trimmed, variant]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -104,6 +146,8 @@ export function SearchPanel({
         {trimmed ? (
           <SearchResults
             products={results}
+            loading={loading}
+            error={error}
             variant={variant === "overlay" ? "compact" : "default"}
             onResultClick={handleResultClick}
           />

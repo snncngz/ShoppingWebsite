@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
 import { CategoryPage } from "@/components/category/CategoryPage";
-import { products } from "@/data/products";
 import { CATEGORY_SLUGS, getCategoryPage } from "@/lib/category-pages";
 import { BRAND_NAME } from "@/lib/constants";
 
+export const dynamic = "force-dynamic";
 export const dynamicParams = true;
 
 export function generateStaticParams() {
@@ -55,7 +55,6 @@ export default async function CategoryRoute({
           { label: category, href: `/${category}` },
         ]
       }
-      products={config ? products.filter(config.match) : []}
       showPerfumeFilters={config?.showPerfumeFilters ?? false}
       showClothingSizes={config?.showClothingSizes ?? false}
     />
