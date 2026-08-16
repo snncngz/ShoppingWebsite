@@ -10,13 +10,11 @@ import { MegaMenu } from "@/components/layout/MegaMenu";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { useCart } from "@/context/CartContext";
+import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { BRAND_NAME } from "@/lib/constants";
-import {
-  desktopNavItems,
-  megaMenus,
-  type MegaMenuContent,
-} from "@/lib/navigation";
+import { filterDesktopNav } from "@/lib/catalog";
+import { desktopNavItems } from "@/lib/navigation";
 
 const iconButtonClass =
   "relative flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:text-black";
@@ -24,9 +22,11 @@ const iconButtonClass =
 export function Navbar() {
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
+  const { store } = useCatalog();
+  const navItems = filterDesktopNav(desktopNavItems, store);
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
-  const [openMegaId, setOpenMegaId] = useState<MegaMenuContent["id"] | null>(
+  const [openMegaId, setOpenMegaId] = useState<string | null>(
     null,
   );
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -111,7 +111,7 @@ export function Navbar() {
     setSearchOpen(true);
   };
 
-  const openMega = openMegaId ? megaMenus[openMegaId] : null;
+  const openMega = navItems.find((item) => item.id === openMegaId)?.mega ?? null;
 
   return (
     <>
@@ -164,7 +164,7 @@ export function Navbar() {
             onMouseLeave={scheduleClose}
             onMouseEnter={cancelClose}
           >
-            {desktopNavItems.map((item) => {
+            {navItems.map((item) => {
               const mega = item.mega;
               const isActive = openMegaId === item.id;
 

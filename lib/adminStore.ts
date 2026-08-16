@@ -4,6 +4,7 @@ export const ADMIN_SESSION_KEY = "velora-admin-session";
 export const ADMIN_PRODUCT_OVERRIDES_KEY = "velora-admin-product-overrides";
 export const ADMIN_NEW_PRODUCTS_KEY = "velora-admin-new-products";
 export const ADMIN_CATEGORY_OVERRIDES_KEY = "velora-admin-category-overrides";
+export const ADMIN_NEW_CATEGORIES_KEY = "velora-admin-new-categories";
 export const CATALOG_CHANGE_EVENT = "velora-catalog-change";
 
 export const DEMO_ADMIN = {
@@ -21,16 +22,26 @@ export type CategoryOverride = {
   hidden?: boolean;
 };
 
+export type AdminCategory = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  image: string;
+};
+
 export type AdminStoreState = {
   productOverrides: Record<string, ProductOverride>;
   newProducts: Product[];
   categoryOverrides: Record<string, CategoryOverride>;
+  newCategories: AdminCategory[];
 };
 
 export const EMPTY_ADMIN_STORE: AdminStoreState = {
   productOverrides: {},
   newProducts: [],
   categoryOverrides: {},
+  newCategories: [],
 };
 
 export function notifyCatalogChange() {
@@ -139,6 +150,30 @@ function parseProduct(value: unknown): Product | null {
   return product;
 }
 
+function parseAdminCategory(value: unknown): AdminCategory | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.id !== "string" ||
+    typeof value.slug !== "string" ||
+    typeof value.name !== "string" ||
+    typeof value.description !== "string" ||
+    typeof value.image !== "string"
+  ) {
+    return null;
+  }
+
+  return {
+    id: value.id,
+    slug: value.slug,
+    name: value.name,
+    description: value.description,
+    image: value.image,
+  };
+}
+
 function parseProductOverride(value: unknown): ProductOverride | null {
   if (!isRecord(value)) {
     return null;
@@ -222,6 +257,7 @@ export function loadAdminStore(): AdminStoreState {
   const overridesRaw = readJson(ADMIN_PRODUCT_OVERRIDES_KEY);
   const newRaw = readJson(ADMIN_NEW_PRODUCTS_KEY);
   const categoriesRaw = readJson(ADMIN_CATEGORY_OVERRIDES_KEY);
+  const newCategoriesRaw = readJson(ADMIN_NEW_CATEGORIES_KEY);
 
   const productOverrides: Record<string, ProductOverride> = {};
   if (isRecord(overridesRaw)) {
@@ -256,13 +292,20 @@ export function loadAdminStore(): AdminStoreState {
     }
   }
 
-  return { productOverrides, newProducts, categoryOverrides };
+  const newCategories = Array.isArray(newCategoriesRaw)
+    ? newCategoriesRaw
+        .map((item) => parseAdminCategory(item))
+        .filter((item): item is AdminCategory => Boolean(item))
+    : [];
+
+  return { productOverrides, newProducts, categoryOverrides, newCategories };
 }
 
 export function saveAdminStore(next: AdminStoreState) {
   writeJson(ADMIN_PRODUCT_OVERRIDES_KEY, next.productOverrides);
   writeJson(ADMIN_NEW_PRODUCTS_KEY, next.newProducts);
   writeJson(ADMIN_CATEGORY_OVERRIDES_KEY, next.categoryOverrides);
+  writeJson(ADMIN_NEW_CATEGORIES_KEY, next.newCategories);
   notifyCatalogChange();
 }
 
@@ -276,6 +319,7 @@ export function clearAdminStore() {
   window.localStorage.removeItem(ADMIN_PRODUCT_OVERRIDES_KEY);
   window.localStorage.removeItem(ADMIN_NEW_PRODUCTS_KEY);
   window.localStorage.removeItem(ADMIN_CATEGORY_OVERRIDES_KEY);
+  window.localStorage.removeItem(ADMIN_NEW_CATEGORIES_KEY);
   notifyCatalogChange();
 }
 

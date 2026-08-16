@@ -12,6 +12,7 @@ import {
   type ProductOverride,
 } from "@/lib/adminStore";
 import {
+  getAdminCategoryNames,
   getPlaceholderForCategory,
   isOriginalProduct,
   listAdminProducts,
@@ -112,6 +113,13 @@ function AdminProductFormFields({
     (existing?.perfumeDetails?.baseNotes ?? ["Amber"]).join(", "),
   );
   const [error, setError] = useState("");
+  const categoryOptions = useMemo(() => {
+    const names = getAdminCategoryNames(store);
+    if (existing?.category && !names.includes(existing.category)) {
+      return [existing.category, ...names];
+    }
+    return names;
+  }, [existing?.category, store]);
 
   if (productId && !existing) {
     return (
@@ -257,7 +265,7 @@ function AdminProductFormFields({
             onChange={(event) => handleCategoryChange(event.target.value)}
             className={fieldClass}
           >
-            {CATEGORY_NAMES.map((item) => (
+            {categoryOptions.map((item) => (
               <option key={item} value={item}>
                 {item}
               </option>

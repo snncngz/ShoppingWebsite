@@ -8,6 +8,7 @@ import { RecentSearches } from "@/components/search/RecentSearches";
 import { SearchResults } from "@/components/search/SearchResults";
 import { useRecentSearches } from "@/components/search/useRecentSearches";
 import { useCatalog } from "@/context/CatalogContext";
+import { listResolvedCategories } from "@/lib/catalog";
 import {
   getSearchHref,
   normalizeSearchQuery,
@@ -31,13 +32,22 @@ export function SearchPanel({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const { terms, remember } = useRecentSearches();
-  const { products } = useCatalog();
+  const { products, store } = useCatalog();
   const [query, setQuery] = useState(initialQuery);
   const trimmed = normalizeSearchQuery(query);
   const results = useMemo(
     () => searchProducts(products, trimmed),
     [products, trimmed],
   );
+  const popularSearches = POPULAR_SEARCHES.filter((term) => {
+    const needle = term.toLocaleLowerCase("tr-TR");
+    const match = listResolvedCategories(store).find(
+      (category) =>
+        category.name.toLocaleLowerCase("tr-TR") === needle ||
+        category.title.toLocaleLowerCase("tr-TR") === needle,
+    );
+    return !match?.hidden;
+  });
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -104,7 +114,7 @@ export function SearchPanel({
                 Popüler Aramalar
               </p>
               <ul className="mt-4 flex flex-col gap-3">
-                {POPULAR_SEARCHES.map((term) => (
+                {popularSearches.map((term) => (
                   <li key={term}>
                     <button
                       type="button"

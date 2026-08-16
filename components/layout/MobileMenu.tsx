@@ -6,7 +6,9 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown, X } from "lucide-react";
 import Link from "next/link";
 
+import { useCatalog } from "@/context/CatalogContext";
 import { BRAND_NAME } from "@/lib/constants";
+import { filterNavLinks } from "@/lib/catalog";
 import { mobileAccordions, mobileUtilityLinks } from "@/lib/navigation";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 
@@ -16,7 +18,17 @@ type MobileMenuProps = {
 };
 
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
+  const { store } = useCatalog();
   const [expanded, setExpanded] = useState<string | null>(null);
+  const sections = mobileAccordions
+    .map((section) => ({
+      ...section,
+      items: filterNavLinks(section.items, store).filter((item) =>
+        section.items.some((original) => original.href === item.href),
+      ),
+    }))
+    .filter((section) => section.items.length > 0);
+  const extraCategories = filterNavLinks([], store);
   const reduceMotion = useReducedMotion();
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
@@ -93,7 +105,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
             <nav className="flex-1 overflow-y-auto px-6 pb-8 pt-4">
               <ul className="flex flex-col">
-                {mobileAccordions.map((section) => {
+                {sections.map((section) => {
                   const isExpanded = expanded === section.id;
                   const panelId = `${section.id}-panel`;
 
@@ -151,6 +163,17 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     </li>
                   );
                 })}
+                {extraCategories.map((item) => (
+                  <li key={item.href} className="border-b border-border">
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className="flex w-full items-center py-5 font-heading text-32 tracking-[0.08em] text-black"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </nav>
 

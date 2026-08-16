@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 
 import { CategoryPage } from "@/components/category/CategoryPage";
 import { products } from "@/data/products";
 import { CATEGORY_SLUGS, getCategoryPage } from "@/lib/category-pages";
 import { BRAND_NAME } from "@/lib/constants";
 
-export const dynamicParams = false;
+export const dynamicParams = true;
 
 export function generateStaticParams() {
   return CATEGORY_SLUGS.map((category) => ({ category }));
@@ -44,22 +43,21 @@ export default async function CategoryRoute({
   const { category } = await params;
   const config = getCategoryPage(category);
 
-  if (!config) {
-    notFound();
-  }
-
-  const catalog = products.filter(config.match);
-
   return (
     <CategoryPage
-      key={config.slug}
-      slug={config.slug}
-      title={config.title}
-      description={config.description}
-      breadcrumbs={config.breadcrumbs}
-      products={catalog}
-      showPerfumeFilters={config.showPerfumeFilters}
-      showClothingSizes={config.showClothingSizes}
+      key={category}
+      slug={category}
+      title={config?.title ?? ""}
+      description={config?.description ?? ""}
+      breadcrumbs={
+        config?.breadcrumbs ?? [
+          { label: "Anasayfa", href: "/" },
+          { label: category, href: `/${category}` },
+        ]
+      }
+      products={config ? products.filter(config.match) : []}
+      showPerfumeFilters={config?.showPerfumeFilters ?? false}
+      showClothingSizes={config?.showClothingSizes ?? false}
     />
   );
 }

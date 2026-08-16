@@ -1,5 +1,10 @@
+"use client";
+
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+
+import { useCatalog } from "@/context/CatalogContext";
+import { getVisibleCategories, isStorefrontHrefVisible } from "@/lib/catalog";
 
 const categories = [
   {
@@ -37,6 +42,34 @@ const categories = [
 ] as const;
 
 export function CategoryGrid() {
+  const { store } = useCatalog();
+  const featured = categories
+    .filter((category) => isStorefrontHrefVisible(category.href, store))
+    .map((category) => {
+      const match = getVisibleCategories(store).find(
+        (item) => item.href === category.href,
+      );
+      return {
+        ...category,
+        name: match?.title ?? category.name,
+      };
+    });
+  const extras = getVisibleCategories(store)
+    .filter((category) => category.origin === "new")
+    .map((category, index) => ({
+      name: category.title,
+      href: category.href,
+      image: category.image,
+      imageClass: "object-center",
+      frameClass: "aspect-[4/5]",
+      offsetClass: index % 2 === 1 ? "lg:mt-12" : "",
+    }));
+  const cards = [...featured, ...extras];
+
+  if (cards.length === 0) {
+    return null;
+  }
+
   return (
     <section className="bg-ivory px-6 py-24 lg:px-8 lg:py-32">
       <div className="mx-auto max-w-7xl">
@@ -46,7 +79,7 @@ export function CategoryGrid() {
         </h2>
 
         <ul className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:mt-16 lg:grid-cols-4 lg:gap-8">
-          {categories.map((category) => (
+          {cards.map((category) => (
             <li key={category.href} className={category.offsetClass}>
               <Link href={category.href} className="group block">
                 <div

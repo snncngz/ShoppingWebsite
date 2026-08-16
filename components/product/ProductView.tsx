@@ -6,7 +6,6 @@ import { ProductDetail } from "@/components/product/ProductDetail";
 import { RelatedProducts } from "@/components/product/RelatedProducts";
 import { ProductDetailSkeleton } from "@/components/ui/Skeleton";
 import { useCatalog } from "@/context/CatalogContext";
-import { getCategoryHref } from "@/lib/category-pages";
 import { getRelatedProducts } from "@/lib/product-detail";
 import type { Product } from "@/types";
 
@@ -16,7 +15,7 @@ type ProductViewProps = {
 };
 
 export function ProductView({ slug, fallback }: ProductViewProps) {
-  const { getBySlug, products, hydrated } = useCatalog();
+  const { getBySlug, products, hydrated, categoryHref } = useCatalog();
   const product = hydrated ? (getBySlug(slug) ?? null) : fallback;
 
   if (!hydrated && !fallback) {
@@ -44,7 +43,7 @@ export function ProductView({ slug, fallback }: ProductViewProps) {
     );
   }
 
-  const categoryHref = getCategoryHref(product.category);
+  const categoryLink = categoryHref(product.category);
   const related = getRelatedProducts(product, products, 4);
 
   return (
@@ -53,11 +52,11 @@ export function ProductView({ slug, fallback }: ProductViewProps) {
         <Breadcrumbs
           items={[
             { label: "Anasayfa", href: "/" },
-            { label: product.category, href: categoryHref },
+            { label: product.category, href: categoryLink },
             { label: product.name, href: `/urun/${product.slug}` },
           ]}
         />
-        <ProductDetail product={product} categoryHref={categoryHref} />
+        <ProductDetail product={product} categoryHref={categoryLink} />
         <RelatedProducts products={related} />
       </div>
     </section>

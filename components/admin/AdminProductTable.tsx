@@ -11,8 +11,7 @@ import {
   removeProductOverride,
   upsertProductOverride,
 } from "@/lib/adminStore";
-import { listAdminProducts } from "@/lib/catalog";
-import { CATEGORY_NAMES } from "@/lib/constants";
+import { getAdminCategoryNames, listAdminProducts } from "@/lib/catalog";
 import { formatPrice } from "@/lib/utils";
 
 export function AdminProductTable() {
@@ -21,6 +20,7 @@ export function AdminProductTable() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
   const rows = useMemo(() => listAdminProducts(store), [store]);
+  const categoryOptions = useMemo(() => getAdminCategoryNames(store), [store]);
 
   const visible = rows.filter((row) => {
     const matchesQuery =
@@ -80,7 +80,7 @@ export function AdminProductTable() {
             className="mt-2 h-12 w-full border border-border bg-ivory px-4 text-14"
           >
             <option value="all">Tümü</option>
-            {CATEGORY_NAMES.map((name) => (
+            {categoryOptions.map((name) => (
               <option key={name} value={name}>
                 {name}
               </option>

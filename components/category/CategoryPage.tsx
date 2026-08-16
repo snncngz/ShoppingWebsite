@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { SlidersHorizontal } from "lucide-react";
+import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/category/Breadcrumbs";
 import { EmptyState } from "@/components/category/EmptyState";
@@ -11,6 +12,7 @@ import { FilterDrawer } from "@/components/category/FilterDrawer";
 import { FilterPanel } from "@/components/category/FilterPanel";
 import { SortSelect } from "@/components/category/SortSelect";
 import { ProductCard } from "@/components/product/ProductCard";
+import { CategorySkeleton } from "@/components/ui/Skeleton";
 import { useCatalog } from "@/context/CatalogContext";
 import { getCategoryPage, type BreadcrumbItem } from "@/lib/category-pages";
 import {
@@ -41,13 +43,16 @@ export function CategoryPage({
   showPerfumeFilters,
   showClothingSizes,
 }: CategoryPageProps) {
-  const { products: catalog, hydrated, getCategoryOverride } = useCatalog();
-  const config = getCategoryPage(slug);
-  const categoryOverride = getCategoryOverride(slug);
+  const { products: catalog, hydrated, getResolvedCategory } = useCatalog();
+  const staticConfig = getCategoryPage(slug);
+  const resolved = getResolvedCategory(slug);
   const products =
-    hydrated && config ? catalog.filter(config.match) : initialProducts;
-  const heading = categoryOverride?.title ?? title;
-  const copy = categoryOverride?.description ?? description;
+    hydrated && resolved ? catalog.filter(resolved.match) : initialProducts;
+  const heading = resolved?.title ?? title;
+  const copy = resolved?.description ?? description;
+  const crumbs = resolved?.breadcrumbs ?? breadcrumbs;
+  const perfumeFilters = resolved?.showPerfumeFilters ?? showPerfumeFilters;
+  const clothingSizes = resolved?.showClothingSizes ?? showClothingSizes;
   const [filters, setFilters] = useState(createEmptyFilters);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -67,10 +72,10 @@ export function CategoryPage({
   const options = useMemo(
     () =>
       getFilterOptions(products, {
-        showClothingSizes,
-        showPerfumeFilters,
+        showClothingSizes: clothingSizes,
+        showPerfumeFilters: perfumeFilters,
       }),
-    [products, showClothingSizes, showPerfumeFilters],
+    [products, clothingSizes, perfumeFilters],
   );
 
   const visibleProducts = useMemo(() => {
@@ -79,7 +84,7 @@ export function CategoryPage({
 
   const catalogIsEmpty = products.length === 0;
   const noFilterResults = !catalogIsEmpty && visibleProducts.length === 0;
-  const showSizeFilter = !showPerfumeFilters;
+  const showSizeFilter = !perfumeFilters;
 
   const clearFilters = () => {
     setFilters(createEmptyFilters());
@@ -91,31 +96,28 @@ export function CategoryPage({
       value={filters}
       onChange={setFilters}
       onClear={clearFilters}
-      showPerfumeFilters={showPerfumeFilters}
+      showPerfumeFilters={perfumeFilters}
       showSizeFilter={showSizeFilter}
     />
   );
 
+  if (!hydrated && !staticConfig) {
+    return <CategorySkeleton />;
+  }
+
+  if (hydrated && (!resolved || resolved.hidden)) {
+    notFound();
+  }
+
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-7xl">
-        <Breadcrumbs items={breadcrumbs} />
+        <Breadcrumbs items={crumbs} />
 
-        {categoryOverride?.hidden ? (
-          <div className="mt-8">
-            <EmptyState
-              title="Bu kategori yayında değil"
-              message="Kategori admin panelinden gizlendi."
-              actionHref="/"
-              actionLabel="Anasayfaya Dön"
-            />
-          </div>
-        ) : (
-          <>
-            <header className="mt-8 max-w-2xl">
-              <h1 className="font-heading text-32 text-black lg:text-48">{heading}</h1>
-              <p className="mt-4 text-16 text-charcoal">{copy}</p>
-            </header>
+        <header className="mt-8 max-w-2xl">
+          <h1 className="font-heading text-32 text-black lg:text-48">{heading}</h1>
+          <p className="mt-4 text-16 text-charcoal">{copy}</p>
+        </header>
 
             <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
               <p className="text-14 text-taupe">{visibleProducts.length} ürün</p>
@@ -166,15 +168,11 @@ export function CategoryPage({
                 )}
               </div>
             </div>
-          </>
-        )}
       </div>
 
-      {categoryOverride?.hidden ? null : (
-        <FilterDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          {filterPanel}
-        </FilterDrawer>
-      )}
+      <FilterDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+        {filterPanel}
+      </FilterDrawer>
     </section>
   );
 }

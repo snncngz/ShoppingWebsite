@@ -21,7 +21,11 @@ import {
   getCategoryOverride as readCategoryOverride,
   getMergedProductById,
   getMergedProductBySlug,
+  getResolvedCategory,
+  getStorefrontCategoryHref,
+  listResolvedCategories,
   mergeCatalog,
+  type ResolvedCategory,
 } from "@/lib/catalog";
 import { getSingletonContext } from "@/lib/singleton-context";
 import type { Product } from "@/types";
@@ -33,6 +37,9 @@ type CatalogContextValue = {
   getById: (id: string) => Product | undefined;
   getBySlug: (slug: string) => Product | undefined;
   getCategoryOverride: (slug: string) => CategoryOverride | undefined;
+  getResolvedCategory: (slug: string) => ResolvedCategory | undefined;
+  categories: ResolvedCategory[];
+  categoryHref: (name: string) => string;
   refresh: () => void;
 };
 
@@ -68,6 +75,11 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
     [store],
   );
 
+  const categories = useMemo(
+    () => listResolvedCategories(store),
+    [store],
+  );
+
   const value = useMemo<CatalogContextValue>(
     () => ({
       products,
@@ -77,9 +89,12 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
       getBySlug: (slug: string) =>
         getMergedProductBySlug(slug, store, sourceProducts),
       getCategoryOverride: (slug: string) => readCategoryOverride(slug, store),
+      getResolvedCategory: (slug: string) => getResolvedCategory(slug, store),
+      categories,
+      categoryHref: (name: string) => getStorefrontCategoryHref(name, store),
       refresh,
     }),
-    [hydrated, products, refresh, store],
+    [categories, hydrated, products, refresh, store],
   );
 
   return (
