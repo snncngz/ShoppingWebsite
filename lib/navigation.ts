@@ -36,7 +36,7 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     ],
     image: {
       src: "/placeholders/parfum.svg",
-      alt: "VELORA parfüm",
+      alt: "Lucien Perrin parfüm",
       caption: "Parfüm",
     },
   },
@@ -52,7 +52,7 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     ],
     image: {
       src: "/placeholders/tshirt.svg",
-      alt: "VELORA giyim",
+      alt: "Lucien Perrin giyim",
       caption: "Giyim",
     },
   },
@@ -68,7 +68,7 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     ],
     image: {
       src: "/placeholders/aksesuar.svg",
-      alt: "VELORA aksesuar",
+      alt: "Lucien Perrin aksesuar",
       caption: "Aksesuar",
     },
   },

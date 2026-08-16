@@ -1,4 +1,4 @@
-export const BRAND_NAME = "VELORA" as const;
+export const BRAND_NAME = "Lucien Perrin" as const;
 
 export const CATEGORY_NAMES = [
   "T-Shirt",

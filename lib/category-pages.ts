@@ -91,7 +91,7 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     slug: "gomlek",
     title: "Gömlek",
     description:
-      "Temiz yakalar, ölçülü dokumalar ve sakin bir duruş. Gömlek koleksiyonu VELORA dilinde tamamlanmak üzere.",
+      "Temiz yakalar, ölçülü dokumalar ve sakin bir duruş. Gömlek koleksiyonu Lucien Perrin dilinde tamamlanmak üzere.",
     breadcrumbs: [
       { label: "Anasayfa", href: "/" },
       { label: "Giyim", href: "/gomlek" },
@@ -160,7 +160,7 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     slug: "yeni-gelenler",
     title: "Yeni Gelenler",
     description:
-      "Sezonun yeni siluetleri ve taze imzalar. VELORA'nın en son eklenen parçaları, tek bir yerde.",
+      "Sezonun yeni siluetleri ve taze imzalar. Lucien Perrin’in en son eklenen parçaları, tek bir yerde.",
     breadcrumbs: [
       { label: "Anasayfa", href: "/" },
       { label: "Yeni Gelenler", href: "/yeni-gelenler" },
@@ -173,7 +173,7 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     slug: "cok-satanlar",
     title: "Çok Satanlar",
     description:
-      "En çok tercih edilen VELORA parçaları. Sessiz lüksün kanıtlanmış favorileri.",
+      "En çok tercih edilen Lucien Perrin parçaları. Sessiz lüksün kanıtlanmış favorileri.",
     breadcrumbs: [
       { label: "Anasayfa", href: "/" },
       { label: "Çok Satanlar", href: "/cok-satanlar" },

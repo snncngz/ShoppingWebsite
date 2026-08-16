@@ -285,7 +285,7 @@ export function CheckoutView() {
               </legend>
               {isLoggedIn ? (
                 <p className="mt-6 text-14 text-taupe">
-                  Kart bilgileri VELORA&apos;da tutulmaz. Onaydan sonra iyzico
+                  Kart bilgileri Lucien Perrin&apos;de tutulmaz. Onaydan sonra iyzico
                   ödeme sayfasına yönlendirilirsiniz. Sipariş ancak doğrulanmış
                   ödeme sonrası ödenmiş sayılır.
                 </p>

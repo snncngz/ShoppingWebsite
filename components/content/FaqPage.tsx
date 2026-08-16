@@ -17,7 +17,7 @@ export function FaqPage() {
           Sıkça Sorulan Sorular
         </h1>
         <p className="mt-4 text-16 text-charcoal">
-          Kargo, iade, beden değişimi ve parfüm koşulları. Cevaplar VELORA’nın
+          Kargo, iade, beden değişimi ve parfüm koşulları. Cevaplar Lucien Perrin’in
           sakin butik ritmine göredir.
         </p>
         <div className="mt-12">

@@ -168,7 +168,7 @@ export async function createPayment(
     items: order.items.map((item) => ({
       id: item.id,
       name: item.product.name,
-      category: "VELORA",
+      category: "Lucien Perrin",
       price: decimalToNumber(item.unitPrice),
       quantity: item.quantity,
     })),

@@ -33,7 +33,7 @@ export function ContactPage() {
           <aside className="flex flex-col gap-10">
             <div>
               <p className="text-12 tracking-label text-taupe">E-posta</p>
-              <p className="mt-3 text-16 text-charcoal">atelier@velora.com</p>
+              <p className="mt-3 text-16 text-charcoal">atelier@lucienperrin.com</p>
             </div>
             <div>
               <p className="text-12 tracking-label text-taupe">Telefon</p>

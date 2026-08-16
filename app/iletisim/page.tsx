@@ -4,7 +4,7 @@ import { ContactPage } from "@/components/content/ContactPage";
 
 export const metadata: Metadata = {
   title: "İletişim",
-  description: "VELORA Nişantaşı atölyesi — yazın, arayın, ziyaret edin.",
+  description: "Lucien Perrin Nişantaşı atölyesi — yazın, arayın, ziyaret edin.",
 };
 
 export default function IletisimRoute() {

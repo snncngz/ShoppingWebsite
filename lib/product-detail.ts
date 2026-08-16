@@ -37,7 +37,7 @@ export function getAccordionContent(product: Product): {
     {
       id: "details",
       title: "Ürün Detayları",
-      body: `${product.name}, ${product.category} koleksiyonunun ${product.subcategory.toLowerCase()} hattında yer alır. ${product.colors.join(", ")} seçenekleriyle sunulur. Her parça VELORA atölye standartlarında, sınırlı adetlerle üretilir.`,
+      body: `${product.name}, ${product.category} koleksiyonunun ${product.subcategory.toLowerCase()} hattında yer alır. ${product.colors.join(", ")} seçenekleriyle sunulur. Her parça Lucien Perrin atölye standartlarında, sınırlı adetlerle üretilir.`,
     },
     {
       id: "material",
@@ -77,7 +77,7 @@ function getMaterialCopy(category: string): string {
     case "Aksesuar":
       return "Fırçalı ve cilalı pirinç kaplama metaller. Formlar minimal tutulur; ağırlık gün boyu rahat taşınacak ölçüdedir.";
     default:
-      return "VELORA parçaları seçilmiş hammaddeler ve ölçülü işçilikle üretilir. Her materyal, siluetin sakin duruşunu bozmayacak şekilde seçilir.";
+      return "Lucien Perrin parçaları seçilmiş hammaddeler ve ölçülü işçilikle üretilir. Her materyal, siluetin sakin duruşunu bozmayacak şekilde seçilir.";
   }
 }
 

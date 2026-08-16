@@ -5,7 +5,7 @@ import { AboutPage } from "@/components/content/AboutPage";
 export const metadata: Metadata = {
   title: "Hakkımızda",
   description:
-    "VELORA — Nişantaşı’nda giyim, parfüm ve aksesuarı aynı sakin lüks dilinde birleştiren butik.",
+    "Lucien Perrin — Nişantaşı’nda giyim, parfüm ve aksesuarı aynı sakin lüks dilinde birleştiren butik.",
 };
 
 export default function HakkimizdaRoute() {

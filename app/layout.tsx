@@ -13,14 +13,14 @@ export const metadata: Metadata = {
     template: `%s · ${BRAND_NAME}`,
   },
   description:
-    "VELORA — sakin lüks, özenle seçilmiş siluetler ve zamansız butik parçalar.",
+    "Lucien Perrin — sakin lüks, özenle seçilmiş siluetler ve zamansız butik parçalar.",
   openGraph: {
     type: "website",
     locale: "tr_TR",
     siteName: BRAND_NAME,
     title: `${BRAND_NAME} — Sakin Lüks Butik`,
     description:
-      "VELORA — sakin lüks, özenle seçilmiş siluetler ve zamansız butik parçalar.",
+      "Lucien Perrin — sakin lüks, özenle seçilmiş siluetler ve zamansız butik parçalar.",
   },
 };
 

@@ -17,7 +17,7 @@ if (process.env.NODE_ENV === "production") {
 
 export const DEV_SEED = {
   userEmail: "db-seed@velora.test",
-  userName: "VELORA DB Seed",
+  userName: "Lucien Perrin DB Seed",
   categorySlug: "db-seed-category",
   categoryName: "DB Seed Category",
   productSlug: "db-seed-product",
@@ -48,7 +48,7 @@ async function main() {
     const admin = await upsertAdminUser(prisma, {
       email: adminEmail,
       password: adminPassword,
-      name: process.env.ADMIN_NAME?.trim() || "VELORA Admin",
+      name: process.env.ADMIN_NAME?.trim() || "Lucien Perrin Admin",
     });
     console.log("Admin user ready:", admin.email);
   }

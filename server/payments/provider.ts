@@ -55,7 +55,7 @@ export function resolvePaymentProviderMode(): "iyzico" | "test" {
 
 function splitName(fullName: string): { name: string; surname: string } {
   const parts = fullName.trim().split(/\s+/);
-  const name = parts[0] || "VELORA";
+  const name = parts[0] || "Lucien Perrin";
   const surname = parts.slice(1).join(" ") || "Customer";
   return { name, surname };
 }
@@ -134,7 +134,7 @@ export async function createProviderCheckout(
       identityNumber: "11111111111",
       lastLoginDate: "2015-10-05 12:43:35",
       registrationDate: "2013-04-21 15:12:09",
-      registrationAddress: "VELORA",
+      registrationAddress: "Lucien Perrin",
       ip: input.ip || "127.0.0.1",
       city: "Istanbul",
       country: "Turkey",
@@ -144,20 +144,20 @@ export async function createProviderCheckout(
       contactName: input.customer.name,
       city: "Istanbul",
       country: "Turkey",
-      address: "VELORA",
+      address: "Lucien Perrin",
       zipCode: "34000",
     },
     billingAddress: {
       contactName: input.customer.name,
       city: "Istanbul",
       country: "Turkey",
-      address: "VELORA",
+      address: "Lucien Perrin",
       zipCode: "34000",
     },
     basketItems: input.items.map((item) => ({
       id: item.id,
       name: item.name,
-      category1: item.category || "VELORA",
+      category1: item.category || "Lucien Perrin",
       itemType: "PHYSICAL",
       price: (item.price * item.quantity).toFixed(2),
     })),

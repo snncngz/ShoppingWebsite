@@ -10,7 +10,7 @@ export function BrandStory() {
             Detaylarda Saklı Bir Tarz
           </h2>
           <p className="mt-6 text-16 text-charcoal">
-            VELORA, giyim, parfüm ve aksesuarı aynı sessiz lüks dilinde
+            Lucien Perrin, giyim, parfüm ve aksesuarı aynı sessiz lüks dilinde
             birleştiren modern bir butik. Her parça günlük ritüelin bir parçası
             olacak kadar sade; koleksiyonda yerini dolduracak kadar özenli.
           </p>
@@ -30,7 +30,7 @@ export function BrandStory() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholders/pantolon.svg"
-            alt="VELORA pantolon silueti"
+            alt="Lucien Perrin pantolon silueti"
             className="h-full w-full object-cover object-top lg:scale-105 lg:object-[center_12%]"
           />
         </div>

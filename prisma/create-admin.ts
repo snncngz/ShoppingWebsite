@@ -7,7 +7,7 @@ loadLocalEnv();
 
 const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
-const name = process.env.ADMIN_NAME?.trim() || "VELORA Admin";
+const name = process.env.ADMIN_NAME?.trim() || "Lucien Perrin Admin";
 
 if (!email || !password) {
   console.error("ADMIN_EMAIL and ADMIN_PASSWORD must be set.");

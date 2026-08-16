@@ -4,7 +4,7 @@ import { CartView } from "@/components/cart/CartView";
 
 export const metadata: Metadata = {
   title: "Sepet",
-  description: "VELORA sepetinizdeki parçaları görüntüleyin ve siparişi tamamlayın.",
+  description: "Lucien Perrin sepetinizdeki parçaları görüntüleyin ve siparişi tamamlayın.",
 };
 
 export default function CartPage() {

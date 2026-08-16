@@ -17,7 +17,7 @@ export const faqItems = [
   {
     id: "parfum-iade",
     title: "Parfümlerde iade koşulları nedir?",
-    body: "Parfümler hijyen nedeniyle yalnızca mühürü açılmamış, kutusu ve kapağı tam olan hallerde iade edilir. Tester veya açılmış flakonlar sağlık ve koku bütünlüğü için iade kapsamı dışındadır. Yanlış gönderilen bir parfümde kargo ve değişim VELORA’ya aittir.",
+    body: "Parfümler hijyen nedeniyle yalnızca mühürü açılmamış, kutusu ve kapağı tam olan hallerde iade edilir. Tester veya açılmış flakonlar sağlık ve koku bütünlüğü için iade kapsamı dışındadır. Yanlış gönderilen bir parfümde kargo ve değişim Lucien Perrin’e aittir.",
   },
   {
     id: "takip",

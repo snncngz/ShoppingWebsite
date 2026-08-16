@@ -646,7 +646,7 @@ const expectedCounts: Record<string, number> = {
 };
 
 if (products.length !== 30) {
-  throw new Error(`VELORA catalog must contain 30 products, received ${products.length}.`);
+  throw new Error(`Lucien Perrin catalog must contain 30 products, received ${products.length}.`);
 }
 
 for (const [category, expected] of Object.entries(expectedCounts)) {

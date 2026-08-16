@@ -210,7 +210,7 @@ export function CategoryPage({
             ) : catalogIsEmpty ? (
               <EmptyState
                 title="Bu kategoride henüz ürün bulunmuyor"
-                message="Koleksiyon yakında VELORA dilinde tamamlanacak."
+                message="Koleksiyon yakında Lucien Perrin dilinde tamamlanacak."
               />
             ) : noFilterResults ? (
               <EmptyState

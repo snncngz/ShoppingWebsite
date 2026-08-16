@@ -14,11 +14,11 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: { absolute: `${BRAND_NAME} — Sakin Lüks Butik` },
   description:
-    "Özenle seçilmiş siluetler, parfüm ve aksesuar. VELORA ile her günün sakin lüksü.",
+    "Özenle seçilmiş siluetler, parfüm ve aksesuar. Lucien Perrin ile her günün sakin lüksü.",
   openGraph: {
     title: `${BRAND_NAME} — Sakin Lüks Butik`,
     description:
-      "Özenle seçilmiş siluetler, parfüm ve aksesuar. VELORA ile her günün sakin lüksü.",
+      "Özenle seçilmiş siluetler, parfüm ve aksesuar. Lucien Perrin ile her günün sakin lüksü.",
     type: "website",
     locale: "tr_TR",
   },

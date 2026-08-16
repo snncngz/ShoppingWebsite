@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Arama",
   description:
-    "VELORA koleksiyonunda ürün, kategori veya parfüm arayın.",
+    "Lucien Perrin koleksiyonunda ürün, kategori veya parfüm arayın.",
 };
 
 export default async function SearchRoute({

@@ -47,7 +47,7 @@ export function LoginForm() {
         <p className="text-12 tracking-label text-taupe">Account</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Giriş</h1>
         <p className="mt-4 text-14 text-taupe">
-          VELORA hesabınıza e-posta ve şifrenizle giriş yapın.
+          Lucien Perrin hesabınıza e-posta ve şifrenizle giriş yapın.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">

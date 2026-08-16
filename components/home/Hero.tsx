@@ -12,7 +12,7 @@ export function Hero() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/placeholders/canta.svg"
-          alt="VELORA sezon koleksiyonu, çanta detayı"
+          alt="Lucien Perrin sezon koleksiyonu, çanta detayı"
           className="h-full w-full origin-center scale-125 object-cover object-[center_28%]"
         />
         <div className="absolute inset-0 bg-black/40" />

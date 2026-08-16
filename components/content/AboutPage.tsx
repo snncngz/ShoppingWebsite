@@ -9,7 +9,7 @@ export function AboutPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/placeholders/canta.svg"
-            alt="VELORA çanta, butik vitrin görseli"
+            alt="Lucien Perrin çanta, butik vitrin görseli"
             className="h-full w-full origin-center scale-125 object-cover object-[center_28%]"
           />
           <div className="absolute inset-0 bg-black/40" />
@@ -44,7 +44,7 @@ export function AboutPage() {
             Az parça, doğru duruş.
           </h2>
           <p className="mt-8 text-16 text-charcoal">
-            VELORA bir sezonun gürültüsüne yetişmek için kurulmadı. Gardırobun
+            Lucien Perrin bir sezonun gürültüsüne yetişmek için kurulmadı. Gardırobun
             her sabah yeniden düşünülmesini gerektiren parçalar yerine, elinizin
             alıştığı kumaşı, bileğinizin tanıdığı tokayı, cildinizin hatırladığı
             kokuyu arar. Sakin lüks; gösterişten değil, seçimin netliğinden
@@ -65,7 +65,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/tshirt.svg"
-              alt="VELORA tişört silueti"
+              alt="Lucien Perrin tişört silueti"
               className="h-full w-full object-cover object-top"
             />
           </div>
@@ -76,7 +76,7 @@ export function AboutPage() {
             </h2>
             <p className="mt-6 text-16 text-charcoal">
               2019’da Teşvikiye’de, eski bir terzi atölyesinin üst katında iki
-              kurucu VELORA’yı açtı. Biri kumaş ve kalıpla, diğeri koku
+              kurucu Lucien Perrin butiğini açtı. Biri kumaş ve kalıpla, diğeri koku
               aileleriyle çalışıyordu. Amaç bir “her şey mağazası” değil;
               giyim, parfüm ve aksesuarın aynı masada karar verildiği küçük bir
               butikti.
@@ -149,7 +149,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/parfum.svg"
-              alt="VELORA parfüm flakonu"
+              alt="Lucien Perrin parfüm flakonu"
               className="h-full w-full object-cover object-center"
             />
           </div>
@@ -162,7 +162,7 @@ export function AboutPage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/placeholders/kemer.svg"
-              alt="VELORA deri kemer detayı"
+              alt="Lucien Perrin deri kemer detayı"
               className="h-full w-full origin-[center_48%] scale-125 object-cover object-[center_48%]"
             />
           </div>
@@ -172,7 +172,7 @@ export function AboutPage() {
               Sabahın tişörtü, akşamın amber’i.
             </h2>
             <p className="mt-6 text-16 text-charcoal">
-              VELORA, özel gece için ayrılan bir marka değil. Kahveyle çıkan
+              Lucien Perrin, özel gece için ayrılan bir marka değil. Kahveyle çıkan
               oversize bir tişört, ofiste duran tailored bir pantolon, akşam
               bilekte kalan bir kemer ve ceket yakasına sinen odunsu bir koku —
               hepsi aynı günün içinde yerini bulur.
