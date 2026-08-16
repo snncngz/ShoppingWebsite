@@ -1,26 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { useCatalog } from "@/context/CatalogContext";
+import { ErrorState } from "@/components/ui/ErrorState";
+import { getAdminErrorMessage } from "@/lib/adminApi";
 import {
-  commitAdminStore,
-  removeProductOverride,
-  upsertProductOverride,
-} from "@/lib/adminStore";
-import { getAdminCategoryNames, listAdminProducts } from "@/lib/catalog";
+  hideAdminApiProduct,
+  listAdminApiProducts,
+  setAdminApiProductActive,
+  type AdminProductListItem,
+} from "@/lib/adminProducts";
+import { CATEGORY_NAMES } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 export function AdminProductTable() {
   const router = useRouter();
-  const { store, refresh } = useCatalog();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
-  const rows = useMemo(() => listAdminProducts(store), [store]);
-  const categoryOptions = useMemo(() => getAdminCategoryNames(store), [store]);
+  const [rows, setRows] = useState<AdminProductListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setRows(await listAdminApiProducts());
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const categoryOptions = useMemo(() => {
+    const fromRows = rows.map((row) => row.category);
+    return [...new Set([...CATEGORY_NAMES, ...fromRows])];
+  }, [rows]);
 
   const visible = rows.filter((row) => {
     const matchesQuery =
@@ -30,21 +55,46 @@ export function AdminProductTable() {
     return matchesQuery && matchesCategory;
   });
 
-  const toggleHidden = (id: string, hidden: boolean) => {
-    commitAdminStore((current) => upsertProductOverride(current, id, { hidden }));
-    refresh();
+  const toggleHidden = async (id: string, hidden: boolean) => {
+    setPendingId(id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await setAdminApiProductActive(id, !hidden);
+      setRows((current) =>
+        current.map((row) =>
+          row.id === id ? { ...row, hidden: !updated.isActive } : row,
+        ),
+      );
+      setNotice(updated.isActive ? "Ürün yayınlandı." : "Ürün gizlendi.");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setPendingId(null);
+    }
   };
 
-  const removeNew = (id: string) => {
-    if (!window.confirm("Bu ürün admin katalogundan silinsin mi?")) {
+  const removeRow = async (id: string) => {
+    if (!window.confirm("Bu ürün vitrinden gizlensin mi? Kayıt veritabanında kalır.")) {
       return;
     }
 
-    commitAdminStore((current) => ({
-      ...removeProductOverride(current, id),
-      newProducts: current.newProducts.filter((product) => product.id !== id),
-    }));
-    refresh();
+    setPendingId(id);
+    setError("");
+    setNotice("");
+    try {
+      const updated = await hideAdminApiProduct(id);
+      setRows((current) =>
+        current.map((row) =>
+          row.id === id ? { ...row, hidden: !updated.isActive } : row,
+        ),
+      );
+      setNotice("Ürün gizlendi.");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setPendingId(null);
+    }
   };
 
   return (
@@ -89,65 +139,77 @@ export function AdminProductTable() {
         </label>
       </div>
 
-      <div className="mt-8 overflow-x-auto border border-border">
-        <table className="min-w-[720px] w-full text-left text-14">
-          <thead className="border-b border-border bg-off-white text-12 tracking-label text-taupe">
-            <tr>
-              <th className="px-4 py-3 font-normal">Ürün</th>
-              <th className="px-4 py-3 font-normal">Kategori</th>
-              <th className="px-4 py-3 font-normal">Fiyat</th>
-              <th className="px-4 py-3 font-normal">Stok</th>
-              <th className="px-4 py-3 font-normal">Durum</th>
-              <th className="px-4 py-3 font-normal">İşlem</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row) => (
-              <tr key={row.id} className="border-b border-border">
-                <td className="px-4 py-4">
-                  <p className="text-charcoal">{row.name}</p>
-                  <p className="mt-1 text-12 text-taupe">
-                    {row.origin === "original" ? "Orijinal" : "Admin"}
-                  </p>
-                </td>
-                <td className="px-4 py-4 text-taupe">{row.category}</td>
-                <td className="px-4 py-4">{formatPrice(row.price)}</td>
-                <td className="px-4 py-4">{row.stock}</td>
-                <td className="px-4 py-4">
-                  {row.hidden ? "Gizli" : row.stock === 0 ? "Tükendi" : "Yayında"}
-                </td>
-                <td className="px-4 py-4">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/admin/urunler/${row.id}`)}
-                      className="h-11 px-3 text-12 tracking-nav text-charcoal hover:text-black"
-                    >
-                      Düzenle
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleHidden(row.id, !row.hidden)}
-                      className="h-11 px-3 text-12 tracking-nav text-charcoal hover:text-black"
-                    >
-                      {row.hidden ? "Yayınla" : "Gizle"}
-                    </button>
-                    {row.origin === "new" ? (
+      {notice ? <p className="mt-6 text-14 text-charcoal">{notice}</p> : null}
+      {error && !loading ? (
+        <p className="mt-6 text-14 text-accent">{error}</p>
+      ) : null}
+
+      {loading ? (
+        <p className="mt-8 text-12 tracking-label text-taupe">Yükleniyor</p>
+      ) : error && rows.length === 0 ? (
+        <div className="mt-8">
+          <ErrorState message={error} onRetry={() => void load()} />
+        </div>
+      ) : (
+        <div className="mt-8 overflow-x-auto border border-border">
+          <table className="min-w-[720px] w-full text-left text-14">
+            <thead className="border-b border-border bg-off-white text-12 tracking-label text-taupe">
+              <tr>
+                <th className="px-4 py-3 font-normal">Ürün</th>
+                <th className="px-4 py-3 font-normal">Kategori</th>
+                <th className="px-4 py-3 font-normal">Fiyat</th>
+                <th className="px-4 py-3 font-normal">Stok</th>
+                <th className="px-4 py-3 font-normal">Durum</th>
+                <th className="px-4 py-3 font-normal">İşlem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((row) => (
+                <tr key={row.id} className="border-b border-border">
+                  <td className="px-4 py-4">
+                    <p className="text-charcoal">{row.name}</p>
+                    <p className="mt-1 text-12 text-taupe">{row.slug}</p>
+                  </td>
+                  <td className="px-4 py-4 text-taupe">{row.category}</td>
+                  <td className="px-4 py-4">{formatPrice(row.price)}</td>
+                  <td className="px-4 py-4">{row.stock}</td>
+                  <td className="px-4 py-4">
+                    {row.hidden ? "Gizli" : row.stock === 0 ? "Tükendi" : "Yayında"}
+                  </td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => removeNew(row.id)}
-                        className="h-11 px-3 text-12 tracking-nav text-accent"
+                        disabled={pendingId === row.id}
+                        onClick={() => router.push(`/admin/urunler/${row.id}`)}
+                        className="h-11 px-3 text-12 tracking-nav text-charcoal hover:text-black disabled:opacity-50"
+                      >
+                        Düzenle
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pendingId === row.id}
+                        onClick={() => void toggleHidden(row.id, row.hidden)}
+                        className="h-11 px-3 text-12 tracking-nav text-charcoal hover:text-black disabled:opacity-50"
+                      >
+                        {row.hidden ? "Yayınla" : "Gizle"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={pendingId === row.id}
+                        onClick={() => void removeRow(row.id)}
+                        className="h-11 px-3 text-12 tracking-nav text-accent disabled:opacity-50"
                       >
                         Sil
                       </button>
-                    ) : null}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

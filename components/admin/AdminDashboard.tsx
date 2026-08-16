@@ -1,25 +1,52 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
+
 import Link from "next/link";
 
 import { useCatalog } from "@/context/CatalogContext";
+import { getAdminErrorMessage } from "@/lib/adminApi";
+import {
+  listAdminApiProducts,
+  type AdminProductListItem,
+} from "@/lib/adminProducts";
 import { clearAdminStore } from "@/lib/adminStore";
-import { isOriginalProduct } from "@/lib/catalog";
 import { demoOrders } from "@/data/orders";
 import { formatPrice } from "@/lib/utils";
 
 export function AdminDashboard() {
-  const { products, store, refresh } = useCatalog();
-  const hiddenCount = Object.values(store.productOverrides).filter(
-    (item) => item.hidden,
-  ).length;
-  const createdCount = store.newProducts.length;
-  const lowStock = products.filter((product) => product.stock > 0 && product.stock <= 5);
-  const outOfStock = products.filter((product) => product.stock === 0);
-  const originalVisible = products.filter((product) => isOriginalProduct(product.id)).length;
+  const { refresh } = useCatalog();
+  const [rows, setRows] = useState<AdminProductListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setRows(await listAdminApiProducts());
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const published = rows.filter((row) => !row.hidden);
+  const hiddenCount = rows.filter((row) => row.hidden).length;
+  const lowStock = published.filter((product) => product.stock > 0 && product.stock <= 5);
+  const outOfStock = published.filter((product) => product.stock === 0);
 
   const handleReset = () => {
-    if (!window.confirm("Tüm admin override'ları silinsin mi? Orijinal 30 ürün geri gelir.")) {
+    if (
+      !window.confirm(
+        "Yerel kategori override'ları silinsin mi? Veritabanındaki ürünler etkilenmez.",
+      )
+    ) {
       return;
     }
 
@@ -32,21 +59,31 @@ export function AdminDashboard() {
       <p className="text-12 tracking-label text-taupe">Overview</p>
       <h1 className="mt-3 font-heading text-32 text-black">Panel</h1>
       <p className="mt-3 max-w-2xl text-14 text-taupe">
-        Değişiklikler tarayıcı localStorage üzerinde tutulur. `data/products.ts`
-        içindeki 30 demo ürün silinmez.
+        Ürün kayıtları PostgreSQL üzerindedir. Kategori ve storefront hâlâ
+        localStorage / `data/products.ts` kullanır.
       </p>
 
-      <ul className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label="Yayındaki ürün" value={String(products.length)} />
-        <Stat label="Orijinal (görünür)" value={String(originalVisible)} />
-        <Stat label="Yeni eklenen" value={String(createdCount)} />
-        <Stat label="Gizlenen" value={String(hiddenCount)} />
-      </ul>
+      {loading ? (
+        <p className="mt-10 text-12 tracking-label text-taupe">Yükleniyor</p>
+      ) : error ? (
+        <p className="mt-10 text-14 text-accent">{error}</p>
+      ) : (
+        <ul className="mt-10 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat label="Yayındaki ürün" value={String(published.length)} />
+          <Stat label="Toplam ürün" value={String(rows.length)} />
+          <Stat label="Düşük stok" value={String(lowStock.length)} />
+          <Stat label="Gizlenen" value={String(hiddenCount)} />
+        </ul>
+      )}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <section className="border border-border bg-off-white p-6">
           <h2 className="text-12 tracking-label text-black">Stok uyarısı</h2>
-          {outOfStock.length === 0 && lowStock.length === 0 ? (
+          {loading ? (
+            <p className="mt-4 text-14 text-taupe">Yükleniyor</p>
+          ) : error ? (
+            <p className="mt-4 text-14 text-accent">{error}</p>
+          ) : outOfStock.length === 0 && lowStock.length === 0 ? (
             <p className="mt-4 text-14 text-taupe">Kritik stok yok.</p>
           ) : (
             <ul className="mt-4 flex flex-col gap-3">

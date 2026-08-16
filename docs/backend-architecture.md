@@ -144,5 +144,7 @@ PATCH  /api/categories/:id
 DELETE /api/categories/:id (sets isActive = false)
 ```
 
-Route Handlers in `app/api/` call `server/services/products.ts` and `server/services/categories.ts`. JSON uses DTOs in `types/api.ts`; Prisma `Decimal` is converted to `number`. Admin and storefront still do not call these APIs.
+Route Handlers in `app/api/` call `server/services/products.ts` and `server/services/categories.ts`. JSON uses DTOs in `types/api.ts`; Prisma `Decimal` is converted to `number`.
+
+FAZ 12.4A: Admin Product pages (`/admin/urunler`) call `/api/products`. Storefront still uses `data/products.ts`. Admin Category pages still use localStorage.
 

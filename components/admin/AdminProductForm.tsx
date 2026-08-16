@@ -1,25 +1,23 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useRouter } from "next/navigation";
 
 import { EmptyState } from "@/components/category/EmptyState";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { useCatalog } from "@/context/CatalogContext";
+import { AdminApiError, getAdminErrorMessage } from "@/lib/adminApi";
 import {
-  commitAdminStore,
-  upsertProductOverride,
-  type ProductOverride,
-} from "@/lib/adminStore";
-import {
-  getAdminCategoryNames,
-  getPlaceholderForCategory,
-  isOriginalProduct,
-  listAdminProducts,
-} from "@/lib/catalog";
+  createAdminApiProduct,
+  getAdminApiProduct,
+  readPerfumeDetails,
+  updateAdminApiProduct,
+} from "@/lib/adminProducts";
+import { getAdminCategoryNames, getPlaceholderForCategory } from "@/lib/catalog";
 import { CATEGORY_NAMES } from "@/lib/constants";
 import { toSlug } from "@/lib/utils";
-import type { Product } from "@/types";
+import type { ProductDto } from "@/types/api";
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none focus:border-taupe";
@@ -42,95 +40,155 @@ function splitList(value: string): string[] {
     .filter(Boolean);
 }
 
-function productToOverride(product: Product): ProductOverride {
-  const { id: _id, ...fields } = product;
-  return fields;
-}
-
 type AdminProductFormProps = {
   productId?: string;
 };
 
 export function AdminProductForm({ productId }: AdminProductFormProps) {
-  const { hydrated, refresh } = useCatalog();
+  const [product, setProduct] = useState<ProductDto | null>(null);
+  const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">(
+    productId ? "loading" : "ready",
+  );
+  const [loadError, setLoadError] = useState("");
 
-  if (!hydrated) {
+  useEffect(() => {
+    if (!productId) {
+      setProduct(null);
+      setStatus("ready");
+      return;
+    }
+
+    let cancelled = false;
+    setStatus("loading");
+    setLoadError("");
+
+    void getAdminApiProduct(productId)
+      .then((data) => {
+        if (cancelled) {
+          return;
+        }
+        setProduct(data);
+        setStatus("ready");
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+        if (error instanceof AdminApiError && error.code === "NOT_FOUND") {
+          setStatus("missing");
+          return;
+        }
+        setLoadError(getAdminErrorMessage(error));
+        setStatus("error");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [productId]);
+
+  if (status === "loading") {
     return <p className="text-12 tracking-label text-taupe">Yükleniyor</p>;
+  }
+
+  if (status === "missing") {
+    return (
+      <EmptyState
+        title="Ürün bulunamadı"
+        message="Bu kayıt veritabanında yok."
+        actionHref="/admin/urunler"
+        actionLabel="Ürünlere dön"
+      />
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <ErrorState
+        message={loadError}
+        onRetry={() => {
+          if (!productId) {
+            return;
+          }
+          setStatus("loading");
+          void getAdminApiProduct(productId)
+            .then((data) => {
+              setProduct(data);
+              setStatus("ready");
+            })
+            .catch((error) => {
+              if (error instanceof AdminApiError && error.code === "NOT_FOUND") {
+                setStatus("missing");
+                return;
+              }
+              setLoadError(getAdminErrorMessage(error));
+              setStatus("error");
+            });
+        }}
+      />
+    );
   }
 
   return (
     <AdminProductFormFields
-      productId={productId}
-      refresh={refresh}
+      key={product?.id ?? "new"}
+      product={product}
     />
   );
 }
 
-function AdminProductFormFields({
-  productId,
-  refresh,
-}: {
-  productId?: string;
-  refresh: () => void;
-}) {
+function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const router = useRouter();
   const { store } = useCatalog();
-  const rows = useMemo(() => listAdminProducts(store), [store]);
-  const existing = productId
-    ? rows.find((row) => row.id === productId)
-    : undefined;
-  const isCreate = !productId;
+  const existing = product ?? undefined;
+  const isCreate = !existing;
+  const perfume = readPerfumeDetails(existing?.perfumeDetails);
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [category, setCategory] = useState(existing?.category ?? "T-Shirt");
+  const [category, setCategory] = useState(existing?.category.name ?? "T-Shirt");
   const [subcategory, setSubcategory] = useState(existing?.subcategory ?? "Essential");
-  const [price, setPrice] = useState(String(existing?.price ?? ""));
+  const [price, setPrice] = useState(existing ? String(existing.price) : "");
   const [oldPrice, setOldPrice] = useState(
     existing?.oldPrice ? String(existing.oldPrice) : "",
   );
   const [description, setDescription] = useState(existing?.description ?? "");
   const [colors, setColors] = useState((existing?.colors ?? ["Siyah"]).join(", "));
   const [sizes, setSizes] = useState(
-    (existing?.sizes ?? SIZE_PRESETS["T-Shirt"]).join(", "),
+    (existing?.sizes?.length
+      ? existing.sizes
+      : SIZE_PRESETS["T-Shirt"]
+    ).join(", "),
   );
   const [stock, setStock] = useState(String(existing?.stock ?? 12));
   const [badge, setBadge] = useState(existing?.badge ?? "");
   const [isNew, setIsNew] = useState(existing?.isNew ?? true);
   const [isPopular, setIsPopular] = useState(existing?.isPopular ?? false);
   const [image, setImage] = useState(
-    existing?.images[0] ?? getPlaceholderForCategory(existing?.category ?? "T-Shirt"),
+    existing?.images[0] ?? getPlaceholderForCategory(existing?.category.name ?? "T-Shirt"),
   );
   const [fragranceFamily, setFragranceFamily] = useState(
-    existing?.perfumeDetails?.fragranceFamily ?? "Odunsu",
+    perfume?.fragranceFamily ?? "Odunsu",
   );
   const [topNotes, setTopNotes] = useState(
-    (existing?.perfumeDetails?.topNotes ?? ["Bergamot"]).join(", "),
+    (perfume?.topNotes ?? ["Bergamot"]).join(", "),
   );
   const [heartNotes, setHeartNotes] = useState(
-    (existing?.perfumeDetails?.heartNotes ?? ["Gül"]).join(", "),
+    (perfume?.heartNotes ?? ["Gül"]).join(", "),
   );
   const [baseNotes, setBaseNotes] = useState(
-    (existing?.perfumeDetails?.baseNotes ?? ["Amber"]).join(", "),
+    (perfume?.baseNotes ?? ["Amber"]).join(", "),
   );
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [saving, setSaving] = useState(false);
+
   const categoryOptions = useMemo(() => {
     const names = getAdminCategoryNames(store);
-    if (existing?.category && !names.includes(existing.category)) {
-      return [existing.category, ...names];
+    if (existing?.category.name && !names.includes(existing.category.name)) {
+      return [existing.category.name, ...names];
     }
     return names;
-  }, [existing?.category, store]);
-
-  if (productId && !existing) {
-    return (
-      <EmptyState
-        title="Ürün bulunamadı"
-        message="Bu kayıt admin katalogunda yok."
-        actionHref="/admin/urunler"
-        actionLabel="Ürünlere dön"
-      />
-    );
-  }
+  }, [existing?.category.name, store]);
 
   const handleCategoryChange = (next: string) => {
     setCategory(next);
@@ -138,9 +196,10 @@ function AdminProductFormFields({
     setSizes((SIZE_PRESETS[next] ?? SIZE_PRESETS["T-Shirt"]).join(", "));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+    setSuccess("");
 
     const parsedPrice = Number(price);
     const parsedStock = Number(stock);
@@ -151,8 +210,8 @@ function AdminProductFormFields({
       return;
     }
 
-    if (Number.isNaN(parsedStock) || parsedStock < 0) {
-      setError("Stok sıfır veya daha büyük olmalıdır.");
+    if (!Number.isInteger(parsedStock) || parsedStock < 0) {
+      setError("Stok sıfır veya daha büyük bir tam sayı olmalıdır.");
       return;
     }
 
@@ -163,89 +222,61 @@ function AdminProductFormFields({
       return;
     }
 
-    const slugBase = toSlug(name) || "urun";
-    const taken = rows
-      .filter((row) => row.id !== existing?.id)
-      .map((row) => row.slug);
-    let slug = existing?.slug && !isCreate ? existing.slug : slugBase;
-    if (isCreate || slug !== existing?.slug) {
-      let unique = slugBase;
-      let index = 2;
-      while (taken.includes(unique)) {
-        unique = `${slugBase}-${index}`;
-        index += 1;
-      }
-      slug = unique;
-    }
-
-    const id = existing?.id ?? `admin-${slug}`;
+    const slug =
+      existing?.slug && !isCreate ? existing.slug : toSlug(name) || "urun";
     const discount =
       parsedOld && parsedOld > parsedPrice
         ? Math.round(((parsedOld - parsedPrice) / parsedOld) * 100)
         : undefined;
 
-    const nextProduct: Product = {
-      id,
-      slug,
+    const payload = {
       name: name.trim(),
-      category,
-      subcategory: subcategory.trim() || "Essential",
-      price: parsedPrice,
+      slug,
       description: description.trim(),
+      price: parsedPrice,
+      oldPrice: parsedOld && parsedOld > parsedPrice ? parsedOld : null,
+      discount: discount ?? null,
+      stock: parsedStock,
+      subcategory: subcategory.trim() || "Essential",
       images: [image],
       colors: colorList,
       sizes: sizeList,
-      stock: parsedStock,
-      rating: existing?.rating ?? 5,
-      reviewCount: existing?.reviewCount ?? 0,
       isPopular,
       isNew,
+      badge: badge.trim() || null,
+      categoryName: category,
+      rating: existing?.rating,
+      reviewCount: existing?.reviewCount,
+      perfumeDetails:
+        category === "Parfüm"
+          ? {
+              volume: sizeList,
+              fragranceFamily: fragranceFamily.trim() || "Odunsu",
+              topNotes: splitList(topNotes),
+              heartNotes: splitList(heartNotes),
+              baseNotes: splitList(baseNotes),
+            }
+          : undefined,
     };
 
-    if (parsedOld && parsedOld > parsedPrice) {
-      nextProduct.oldPrice = parsedOld;
-      nextProduct.discount = discount;
-    }
-
-    if (badge.trim()) {
-      nextProduct.badge = badge.trim();
-    }
-
-    if (category === "Parfüm") {
-      nextProduct.perfumeDetails = {
-        volume: sizeList,
-        fragranceFamily: fragranceFamily.trim() || "Odunsu",
-        topNotes: splitList(topNotes),
-        heartNotes: splitList(heartNotes),
-        baseNotes: splitList(baseNotes),
-      };
-    }
-
-    commitAdminStore((current) => {
-      if (isOriginalProduct(id)) {
-        return upsertProductOverride(current, id, {
-          ...productToOverride(nextProduct),
-          hidden: false,
-        });
+    setSaving(true);
+    try {
+      if (isCreate) {
+        await createAdminApiProduct(payload);
+      } else {
+        await updateAdminApiProduct(existing.id, payload);
       }
-
-      const already = current.newProducts.some((product) => product.id === id);
-      return {
-        ...current,
-        newProducts: already
-          ? current.newProducts.map((product) =>
-              product.id === id ? nextProduct : product,
-            )
-          : [...current.newProducts, nextProduct],
-      };
-    });
-
-    refresh();
-    router.push("/admin/urunler");
+      setSuccess("Kaydedildi.");
+      router.push("/admin/urunler");
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl">
+    <form onSubmit={(event) => void handleSubmit(event)} className="max-w-3xl">
       <p className="text-12 tracking-label text-taupe">
         {isCreate ? "Create" : "Edit"}
       </p>
@@ -399,13 +430,15 @@ function AdminProductFormFields({
       </div>
 
       {error ? <p className="mt-6 text-14 text-accent">{error}</p> : null}
+      {success ? <p className="mt-6 text-14 text-charcoal">{success}</p> : null}
 
       <div className="mt-8 flex flex-wrap gap-3">
         <button
           type="submit"
-          className="inline-flex h-12 items-center bg-charcoal px-8 text-12 tracking-nav text-ivory hover:bg-black"
+          disabled={saving}
+          className="inline-flex h-12 items-center bg-charcoal px-8 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
         >
-          Kaydet
+          {saving ? "Kaydediliyor" : "Kaydet"}
         </button>
         <button
           type="button"
