@@ -54,6 +54,35 @@ const CSRF_EXEMPT = [
   "/api/payments/iyzico/callback",
 ];
 
+function firstHeaderValue(value: string | null): string | undefined {
+  const first = value?.split(",")[0]?.trim();
+  return first || undefined;
+}
+
+/** Public origin behind reverse proxies (Render, etc.). */
+function publicOrigin(request: Request): string | null {
+  const forwardedHost = firstHeaderValue(request.headers.get("x-forwarded-host"));
+  if (forwardedHost) {
+    const proto =
+      firstHeaderValue(request.headers.get("x-forwarded-proto")) ?? "https";
+    return `${proto}://${forwardedHost}`;
+  }
+
+  const host = firstHeaderValue(request.headers.get("host"));
+  if (host) {
+    const proto =
+      firstHeaderValue(request.headers.get("x-forwarded-proto")) ??
+      (host.includes("localhost") ? "http" : "https");
+    return `${proto}://${host}`;
+  }
+
+  try {
+    return new URL(request.url).origin;
+  } catch {
+    return null;
+  }
+}
+
 export function assertSameOrigin(request: Request, pathname: string): void {
   const method = request.method.toUpperCase();
   if (method === "GET" || method === "HEAD" || method === "OPTIONS") {
@@ -68,26 +97,28 @@ export function assertSameOrigin(request: Request, pathname: string): void {
     return;
   }
 
-  let requestOrigin = "";
-  try {
-    requestOrigin = new URL(request.url).origin;
-  } catch {
-    return;
+  const allowed = new Set<string>();
+  const pub = publicOrigin(request);
+  if (pub) {
+    allowed.add(pub);
   }
-
-  if (origin === requestOrigin) {
-    return;
+  try {
+    allowed.add(new URL(request.url).origin);
+  } catch {
+    // ignore
   }
 
   const configured = process.env.API_BASE_URL?.trim();
   if (configured) {
     try {
-      if (origin === new URL(configured).origin) {
-        return;
-      }
+      allowed.add(new URL(configured).origin);
     } catch {
       // ignore invalid API_BASE_URL
     }
+  }
+
+  if (allowed.has(origin)) {
+    return;
   }
 
   forbidden("Cross-origin request blocked");

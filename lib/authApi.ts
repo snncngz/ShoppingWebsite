@@ -90,6 +90,9 @@ export function getAuthErrorMessage(error: unknown): string {
     }
 
     if (error.code === "FORBIDDEN") {
+      if (error.message.toLowerCase().includes("cross-origin")) {
+        return "Güvenlik engeli: site adresi (API_BASE_URL) uyuşmuyor olabilir. Sayfayı yenileyip tekrar deneyin.";
+      }
       return "Bu işlem için yetkiniz yok.";
     }
 
