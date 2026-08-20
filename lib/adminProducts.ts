@@ -209,6 +209,16 @@ export async function hideAdminApiProduct(id: string): Promise<ProductDto> {
   });
 }
 
+export async function uploadAdminProductImage(file: File): Promise<string> {
+  const body = new FormData();
+  body.append("file", file);
+  const data = await adminRequest<{ url: string }>("/api/admin/uploads", {
+    method: "POST",
+    body,
+  });
+  return data.url;
+}
+
 export function readPerfumeDetails(value: unknown): PerfumeDetails | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;

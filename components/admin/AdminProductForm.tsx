@@ -13,8 +13,9 @@ import {
   getAdminApiProduct,
   readPerfumeDetails,
   updateAdminApiProduct,
+  uploadAdminProductImage,
 } from "@/lib/adminProducts";
-import { getPlaceholderForCategory } from "@/lib/catalog";
+import { CATEGORY_PLACEHOLDERS, getPlaceholderForCategory } from "@/lib/catalog";
 import { CATEGORY_NAMES } from "@/lib/constants";
 import { toSlug } from "@/lib/utils";
 import type { ProductDto } from "@/types/api";
@@ -23,6 +24,13 @@ const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none focus:border-taupe";
 const areaClass =
   "mt-2 min-h-28 w-full border border-border bg-ivory px-4 py-3 text-14 text-charcoal outline-none focus:border-taupe";
+
+const MAX_IMAGES = 6;
+const PLACEHOLDER_SET = new Set(Object.values(CATEGORY_PLACEHOLDERS));
+
+function isPlaceholderImage(src: string): boolean {
+  return PLACEHOLDER_SET.has(src) || src.startsWith("/placeholders/");
+}
 
 const SIZE_PRESETS: Record<string, string[]> = {
   "T-Shirt": ["XS", "S", "M", "L", "XL"],
@@ -162,9 +170,12 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [badge, setBadge] = useState(existing?.badge ?? "");
   const [isNew, setIsNew] = useState(existing?.isNew ?? true);
   const [isPopular, setIsPopular] = useState(existing?.isPopular ?? false);
-  const [image, setImage] = useState(
-    existing?.images[0] ?? getPlaceholderForCategory(existing?.category.name ?? "T-Shirt"),
+  const [images, setImages] = useState<string[]>(
+    existing?.images?.length
+      ? existing.images
+      : [getPlaceholderForCategory(existing?.category.name ?? "T-Shirt")],
   );
+  const [uploading, setUploading] = useState(false);
   const [fragranceFamily, setFragranceFamily] = useState(
     perfume?.fragranceFamily ?? "Odunsu",
   );
@@ -212,8 +223,44 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
 
   const handleCategoryChange = (next: string) => {
     setCategory(next);
-    setImage(getPlaceholderForCategory(next));
+    setImages((current) => {
+      const hasCustom = current.some((src) => !isPlaceholderImage(src));
+      if (hasCustom) {
+        return current;
+      }
+      return [getPlaceholderForCategory(next)];
+    });
     setSizes((SIZE_PRESETS[next] ?? SIZE_PRESETS["T-Shirt"]).join(", "));
+  };
+
+  const handleUpload = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) {
+      return;
+    }
+
+    setError("");
+    const remaining = MAX_IMAGES - images.length;
+    if (remaining <= 0) {
+      setError(`En fazla ${MAX_IMAGES} görsel ekleyebilirsiniz.`);
+      return;
+    }
+
+    const files = Array.from(fileList).slice(0, remaining);
+    setUploading(true);
+    try {
+      const uploaded: string[] = [];
+      for (const file of files) {
+        uploaded.push(await uploadAdminProductImage(file));
+      }
+      setImages((current) => {
+        const withoutPlaceholders = current.filter((src) => !isPlaceholderImage(src));
+        return [...withoutPlaceholders, ...uploaded].slice(0, MAX_IMAGES);
+      });
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -258,7 +305,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       discount: discount ?? null,
       stock: parsedStock,
       subcategory: subcategory.trim() || "Essential",
-      images: [image],
+      images: images.length > 0 ? images : [getPlaceholderForCategory(category)],
       colors: colorList,
       sizes: sizeList,
       isPopular,
@@ -382,25 +429,70 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
           <input value={badge} onChange={(event) => setBadge(event.target.value)} className={fieldClass} />
         </label>
         <fieldset className="sm:col-span-2">
-          <legend className="text-12 tracking-label text-charcoal">Görsel</legend>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {CATEGORY_NAMES.map((item) => {
-              const src = getPlaceholderForCategory(item);
-              return (
+          <legend className="text-12 tracking-label text-charcoal">Görseller</legend>
+          <p className="mt-2 text-12 text-taupe">
+            JPEG, PNG, WEBP veya GIF · en fazla {MAX_IMAGES} adet · dosya başına 5MB
+          </p>
+          <div className="mt-3 flex flex-wrap gap-3">
+            {images.map((src) => (
+              <div
+                key={src}
+                className="relative h-28 w-28 overflow-hidden border border-border bg-off-white"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt="" className="h-full w-full object-cover" />
                 <button
-                  key={item}
                   type="button"
-                  onClick={() => setImage(src)}
-                  className={`border px-3 py-2 text-12 tracking-nav ${
-                    image === src
-                      ? "border-charcoal bg-charcoal text-ivory"
-                      : "border-border text-charcoal"
-                  }`}
+                  onClick={() =>
+                    setImages((current) => {
+                      const next = current.filter((item) => item !== src);
+                      return next.length > 0
+                        ? next
+                        : [getPlaceholderForCategory(category)];
+                    })
+                  }
+                  className="absolute right-1 top-1 bg-charcoal/80 px-2 py-1 text-12 tracking-nav text-ivory"
                 >
-                  {item}
+                  Sil
                 </button>
-              );
-            })}
+              </div>
+            ))}
+          </div>
+          <label className="mt-4 inline-flex h-12 cursor-pointer items-center border border-charcoal px-6 text-12 tracking-nav text-charcoal hover:bg-warm-beige/40">
+            {uploading ? "Yükleniyor…" : "Fotoğraf yükle"}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              disabled={uploading || saving}
+              className="sr-only"
+              onChange={(event) => {
+                void handleUpload(event.target.files);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          <div className="mt-4">
+            <p className="text-12 tracking-label text-taupe">Veya hazır görsel</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {CATEGORY_NAMES.map((item) => {
+                const src = getPlaceholderForCategory(item);
+                return (
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setImages([src])}
+                    className={`border px-3 py-2 text-12 tracking-nav ${
+                      images.length === 1 && images[0] === src
+                        ? "border-charcoal bg-charcoal text-ivory"
+                        : "border-border text-charcoal"
+                    }`}
+                  >
+                    {item}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </fieldset>
         <label className="flex min-h-11 items-center gap-3 text-14 text-charcoal">

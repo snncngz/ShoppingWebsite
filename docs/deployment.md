@@ -27,12 +27,22 @@ GitHub
 ## Deploy commands
 
 ```bash
-npm ci
+npm ci --include=dev
 npx prisma generate
 npx prisma migrate deploy
 npm run build
 npm run start
 ```
+
+On Render (and similar hosts), set **Build Command** to a single line:
+
+```bash
+npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+```
+
+Use `npm ci --include=dev` so Tailwind/PostCSS/TypeScript install even when `NODE_ENV=production` is set for runtime. **Start Command** stays `npm run start`.
+
+Health check path: `/api/health`.
 
 Create the admin account once:
 

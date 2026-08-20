@@ -38,6 +38,10 @@ yarn-error.log*
 *.log
 logs/
 
+# uploaded product images
+/public/uploads/products/*
+!/public/uploads/products/.gitkeep
+
 # vercel
 .vercel
 
