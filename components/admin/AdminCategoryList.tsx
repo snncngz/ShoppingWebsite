@@ -119,8 +119,9 @@ export function AdminCategoryList() {
           <h1 className="mt-3 font-heading text-32 text-black">Kategoriler</h1>
           <p className="mt-3 max-w-2xl text-14 text-taupe">
             Kategori kayıtları PostgreSQL üzerindedir. Gizle işlemi
-            `isActive=false` yapar; bağlı ürünler silinmez. Mağaza vitrini
-            hâlâ `data/products.ts` kullanır.
+            `isActive=false` yapar; bağlı ürünler silinmez. Mağaza menüsündeki
+            bazı linkler (ör. T-Shirt, Parfüm) kodda sabittir; bu sayfada yalnızca
+            veritabanındaki kategoriler listelenir.
           </p>
         </div>
         <button
@@ -156,23 +157,40 @@ export function AdminCategoryList() {
         <div className="mt-10">
           <ErrorState message={error} onRetry={() => void load()} />
         </div>
+      ) : rows.length === 0 ? (
+        <div className="mt-10 border border-border bg-off-white p-8">
+          <p className="font-heading text-24 text-black">Henüz kategori yok</p>
+          <p className="mt-3 max-w-xl text-14 text-taupe">
+            Veritabanında kategori kaydı bulunamadı. Sitede gördüğünüz menü
+            sabit navigasyondur. Ürün eklerken listelenen isimler de çoğu zaman
+            formun yedek listesidir. Buradan &quot;+ Yeni Kategori&quot; ile
+            ekleyin veya sunucuda{" "}
+            <code className="text-12">npm run ensure-categories</code> çalıştırın.
+          </p>
+          <p className="mt-4 text-14 text-charcoal">Toplam: 0</p>
+        </div>
       ) : (
-        <ul className="mt-10 flex flex-col gap-6">
-          {rows.map((row) => (
-            <li key={row.id} className="border border-border bg-off-white p-6">
-              <CategoryEditor
-                slug={row.slug}
-                title={row.name}
-                description={row.description}
-                hidden={!row.isActive}
-                disabled={pendingId === row.id}
-                onSave={(next) => saveRow(row, next)}
-                onToggle={() => void toggleHidden(row)}
-                onDelete={() => void removeRow(row)}
-              />
-            </li>
-          ))}
-        </ul>
+        <>
+          <p className="mt-8 text-12 tracking-label text-taupe">
+            Toplam: {rows.length}
+          </p>
+          <ul className="mt-4 flex flex-col gap-6">
+            {rows.map((row) => (
+              <li key={row.id} className="border border-border bg-off-white p-6">
+                <CategoryEditor
+                  slug={row.slug}
+                  title={row.name}
+                  description={row.description}
+                  hidden={!row.isActive}
+                  disabled={pendingId === row.id}
+                  onSave={(next) => saveRow(row, next)}
+                  onToggle={() => void toggleHidden(row)}
+                  onDelete={() => void removeRow(row)}
+                />
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </div>
   );

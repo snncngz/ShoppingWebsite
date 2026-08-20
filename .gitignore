@@ -38,7 +38,10 @@ yarn-error.log*
 *.log
 logs/
 
-# uploaded product images
+# uploaded product images (runtime storage; served via /api/uploads)
+/storage/uploads/**
+!/storage/uploads/.gitkeep
+!/storage/uploads/products/.gitkeep
 /public/uploads/products/*
 !/public/uploads/products/.gitkeep
 

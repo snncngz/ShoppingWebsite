@@ -15,6 +15,7 @@
     "db:seed": "prisma db seed",
     "seed": "prisma db seed",
     "create-admin": "tsx prisma/create-admin.ts",
+    "ensure-categories": "tsx prisma/ensure-categories.ts",
     "test:auth": "tsx scripts/test-auth.ts",
     "test:cart": "tsx scripts/test-cart-wishlist.ts",
     "test:orders": "tsx scripts/test-orders.ts",

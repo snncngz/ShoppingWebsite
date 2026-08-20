@@ -1,8 +1,8 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-import { badRequest } from "@/server/api/errors";
+import { badRequest, notFound } from "@/server/api/errors";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -13,6 +13,16 @@ const EXT_BY_MIME: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
 };
+
+const MIME_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+const FILENAME_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i;
 
 function sniffMime(bytes: Buffer): string | null {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
@@ -43,6 +53,11 @@ function sniffMime(bytes: Buffer): string | null {
   return null;
 }
 
+/** Runtime upload root (not Next `public/` — those files are often build-time only). */
+export function uploadStorageRoot(): string {
+  return path.join(process.cwd(), "storage", "uploads");
+}
+
 export async function saveProductImage(file: File): Promise<{ url: string }> {
   if (!(file instanceof File) || file.size <= 0) {
     badRequest("file is required");
@@ -60,16 +75,46 @@ export async function saveProductImage(file: File): Promise<{ url: string }> {
     badRequest("Only JPEG, PNG, WEBP, or GIF images are allowed");
   }
 
-  if (declared && declared !== sniffed && !(declared === "image/jpg" && sniffed === "image/jpeg")) {
+  if (
+    declared &&
+    declared !== sniffed &&
+    !(declared === "image/jpg" && sniffed === "image/jpeg")
+  ) {
     badRequest("File content does not match its type");
   }
 
   const ext = EXT_BY_MIME[sniffed];
   const filename = `${randomUUID()}.${ext}`;
-  const relativeDir = path.join("uploads", "products");
-  const absoluteDir = path.join(process.cwd(), "public", relativeDir);
+  const absoluteDir = path.join(uploadStorageRoot(), "products");
   await mkdir(absoluteDir, { recursive: true });
   await writeFile(path.join(absoluteDir, filename), buffer);
 
-  return { url: `/${relativeDir.replaceAll("\\", "/")}/${filename}` };
+  return { url: `/api/uploads/products/${filename}` };
+}
+
+export async function readProductUpload(filename: string): Promise<{
+  bytes: Buffer;
+  contentType: string;
+}> {
+  if (!FILENAME_PATTERN.test(filename)) {
+    notFound("Image not found");
+  }
+
+  const absolutePath = path.join(uploadStorageRoot(), "products", filename);
+  const resolved = path.resolve(absolutePath);
+  const root = path.resolve(path.join(uploadStorageRoot(), "products"));
+  if (!resolved.startsWith(root + path.sep) && resolved !== root) {
+    notFound("Image not found");
+  }
+
+  try {
+    const bytes = await readFile(resolved);
+    const ext = filename.split(".").pop()?.toLowerCase() ?? "jpg";
+    return {
+      bytes,
+      contentType: MIME_BY_EXT[ext] ?? "application/octet-stream",
+    };
+  } catch {
+    notFound("Image not found");
+  }
 }

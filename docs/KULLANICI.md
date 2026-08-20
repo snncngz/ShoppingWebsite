@@ -99,13 +99,28 @@ Admin girişinde “Bu işlem için yetkiniz yok” görürseniz çoğu zaman es
 
 ---
 
-## Sık sorunlar
+## Kategoriler neden boş görünebilir?
+
+- Admin → Kategoriler yalnızca **PostgreSQL** kayıtlarını gösterir.
+- Sitedeki menü (T-Shirt, Parfüm vb.) çoğu zaman **sabit navigasyon**dur; DB boş olsa bile görünür.
+- Ürün formundaki kategori listesi de yedek olarak kod içi isimleri gösterir.
+- Canlı DB’de kategori yoksa admin sayfasında **Toplam: 0** görürsünüz.
+
+Varsayılan kategorileri doldurmak (bilgisayardan, External Database URL ile):
+
+```powershell
+$env:FORCE_DATABASE_URL="EXTERNAL_URL?sslmode=require"
+npm run ensure-categories
+```
+
+Sonra `/admin/kategoriler` sayfasını yenileyin.
 
 | Sorun | Ne yapın |
 |--------|----------|
 | Admin giriş olmuyor | Admin hiç oluşturulmamış olabilir → yukarıdaki adımlar |
 | Site uykudan uyanıyor | Free plan; 30–60 sn bekleyin |
-| Fotoğraflar kayboluyor | Free disk kalıcı değil; redeploy sonrası silinebilir |
+| Fotoğraflar görünmüyor | Eski yükleme `public/` altına yazılıyordu; Render’da çoğu zaman görünmez. Güncel kod `/api/uploads/...` ile sunar — GitHub’a push + redeploy şart. Sonra ürünü yeniden kaydedip fotoğrafı tekrar yükleyin. |
+| Fotoğraflar redeploy sonrası siliniyor | Render Free disk kalıcı değil. Kalıcı çözüm: Render Disk veya bulut depolama (R2/S3). |
 | Build Tailwind hatası | Build Command’te `npm ci --include=dev` kullanın |
 
 Daha teknik detay: `docs/deployment.md`, `docs/production.md`.
