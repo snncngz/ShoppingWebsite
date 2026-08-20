@@ -70,19 +70,12 @@ export async function saveProductImage(file: File): Promise<{ url: string }> {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
+  // Trust magic bytes only — browsers often send a wrong `file.type`
+  // (e.g. JPEG labeled as PNG / image/jpg / octet-stream).
   const sniffed = sniffMime(buffer);
-  const declared = file.type?.toLowerCase() || "";
 
   if (!sniffed || !ALLOWED.has(sniffed)) {
     badRequest("Only JPEG, PNG, WEBP, or GIF images are allowed");
-  }
-
-  if (
-    declared &&
-    declared !== sniffed &&
-    !(declared === "image/jpg" && sniffed === "image/jpeg")
-  ) {
-    badRequest("File content does not match its type");
   }
 
   const ext = EXT_BY_MIME[sniffed];
