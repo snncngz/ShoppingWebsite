@@ -227,3 +227,14 @@ model WishlistItem {
 
   @@unique([wishlistId, productId])
 }
+
+/** Product images uploaded via admin — stored in DB so Render redeploys keep them. */
+model UploadAsset {
+  id          String   @id @default(uuid())
+  filename    String   @unique
+  contentType String
+  bytes       Bytes
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+}

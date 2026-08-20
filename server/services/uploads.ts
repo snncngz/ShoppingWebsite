@@ -3,6 +3,7 @@ import path from "node:path";
 import { randomUUID } from "node:crypto";
 
 import { badRequest, notFound } from "@/server/api/errors";
+import { getPrisma } from "@/server/db/prisma";
 
 const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -22,7 +23,8 @@ const MIME_BY_EXT: Record<string, string> = {
   gif: "image/gif",
 };
 
-const FILENAME_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i;
+const FILENAME_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|jpeg|png|webp|gif)$/i;
 
 function sniffMime(bytes: Buffer): string | null {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
@@ -53,7 +55,7 @@ function sniffMime(bytes: Buffer): string | null {
   return null;
 }
 
-/** Runtime upload root (not Next `public/` — those files are often build-time only). */
+/** Optional local cache (ephemeral on Render free). Source of truth is UploadAsset. */
 export function uploadStorageRoot(): string {
   return path.join(process.cwd(), "storage", "uploads");
 }
@@ -85,9 +87,22 @@ export async function saveProductImage(file: File): Promise<{ url: string }> {
 
   const ext = EXT_BY_MIME[sniffed];
   const filename = `${randomUUID()}.${ext}`;
-  const absoluteDir = path.join(uploadStorageRoot(), "products");
-  await mkdir(absoluteDir, { recursive: true });
-  await writeFile(path.join(absoluteDir, filename), buffer);
+
+  await getPrisma().uploadAsset.create({
+    data: {
+      filename,
+      contentType: sniffed,
+      bytes: buffer,
+    },
+  });
+
+  try {
+    const absoluteDir = path.join(uploadStorageRoot(), "products");
+    await mkdir(absoluteDir, { recursive: true });
+    await writeFile(path.join(absoluteDir, filename), buffer);
+  } catch {
+    // Disk cache is best-effort; DB row is enough to serve the image.
+  }
 
   return { url: `/api/uploads/products/${filename}` };
 }
@@ -115,6 +130,19 @@ export async function readProductUpload(filename: string): Promise<{
       contentType: MIME_BY_EXT[ext] ?? "application/octet-stream",
     };
   } catch {
+    // Fall through to DB (Render disk is wiped on redeploy).
+  }
+
+  const asset = await getPrisma().uploadAsset.findUnique({
+    where: { filename },
+  });
+
+  if (!asset) {
     notFound("Image not found");
   }
+
+  return {
+    bytes: Buffer.from(asset.bytes),
+    contentType: asset.contentType,
+  };
 }

@@ -239,7 +239,9 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
     }
 
     setError("");
-    const remaining = MAX_IMAGES - images.length;
+    setSuccess("");
+    const customCount = images.filter((src) => !isPlaceholderImage(src)).length;
+    const remaining = MAX_IMAGES - customCount;
     if (remaining <= 0) {
       setError(`En fazla ${MAX_IMAGES} görsel ekleyebilirsiniz.`);
       return;
@@ -256,6 +258,9 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         const withoutPlaceholders = current.filter((src) => !isPlaceholderImage(src));
         return [...withoutPlaceholders, ...uploaded].slice(0, MAX_IMAGES);
       });
+      setSuccess(
+        `${uploaded.length} fotoğraf yüklendi. Ürünü kaydetmeyi unutmayın.`,
+      );
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -267,6 +272,11 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
     event.preventDefault();
     setError("");
     setSuccess("");
+
+    if (uploading) {
+      setError("Fotoğraf yüklemesi bitmeden kaydedemezsiniz.");
+      return;
+    }
 
     const parsedPrice = Number(price);
     const parsedStock = Number(stock);
@@ -431,7 +441,8 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         <fieldset className="sm:col-span-2">
           <legend className="text-12 tracking-label text-charcoal">Görseller</legend>
           <p className="mt-2 text-12 text-taupe">
-            JPEG, PNG, WEBP veya GIF · en fazla {MAX_IMAGES} adet · dosya başına 5MB
+            JPEG, PNG, WEBP veya GIF · en fazla {MAX_IMAGES} adet · dosya başına 5MB.
+            Yükledikten sonra mutlaka Kaydet’e basın.
           </p>
           <div className="mt-3 flex flex-wrap gap-3">
             {images.map((src) => (
@@ -547,10 +558,10 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       <div className="mt-8 flex flex-wrap gap-3">
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || uploading}
           className="inline-flex h-12 items-center bg-charcoal px-8 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
         >
-          {saving ? "Kaydediliyor" : "Kaydet"}
+          {saving ? "Kaydediliyor" : uploading ? "Foto yükleniyor…" : "Kaydet"}
         </button>
         <button
           type="button"
