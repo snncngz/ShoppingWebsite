@@ -203,8 +203,8 @@ export async function setAdminApiProductActive(
   });
 }
 
-export async function hideAdminApiProduct(id: string): Promise<ProductDto> {
-  return adminRequest<ProductDto>(`/api/products/${id}`, {
+export async function deleteAdminApiProduct(id: string): Promise<{ id: string }> {
+  return adminRequest<{ id: string }>(`/api/products/${id}`, {
     method: "DELETE",
   });
 }

@@ -390,3 +390,27 @@ export async function hideProduct(id: string): Promise<ProductDto> {
 
   return toProductDto(product);
 }
+
+export async function deleteProduct(id: string): Promise<{ id: string }> {
+  const productId = requireId(id);
+  await requireProduct(productId);
+
+  const orderItemCount = await getPrisma().orderItem.count({
+    where: { productId },
+  });
+
+  if (orderItemCount > 0) {
+    conflict(
+      "Bu ürün sipariş geçmişinde olduğu için tamamen silinemez. Gizle seçeneğini kullanın.",
+    );
+  }
+
+  await getPrisma().$transaction(async (tx) => {
+    await tx.cartItem.deleteMany({ where: { productId } });
+    await tx.wishlistItem.deleteMany({ where: { productId } });
+    await tx.inventoryMovement.deleteMany({ where: { productId } });
+    await tx.product.delete({ where: { id: productId } });
+  });
+
+  return { id: productId };
+}

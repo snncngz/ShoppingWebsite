@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getAdminErrorMessage } from "@/lib/adminApi";
 import {
-  hideAdminApiProduct,
+  deleteAdminApiProduct,
   listAdminApiProducts,
   setAdminApiProductActive,
   type AdminProductListItem,
@@ -25,6 +25,7 @@ export function AdminProductTable() {
   const [error, setError] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AdminProductListItem | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -74,22 +75,20 @@ export function AdminProductTable() {
     }
   };
 
-  const removeRow = async (id: string) => {
-    if (!window.confirm("Bu ürün vitrinden gizlensin mi? Kayıt veritabanında kalır.")) {
+  const confirmDelete = async () => {
+    if (!deleteTarget) {
       return;
     }
 
+    const id = deleteTarget.id;
     setPendingId(id);
     setError("");
     setNotice("");
     try {
-      const updated = await hideAdminApiProduct(id);
-      setRows((current) =>
-        current.map((row) =>
-          row.id === id ? { ...row, hidden: !updated.isActive } : row,
-        ),
-      );
-      setNotice("Ürün gizlendi.");
+      await deleteAdminApiProduct(id);
+      setRows((current) => current.filter((row) => row.id !== id));
+      setNotice(`"${deleteTarget.name}" silindi.`);
+      setDeleteTarget(null);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -197,7 +196,7 @@ export function AdminProductTable() {
                       <button
                         type="button"
                         disabled={pendingId === row.id}
-                        onClick={() => void removeRow(row.id)}
+                        onClick={() => setDeleteTarget(row)}
                         className="h-11 px-3 text-12 tracking-nav text-accent disabled:opacity-50"
                       >
                         Sil
@@ -210,6 +209,43 @@ export function AdminProductTable() {
           </table>
         </div>
       )}
+
+      {deleteTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-product-title"
+        >
+          <div className="w-full max-w-md border border-border bg-ivory p-6 shadow-lg">
+            <h2 id="delete-product-title" className="font-heading text-24 text-black">
+              Ürünü sil
+            </h2>
+            <p className="mt-4 text-14 text-charcoal">
+              <span className="font-medium">{deleteTarget.name}</span> ürününü silmek
+              istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={pendingId === deleteTarget.id}
+                onClick={() => setDeleteTarget(null)}
+                className="inline-flex h-11 items-center border border-charcoal px-6 text-12 tracking-nav text-charcoal disabled:opacity-50"
+              >
+                Hayır
+              </button>
+              <button
+                type="button"
+                disabled={pendingId === deleteTarget.id}
+                onClick={() => void confirmDelete()}
+                className="inline-flex h-11 items-center bg-accent px-6 text-12 tracking-nav text-ivory hover:bg-accent/90 disabled:opacity-50"
+              >
+                {pendingId === deleteTarget.id ? "Siliniyor…" : "Evet, sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

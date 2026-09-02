@@ -4,8 +4,8 @@ import { getCurrentUser, requireAdmin } from "@/server/auth/authorization";
 import { apiRoute } from "@/server/api/handler";
 import { jsonSuccess } from "@/server/api/http";
 import {
+  deleteProduct,
   getProductById,
-  hideProduct,
   parsePatchProduct,
   updateProduct,
 } from "@/server/services/products";
@@ -35,5 +35,5 @@ export const PATCH = apiRoute(async (request: NextRequest, context: IdContext) =
 export const DELETE = apiRoute(async (_request: NextRequest, context: IdContext) => {
   await requireAdmin();
   const { id } = await context.params;
-  return jsonSuccess(await hideProduct(id));
+  return jsonSuccess(await deleteProduct(id));
 });
