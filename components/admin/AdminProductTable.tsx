@@ -26,6 +26,9 @@ export function AdminProductTable() {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<AdminProductListItem | null>(null);
+  const [visibilityTarget, setVisibilityTarget] = useState<AdminProductListItem | null>(
+    null,
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -56,18 +59,25 @@ export function AdminProductTable() {
     return matchesQuery && matchesCategory;
   });
 
-  const toggleHidden = async (id: string, hidden: boolean) => {
+  const confirmVisibility = async () => {
+    if (!visibilityTarget) {
+      return;
+    }
+
+    const id = visibilityTarget.id;
+    const publish = visibilityTarget.hidden;
     setPendingId(id);
     setError("");
     setNotice("");
     try {
-      const updated = await setAdminApiProductActive(id, !hidden);
+      const updated = await setAdminApiProductActive(id, publish);
       setRows((current) =>
         current.map((row) =>
           row.id === id ? { ...row, hidden: !updated.isActive } : row,
         ),
       );
       setNotice(updated.isActive ? "Ürün yayınlandı." : "Ürün gizlendi.");
+      setVisibilityTarget(null);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -188,7 +198,7 @@ export function AdminProductTable() {
                       <button
                         type="button"
                         disabled={pendingId === row.id}
-                        onClick={() => void toggleHidden(row.id, row.hidden)}
+                        onClick={() => setVisibilityTarget(row)}
                         className="h-11 px-3 text-12 tracking-nav text-charcoal hover:text-black disabled:opacity-50"
                       >
                         {row.hidden ? "Yayınla" : "Gizle"}
@@ -209,6 +219,51 @@ export function AdminProductTable() {
           </table>
         </div>
       )}
+
+      {visibilityTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="visibility-product-title"
+        >
+          <div className="w-full max-w-md border border-border bg-ivory p-6 shadow-lg">
+            <h2 id="visibility-product-title" className="font-heading text-24 text-black">
+              {visibilityTarget.hidden ? "Ürünü yayınla" : "Ürünü gizle"}
+            </h2>
+            <p className="mt-4 text-14 text-charcoal">
+              <span className="font-medium">{visibilityTarget.name}</span> ürününü{" "}
+              {visibilityTarget.hidden
+                ? "yayınlamak istediğinizden emin misiniz?"
+                : "gizlemek istediğinizden emin misiniz? Gizli ürün sitede görünmez."}
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={pendingId === visibilityTarget.id}
+                onClick={() => setVisibilityTarget(null)}
+                className="inline-flex h-11 items-center border border-charcoal px-6 text-12 tracking-nav text-charcoal disabled:opacity-50"
+              >
+                Hayır
+              </button>
+              <button
+                type="button"
+                disabled={pendingId === visibilityTarget.id}
+                onClick={() => void confirmVisibility()}
+                className="inline-flex h-11 items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
+              >
+                {pendingId === visibilityTarget.id
+                  ? visibilityTarget.hidden
+                    ? "Yayınlanıyor…"
+                    : "Gizleniyor…"
+                  : visibilityTarget.hidden
+                    ? "Evet, yayınla"
+                    : "Evet, gizle"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {deleteTarget ? (
         <div
