@@ -5,6 +5,10 @@ import { upsertAdminUser } from "./upsert-admin";
 
 loadLocalEnv();
 
+if (process.env.FORCE_DATABASE_URL?.trim()) {
+  process.env.DATABASE_URL = process.env.FORCE_DATABASE_URL.trim();
+}
+
 const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
 const password = process.env.ADMIN_PASSWORD;
 const name = process.env.ADMIN_NAME?.trim() || "Lucien Perrin Admin";
@@ -19,7 +23,13 @@ if (password.length < 8) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DATABASE_URL?.trim();
+if (!databaseUrl) {
+  console.error("DATABASE_URL is not set.");
+  process.exit(1);
+}
+
+const prisma = new PrismaClient({ datasourceUrl: databaseUrl });
 
 upsertAdminUser(prisma, { email, password, name })
   .then((user) => {

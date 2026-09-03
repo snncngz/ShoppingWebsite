@@ -88,3 +88,6 @@ A starter workflow lives at `.github/workflows/ci.yml`.
 ## Rollback
 
 See [production.md](./production.md#rollback). Prefer previous app artifact + forward-fix DB migrations, or restore DB from backup if schema/data is corrupted.
+
+
+npm run dev
