@@ -197,7 +197,14 @@ export function getCategoryPage(slug: string): CategoryPageConfig | undefined {
 }
 
 export function getPerfumeGender(product: Product): (typeof PERFUME_GENDERS)[number] | null {
-  if (product.category !== "Parfüm") {
+  const fromSub = PERFUME_GENDERS.find(
+    (gender) => gender.toLocaleLowerCase("tr-TR") === product.subcategory.toLocaleLowerCase("tr-TR"),
+  );
+  if (fromSub) {
+    return fromSub;
+  }
+
+  if (product.category !== "Parfüm" && product.categorySlug !== "parfum") {
     return null;
   }
 

@@ -83,7 +83,7 @@ export function CategoryPage({
 
     const category = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
       ? undefined
-      : resolved.slug;
+      : resolved.parentSlug ?? resolved.slug;
 
     void fetchStorefrontProductList({
       category,
@@ -93,11 +93,12 @@ export function CategoryPage({
         if (cancelled) {
           return;
         }
-        setApiProducts(
-          VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
+        const scoped = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
+          ? items.filter(resolved.match)
+          : resolved.origin === "child"
             ? items.filter(resolved.match)
-            : items,
-        );
+            : items;
+        setApiProducts(scoped);
         setListLoading(false);
       })
       .catch((caught) => {

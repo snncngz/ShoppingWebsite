@@ -38,6 +38,14 @@ export type CategorySummaryDto = {
   id: string;
   name: string;
   slug: string;
+  parent: CategorySummaryDto | null;
+};
+
+export type CategoryChildDto = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
 };
 
 export type ProductSummaryDto = {
@@ -79,6 +87,9 @@ export type CategoryDto = {
   slug: string;
   description: string;
   isActive: boolean;
+  parentId: string | null;
+  parentSlug: string | null;
+  children: CategoryChildDto[];
   createdAt: string;
   updatedAt: string;
 };

@@ -18,7 +18,7 @@ import {
 import { CATEGORY_PLACEHOLDERS, getPlaceholderForCategory } from "@/lib/catalog";
 import { CATEGORY_NAMES } from "@/lib/constants";
 import { toSlug } from "@/lib/utils";
-import type { ProductDto } from "@/types/api";
+import type { CategoryDto, ProductDto } from "@/types/api";
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none focus:border-taupe";
@@ -150,10 +150,15 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const existing = product ?? undefined;
   const isCreate = !existing;
   const perfume = readPerfumeDetails(existing?.perfumeDetails);
+  const initialCategory =
+    existing?.category.parent?.name ?? existing?.category.name ?? "T-Shirt";
+  const initialSubcategory = existing?.category.parent
+    ? existing.category.name
+    : (existing?.subcategory ?? "");
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [category, setCategory] = useState(existing?.category.name ?? "T-Shirt");
-  const [subcategory, setSubcategory] = useState(existing?.subcategory ?? "Essential");
+  const [category, setCategory] = useState(initialCategory);
+  const [subcategory, setSubcategory] = useState(initialSubcategory);
   const [price, setPrice] = useState(existing ? String(existing.price) : "");
   const [oldPrice, setOldPrice] = useState(
     existing?.oldPrice ? String(existing.oldPrice) : "",
@@ -191,10 +196,11 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
+  const [categoryRecords, setCategoryRecords] = useState<CategoryDto[]>([]);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
     const names: string[] = [...CATEGORY_NAMES];
-    if (existing?.category.name && !names.includes(existing.category.name)) {
-      return [existing.category.name, ...names];
+    if (initialCategory && !names.includes(initialCategory)) {
+      return [initialCategory, ...names];
     }
     return names;
   });
@@ -206,10 +212,12 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         if (cancelled) {
           return;
         }
+        const parents = categories.filter((item) => !item.parentId);
+        setCategoryRecords(parents);
         const names = [
-          ...(existing?.category.name ? [existing.category.name] : []),
+          initialCategory,
           ...CATEGORY_NAMES,
-          ...categories.map((item) => item.name),
+          ...parents.map((item) => item.name),
         ];
         setCategoryOptions([...new Set(names)]);
       })
@@ -219,10 +227,29 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
     return () => {
       cancelled = true;
     };
-  }, [existing?.category.name]);
+  }, [initialCategory]);
+
+  const selectedCategory = categoryRecords.find((item) => item.name === category);
+  const subcategoryOptions = (selectedCategory?.children ?? [])
+    .filter((item) => item.isActive)
+    .map((item) => item.name);
+  const isPerfume =
+    category === "Parfüm" || selectedCategory?.slug === "parfum";
+
+  useEffect(() => {
+    if (!isCreate || subcategory || subcategoryOptions.length === 0) {
+      return;
+    }
+    setSubcategory(subcategoryOptions[0]);
+  }, [isCreate, subcategory, subcategoryOptions]);
 
   const handleCategoryChange = (next: string) => {
     setCategory(next);
+    const nextRecord = categoryRecords.find((item) => item.name === next);
+    const nextSubs = (nextRecord?.children ?? [])
+      .filter((item) => item.isActive)
+      .map((item) => item.name);
+    setSubcategory(nextSubs[0] ?? "");
     setImages((current) => {
       const hasCustom = current.some((src) => !isPlaceholderImage(src));
       if (hasCustom) {
@@ -314,7 +341,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       oldPrice: parsedOld && parsedOld > parsedPrice ? parsedOld : null,
       discount: discount ?? null,
       stock: parsedStock,
-      subcategory: subcategory.trim() || "Essential",
+      subcategory: subcategory.trim(),
       images: images.length > 0 ? images : [getPlaceholderForCategory(category)],
       colors: colorList,
       sizes: sizeList,
@@ -325,7 +352,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       rating: existing?.rating,
       reviewCount: existing?.reviewCount,
       perfumeDetails:
-        category === "Parfüm"
+        isPerfume
           ? {
               volume: sizeList,
               fragranceFamily: fragranceFamily.trim() || "Odunsu",
@@ -382,11 +409,27 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         </label>
         <label className="text-12 tracking-label text-charcoal">
           Alt kategori
-          <input
-            value={subcategory}
-            onChange={(event) => setSubcategory(event.target.value)}
-            className={fieldClass}
-          />
+          {subcategoryOptions.length > 0 ? (
+            <select
+              value={subcategory}
+              onChange={(event) => setSubcategory(event.target.value)}
+              className={fieldClass}
+            >
+              <option value="">Ana kategori</option>
+              {subcategoryOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              value={subcategory}
+              onChange={(event) => setSubcategory(event.target.value)}
+              placeholder="Örn. Women's"
+              className={fieldClass}
+            />
+          )}
         </label>
         <label className="text-12 tracking-label text-charcoal">
           Fiyat (TL)
@@ -522,7 +565,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
           />
           Çok satan
         </label>
-        {category === "Parfüm" ? (
+        {isPerfume ? (
           <>
             <label className="text-12 tracking-label text-charcoal sm:col-span-2">
               Koku ailesi

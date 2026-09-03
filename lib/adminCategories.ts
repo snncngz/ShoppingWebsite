@@ -6,6 +6,7 @@ export type AdminCategoryWriteInput = {
   slug: string;
   description: string;
   isActive: boolean;
+  subcategories?: string[];
 };
 
 export type AdminCategoryPatchInput = {
@@ -13,6 +14,7 @@ export type AdminCategoryPatchInput = {
   slug?: string;
   description?: string;
   isActive?: boolean;
+  subcategories?: string[];
 };
 
 async function fetchCategories(isActive: boolean): Promise<CategoryDto[]> {

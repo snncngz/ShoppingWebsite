@@ -33,7 +33,7 @@ export function MegaMenu({ menu, isOpen, onMouseEnter, onMouseLeave }: MegaMenuP
           <div className="mx-auto grid max-w-6xl grid-cols-[1fr_280px] gap-16 px-8 py-12 xl:px-12">
             <ul className="flex flex-col justify-center gap-5">
               {menu.items.map((item) => (
-                <li key={item.href}>
+                <li key={`${item.href}-${item.label}`}>
                   <Link
                     href={item.href}
                     role="menuitem"

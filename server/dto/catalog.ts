@@ -11,7 +11,12 @@ import type {
 
 export const productCategoryInclude = {
   category: {
-    select: { id: true, name: true, slug: true },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      parent: { select: { id: true, name: true, slug: true } },
+    },
   },
 } satisfies Prisma.ProductInclude;
 
@@ -32,12 +37,22 @@ export function toDecimal(value: number): Prisma.Decimal {
 }
 
 export function toCategorySummaryDto(
-  category: Pick<Category, "id" | "name" | "slug">,
+  category: Pick<Category, "id" | "name" | "slug"> & {
+    parent?: Pick<Category, "id" | "name" | "slug"> | null;
+  },
 ): CategorySummaryDto {
   return {
     id: category.id,
     name: category.name,
     slug: category.slug,
+    parent: category.parent
+      ? {
+          id: category.parent.id,
+          name: category.parent.name,
+          slug: category.parent.slug,
+          parent: null,
+        }
+      : null,
   };
 }
 
@@ -80,13 +95,26 @@ export function toProductDto(product: ProductWithCategory): ProductDto {
   };
 }
 
-export function toCategoryDto(category: Category): CategoryDto {
+export function toCategoryDto(
+  category: Category & {
+    parent?: Pick<Category, "id" | "name" | "slug"> | null;
+    children?: Pick<Category, "id" | "name" | "slug" | "isActive">[];
+  },
+): CategoryDto {
   return {
     id: category.id,
     name: category.name,
     slug: category.slug,
     description: category.description,
     isActive: category.isActive,
+    parentId: category.parentId,
+    parentSlug: category.parent?.slug ?? null,
+    children: (category.children ?? []).map((child) => ({
+      id: child.id,
+      name: child.name,
+      slug: child.slug,
+      isActive: child.isActive,
+    })),
     createdAt: category.createdAt.toISOString(),
     updatedAt: category.updatedAt.toISOString(),
   };

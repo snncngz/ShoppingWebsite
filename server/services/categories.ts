@@ -6,12 +6,14 @@ import { toCategoryDetailDto, toCategoryDto } from "@/server/dto/catalog";
 import {
   optionalBoolean,
   optionalString,
+  optionalStringArray,
   parseQueryBoolean,
   parseQueryString,
   requireId,
   requireString,
   hasField,
 } from "@/server/utils/validation";
+import { toSlug } from "@/lib/utils";
 import type { CategoryDetailDto, CategoryDto } from "@/types/api";
 
 type CategoryWriteInput = {
@@ -19,6 +21,15 @@ type CategoryWriteInput = {
   slug?: string;
   description?: string;
   isActive?: boolean;
+  subcategories?: string[];
+};
+
+const CATEGORY_TREE_INCLUDE = {
+  parent: { select: { id: true, name: true, slug: true } },
+  children: {
+    select: { id: true, name: true, slug: true, isActive: true },
+    orderBy: { name: "asc" as const },
+  },
 };
 
 function isUniqueSlugError(error: unknown): boolean {
@@ -32,6 +43,7 @@ async function requireCategory(id: string) {
   const category = await getPrisma().category.findUnique({
     where: { id },
     include: {
+      ...CATEGORY_TREE_INCLUDE,
       products: {
         select: { id: true, name: true, slug: true, isActive: true },
         orderBy: { name: "asc" },
@@ -47,6 +59,79 @@ async function requireCategory(id: string) {
   return category;
 }
 
+async function allocateSlug(base: string, excludeId?: string): Promise<string> {
+  const root = toSlug(base) || "kategori";
+  for (let index = 0; index < 40; index += 1) {
+    const slug = index === 0 ? root : `${root}-${index + 1}`;
+    const existing = await getPrisma().category.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    if (!existing || existing.id === excludeId) {
+      return slug;
+    }
+  }
+  badRequest("Could not allocate a unique subcategory slug");
+}
+
+async function syncSubcategories(
+  parentId: string,
+  names: string[],
+): Promise<void> {
+  const parent = await getPrisma().category.findUniqueOrThrow({
+    where: { id: parentId },
+    include: { children: true },
+  });
+
+  if (parent.parentId) {
+    badRequest("Alt kategoriye alt kategori eklenemez");
+  }
+
+  const wanted = [
+    ...new Set(names.map((name) => name.trim()).filter(Boolean)),
+  ];
+  const remaining = [...parent.children];
+
+  for (const name of wanted) {
+    const slugHint = toSlug(name);
+    const match = remaining.find(
+      (child) => child.name === name || child.slug === slugHint,
+    );
+    if (match) {
+      await getPrisma().category.update({
+        where: { id: match.id },
+        data: { name, isActive: true },
+      });
+      remaining.splice(remaining.indexOf(match), 1);
+      continue;
+    }
+
+    await getPrisma().category.create({
+      data: {
+        name,
+        slug: await allocateSlug(name),
+        description: "",
+        isActive: true,
+        parentId,
+      },
+    });
+  }
+
+  for (const extra of remaining) {
+    const productCount = await getPrisma().product.count({
+      where: { categoryId: extra.id },
+    });
+    if (productCount > 0) {
+      await getPrisma().category.update({
+        where: { id: extra.id },
+        data: { isActive: false },
+      });
+      continue;
+    }
+    await getPrisma().category.delete({ where: { id: extra.id } });
+  }
+}
+
 export function readCategoryListQuery(params: URLSearchParams) {
   return {
     search: parseQueryString(params.get("search")),
@@ -60,6 +145,7 @@ export function parseCreateCategory(body: Record<string, unknown>) {
     slug: requireString(body, "slug"),
     description: optionalString(body, "description", 8000) ?? "",
     isActive: optionalBoolean(body, "isActive") ?? true,
+    subcategories: optionalStringArray(body, "subcategories", 30, 80) ?? [],
   };
 }
 
@@ -69,6 +155,7 @@ export function parsePatchCategory(
   const patch: CategoryWriteInput = {
     description: optionalString(body, "description", 8000),
     isActive: optionalBoolean(body, "isActive"),
+    subcategories: optionalStringArray(body, "subcategories", 30, 80),
   };
 
   if (hasField(body, "name")) {
@@ -91,6 +178,7 @@ export async function listCategories(input: {
 }): Promise<CategoryDto[]> {
   const where: Prisma.CategoryWhereInput = {
     isActive: input.isActive,
+    parentId: null,
   };
 
   if (input.search) {
@@ -102,6 +190,7 @@ export async function listCategories(input: {
 
   const categories = await getPrisma().category.findMany({
     where,
+    include: CATEGORY_TREE_INCLUDE,
     orderBy: [{ name: "asc" }, { id: "asc" }],
   });
 
@@ -136,7 +225,10 @@ export async function createCategory(
         isActive: input.isActive,
       },
     });
-    return toCategoryDto(category);
+    if (input.subcategories.length > 0) {
+      await syncSubcategories(category.id, input.subcategories);
+    }
+    return toCategoryDto(await requireCategory(category.id));
   } catch (error) {
     if (isUniqueSlugError(error)) {
       conflict("Category slug already exists");
@@ -152,7 +244,7 @@ export async function updateCategory(
   await requireCategory(requireId(id));
 
   try {
-    const category = await getPrisma().category.update({
+    await getPrisma().category.update({
       where: { id },
       data: {
         name: input.name,
@@ -161,7 +253,10 @@ export async function updateCategory(
         isActive: input.isActive,
       },
     });
-    return toCategoryDto(category);
+    if (input.subcategories) {
+      await syncSubcategories(id, input.subcategories);
+    }
+    return toCategoryDto(await requireCategory(id));
   } catch (error) {
     if (isUniqueSlugError(error)) {
       conflict("Category slug already exists");
@@ -176,6 +271,7 @@ export async function hideCategory(id: string): Promise<CategoryDto> {
   const category = await getPrisma().category.update({
     where: { id },
     data: { isActive: false },
+    include: CATEGORY_TREE_INCLUDE,
   });
 
   return toCategoryDto(category);

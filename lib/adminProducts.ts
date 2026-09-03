@@ -60,7 +60,9 @@ export function toAdminProductListItem(product: ProductDto): AdminProductListIte
     id: product.id,
     name: product.name,
     slug: product.slug,
-    category: product.category.name,
+    category: product.category.parent
+      ? `${product.category.parent.name} / ${product.category.name}`
+      : product.category.name,
     categoryId: product.categoryId,
     price: product.price,
     stock: product.stock,
@@ -83,13 +85,26 @@ export async function getAdminApiProduct(id: string): Promise<ProductDto> {
   return adminRequest<ProductDto>(`/api/products/${id}`);
 }
 
-async function resolveCategoryId(name: string): Promise<string> {
+async function resolveCategoryId(name: string, subcategory?: string): Promise<string> {
   const slug = toSlug(name) || "kategori";
   const categories = await listAdminApiCategories();
   const match = categories.find(
-    (category) => category.name === name || category.slug === slug,
+    (category) =>
+      !category.parentId &&
+      (category.name === name || category.slug === slug),
   );
   if (match) {
+    const wanted = subcategory?.trim();
+    if (wanted) {
+      const child = match.children.find(
+        (item) =>
+          item.isActive &&
+          (item.name === wanted || item.slug === toSlug(wanted)),
+      );
+      if (child) {
+        return child.id;
+      }
+    }
     return match.id;
   }
 
@@ -107,7 +122,9 @@ async function resolveCategoryId(name: string): Promise<string> {
   } catch (error) {
     const again = await listAdminApiCategories();
     const retry = again.find(
-      (category) => category.name === name || category.slug === slug,
+      (category) =>
+        !category.parentId &&
+        (category.name === name || category.slug === slug),
     );
     if (retry) {
       return retry.id;
@@ -172,7 +189,7 @@ function toProductBody(
 export async function createAdminApiProduct(
   input: AdminProductWriteInput,
 ): Promise<ProductDto> {
-  const categoryId = await resolveCategoryId(input.categoryName);
+  const categoryId = await resolveCategoryId(input.categoryName, input.subcategory);
   return adminRequest<ProductDto>("/api/products", {
     method: "POST",
     body: JSON.stringify({
@@ -186,7 +203,7 @@ export async function updateAdminApiProduct(
   id: string,
   input: AdminProductWriteInput,
 ): Promise<ProductDto> {
-  const categoryId = await resolveCategoryId(input.categoryName);
+  const categoryId = await resolveCategoryId(input.categoryName, input.subcategory);
   return adminRequest<ProductDto>(`/api/products/${id}`, {
     method: "PATCH",
     body: JSON.stringify(toProductBody(input, categoryId, "update")),

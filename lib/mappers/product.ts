@@ -29,12 +29,15 @@ export function toPerfumeDetails(value: unknown): PerfumeDetails | undefined {
 }
 
 export function toStorefrontProduct(dto: ProductDto): Product {
+  const parent = dto.category.parent;
   const product: Product = {
     id: dto.id,
     slug: dto.slug,
     name: dto.name,
-    category: dto.category.name,
-    subcategory: dto.subcategory,
+    category: parent?.name ?? dto.category.name,
+    categorySlug: parent?.slug ?? dto.category.slug,
+    categoryLeafSlug: dto.category.slug,
+    subcategory: parent ? dto.category.name : dto.subcategory,
     price: dto.price,
     description: dto.description,
     images: dto.images,

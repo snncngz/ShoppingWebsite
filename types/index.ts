@@ -11,6 +11,8 @@ export type Product = {
   slug: string;
   name: string;
   category: string;
+  categorySlug?: string;
+  categoryLeafSlug?: string;
   subcategory: string;
   price: number;
   oldPrice?: number;

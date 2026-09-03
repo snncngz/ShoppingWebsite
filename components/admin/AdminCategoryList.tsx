@@ -91,7 +91,7 @@ export function AdminCategoryList() {
 
   const saveRow = async (
     row: CategoryDto,
-    next: { title: string; description: string },
+    next: { title: string; description: string; subcategories: string[] },
   ) => {
     setPendingId(row.id);
     setError("");
@@ -100,6 +100,7 @@ export function AdminCategoryList() {
       const updated = await updateAdminApiCategory(row.id, {
         name: next.title,
         description: next.description,
+        subcategories: next.subcategories,
       });
       replaceRow(updated);
       setNotice("Kategori kaydedildi.");
@@ -111,6 +112,8 @@ export function AdminCategoryList() {
     }
   };
 
+  const parents = rows.filter((row) => !row.parentId);
+
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -118,10 +121,9 @@ export function AdminCategoryList() {
           <p className="text-12 tracking-label text-taupe">Taxonomy</p>
           <h1 className="mt-3 font-heading text-32 text-black">Kategoriler</h1>
           <p className="mt-3 max-w-2xl text-14 text-taupe">
-            Kategori kayıtları PostgreSQL üzerindedir. Gizle işlemi
-            `isActive=false` yapar; bağlı ürünler silinmez. Mağaza menüsündeki
-            bazı linkler (ör. T-Shirt, Parfüm) kodda sabittir; bu sayfada yalnızca
-            veritabanındaki kategoriler listelenir.
+            Kategori kayıtları PostgreSQL üzerindedir. Yeni kategori eklerken alt
+            kategori de yazabilirsiniz. Gizle işlemi `isActive=false` yapar;
+            bağlı ürünler silinmez.
           </p>
         </div>
         <button
@@ -136,7 +138,7 @@ export function AdminCategoryList() {
       {creating ? (
         <div className="mt-8 border border-border bg-off-white p-6">
           <NewCategoryForm
-            existingSlugs={rows.map((row) => row.slug)}
+            existingSlugs={parents.map((row) => row.slug)}
             onCancel={() => setCreating(false)}
             onCreated={(category) => {
               replaceRow(category);
@@ -157,7 +159,7 @@ export function AdminCategoryList() {
         <div className="mt-10">
           <ErrorState message={error} onRetry={() => void load()} />
         </div>
-      ) : rows.length === 0 ? (
+      ) : parents.length === 0 ? (
         <div className="mt-10 border border-border bg-off-white p-8">
           <p className="font-heading text-24 text-black">Henüz kategori yok</p>
           <p className="mt-3 max-w-xl text-14 text-taupe">
@@ -172,16 +174,19 @@ export function AdminCategoryList() {
       ) : (
         <>
           <p className="mt-8 text-12 tracking-label text-taupe">
-            Toplam: {rows.length}
+            Toplam: {parents.length}
           </p>
           <ul className="mt-4 flex flex-col gap-6">
-            {rows.map((row) => (
+            {parents.map((row) => (
               <li key={row.id} className="border border-border bg-off-white p-6">
                 <CategoryEditor
                   slug={row.slug}
                   title={row.name}
                   description={row.description}
                   hidden={!row.isActive}
+                  subcategories={row.children
+                    .filter((child) => child.isActive)
+                    .map((child) => child.name)}
                   disabled={pendingId === row.id}
                   onSave={(next) => saveRow(row, next)}
                   onToggle={() => void toggleHidden(row)}
@@ -207,6 +212,7 @@ function NewCategoryForm({
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [subcategories, setSubcategories] = useState("");
   const [visible, setVisible] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -238,6 +244,10 @@ function NewCategoryForm({
         slug,
         description: description.trim(),
         isActive: visible,
+        subcategories: subcategories
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
       });
       onCreated(created);
     } catch (caught) {
@@ -268,6 +278,15 @@ function NewCategoryForm({
           value={description}
           onChange={(event) => setDescription(event.target.value)}
           className="mt-2 min-h-24 w-full border border-border bg-ivory px-4 py-3 text-14"
+        />
+      </label>
+      <label className="text-12 tracking-label text-charcoal">
+        Alt kategoriler (virgülle)
+        <input
+          value={subcategories}
+          onChange={(event) => setSubcategories(event.target.value)}
+          placeholder="Örn. Women's, Men's, Unisex"
+          className="mt-2 h-12 w-full border border-border bg-ivory px-4 text-14"
         />
       </label>
       <label className="flex min-h-11 items-center gap-3 text-14 text-charcoal">
@@ -304,6 +323,7 @@ function CategoryEditor({
   title,
   description,
   hidden,
+  subcategories,
   disabled,
   onSave,
   onToggle,
@@ -313,13 +333,19 @@ function CategoryEditor({
   title: string;
   description: string;
   hidden: boolean;
+  subcategories: string[];
   disabled: boolean;
-  onSave: (next: { title: string; description: string }) => Promise<void>;
+  onSave: (next: {
+    title: string;
+    description: string;
+    subcategories: string[];
+  }) => Promise<void>;
   onToggle: () => void;
   onDelete: () => void;
 }) {
   const [nextTitle, setNextTitle] = useState(title);
   const [nextDescription, setNextDescription] = useState(description);
+  const [nextSubcategories, setNextSubcategories] = useState(subcategories.join(", "));
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -334,6 +360,10 @@ function CategoryEditor({
         void onSave({
           title: nextTitle.trim() || title,
           description: nextDescription.trim(),
+          subcategories: nextSubcategories
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
         })
           .then(() => {
             setSuccess("Kaydedildi.");
@@ -384,6 +414,15 @@ function CategoryEditor({
           value={nextDescription}
           onChange={(event) => setNextDescription(event.target.value)}
           className="mt-2 min-h-24 w-full border border-border bg-ivory px-4 py-3 text-14"
+        />
+      </label>
+      <label className="text-12 tracking-label text-charcoal">
+        Alt kategoriler (virgülle)
+        <input
+          value={nextSubcategories}
+          onChange={(event) => setNextSubcategories(event.target.value)}
+          placeholder="Örn. Women's, Men's, Unisex"
+          className="mt-2 h-12 w-full border border-border bg-ivory px-4 text-14"
         />
       </label>
       {error ? <p className="text-14 text-accent">{error}</p> : null}

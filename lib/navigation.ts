@@ -4,7 +4,7 @@ export type NavLink = {
 };
 
 export type MegaMenuContent = {
-  id: "parfum" | "giyim" | "aksesuar";
+  id: string;
   label: string;
   href: string;
   items: NavLink[];
@@ -28,9 +28,9 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     label: "Parfüm",
     href: "/parfum",
     items: [
-      { label: "Women's", href: "/parfum" },
-      { label: "Men's", href: "/parfum" },
-      { label: "Unisex", href: "/parfum" },
+      { label: "Women's", href: "/parfum/womens" },
+      { label: "Men's", href: "/parfum/mens" },
+      { label: "Unisex", href: "/parfum/unisex" },
       { label: "New Arrivals", href: "/yeni-gelenler" },
       { label: "Best Sellers", href: "/cok-satanlar" },
     ],
@@ -101,9 +101,9 @@ export const mobileAccordions: {
     id: "parfum",
     label: "Parfüm",
     items: [
-      { label: "Women's", href: "/parfum" },
-      { label: "Men's", href: "/parfum" },
-      { label: "Unisex", href: "/parfum" },
+      { label: "Women's", href: "/parfum/womens" },
+      { label: "Men's", href: "/parfum/mens" },
+      { label: "Unisex", href: "/parfum/unisex" },
     ],
   },
   {

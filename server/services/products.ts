@@ -223,7 +223,12 @@ export async function listProducts(
   };
 
   if (input.category) {
-    where.category = { slug: input.category };
+    where.category = {
+      OR: [
+        { slug: input.category },
+        { parent: { slug: input.category } },
+      ],
+    };
   }
 
   if (input.slug) {

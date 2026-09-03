@@ -83,6 +83,33 @@ async function main() {
       });
       console.log(`Category ready: ${category.slug}`);
     }
+
+    const parfum = await prisma.category.findUnique({ where: { slug: "parfum" } });
+    if (parfum) {
+      const perfumeSubs = [
+        { name: "Women's", slug: "womens" },
+        { name: "Men's", slug: "mens" },
+        { name: "Unisex", slug: "unisex" },
+      ] as const;
+      for (const child of perfumeSubs) {
+        await prisma.category.upsert({
+          where: { slug: child.slug },
+          update: {
+            name: child.name,
+            parentId: parfum.id,
+            isActive: true,
+          },
+          create: {
+            name: child.name,
+            slug: child.slug,
+            description: "",
+            isActive: true,
+            parentId: parfum.id,
+          },
+        });
+        console.log(`Subcategory ready: ${child.slug}`);
+      }
+    }
     console.log(`Done. ${DEFAULT_CATEGORIES.length} categories ensured.`);
   } finally {
     await prisma.$disconnect();

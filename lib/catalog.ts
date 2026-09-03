@@ -219,8 +219,10 @@ export type ResolvedCategory = {
   description: string;
   href: string;
   image: string;
-  origin: "original" | "new";
+  origin: "original" | "new" | "child";
   hidden: boolean;
+  parentSlug: string | null;
+  children: { slug: string; title: string; href: string }[];
   showPerfumeFilters: boolean;
   showClothingSizes: boolean;
   breadcrumbs: BreadcrumbItem[];
@@ -237,8 +239,8 @@ export function slugFromHref(href: string): string | null {
     return null;
   }
 
-  const slug = path.slice(1);
-  if (!slug || slug.includes("/")) {
+  const slug = path.slice(1).replace(/\/$/, "");
+  if (!slug) {
     return null;
   }
 
@@ -262,6 +264,8 @@ export function listResolvedCategories(
       image: getPlaceholderForCategory(config.title),
       origin: "original" as const,
       hidden: Boolean(override?.hidden),
+      parentSlug: null,
+      children: [],
       showPerfumeFilters: config.showPerfumeFilters,
       showClothingSizes: config.showClothingSizes,
       breadcrumbs: [
@@ -285,6 +289,8 @@ export function listResolvedCategories(
       image: category.image || getPlaceholderForCategory(category.name),
       origin: "new" as const,
       hidden: Boolean(override?.hidden),
+      parentSlug: null,
+      children: [],
       showPerfumeFilters: category.name === "Parfüm" || title === "Parfüm",
       showClothingSizes: false,
       breadcrumbs: [
@@ -308,6 +314,32 @@ export function getResolvedCategory(
 
 export const VIRTUAL_CATEGORY_SLUGS = new Set(["yeni-gelenler", "cok-satanlar"]);
 
+function activeChildren(
+  api: CategoryDto | undefined,
+  parentSlug: string,
+): { slug: string; title: string; href: string }[] {
+  return (api?.children ?? [])
+    .filter((child) => child.isActive)
+    .map((child) => ({
+      slug: child.slug,
+      title: child.name,
+      href: `/${parentSlug}/${child.slug}`,
+    }));
+}
+
+function productInCategory(
+  product: Product,
+  slug: string,
+  names: string[],
+): boolean {
+  if (product.categorySlug === slug || product.categoryLeafSlug === slug) {
+    return true;
+  }
+  return names.some(
+    (name) => product.category === name || product.subcategory === name,
+  );
+}
+
 export function resolveStorefrontCategories(
   apiCategories: CategoryDto[],
 ): ResolvedCategory[] {
@@ -321,12 +353,16 @@ export function resolveStorefrontCategories(
 
     if (api) {
       usedIds.add(api.id);
+      for (const child of api.children) {
+        usedIds.add(child.id);
+      }
     }
 
     const title = api?.name ?? config.title;
     const description = api?.description?.trim()
       ? api.description
       : config.description;
+    const children = activeChildren(api, slug);
 
     return {
       slug,
@@ -341,6 +377,8 @@ export function resolveStorefrontCategories(
         : api
           ? !api.isActive
           : false,
+      parentSlug: null,
+      children,
       showPerfumeFilters: config.showPerfumeFilters,
       showClothingSizes: config.showClothingSizes,
       breadcrumbs: [
@@ -348,17 +386,21 @@ export function resolveStorefrontCategories(
         { label: title, href: hrefFromSlug(slug) },
       ],
       match: (product: Product) =>
-        config.match(product) ||
-        product.category === title ||
-        Boolean(api && product.category === api.name),
+        productInCategory(product, slug, [title, config.title, api?.name ?? ""]) ||
+        config.match(product),
     };
   });
 
   const extras = apiCategories
     .filter((category) => category.isActive && !usedIds.has(category.id))
+    .filter((category) => !category.parentId)
     .filter((category) => !isReservedCategorySlug(category.slug))
     .map((category) => {
       const title = category.name;
+      const children = activeChildren(category, category.slug);
+      for (const child of category.children) {
+        usedIds.add(child.id);
+      }
 
       return {
         slug: category.slug,
@@ -369,6 +411,8 @@ export function resolveStorefrontCategories(
         image: getPlaceholderForCategory(category.name),
         origin: "new" as const,
         hidden: false,
+        parentSlug: null,
+        children,
         showPerfumeFilters: category.name === "Parfüm" || title === "Parfüm",
         showClothingSizes: false,
         breadcrumbs: [
@@ -376,18 +420,54 @@ export function resolveStorefrontCategories(
           { label: title, href: hrefFromSlug(category.slug) },
         ],
         match: (product: Product) =>
-          product.category === category.name || product.category === title,
+          productInCategory(product, category.slug, [category.name, title]),
       };
     });
 
-  return [...originals, ...extras];
+  const parents = [...originals, ...extras];
+  const childPages = parents.flatMap((parent) =>
+    parent.children.map((child) => {
+      const apiChild = apiCategories.find((item) => item.slug === child.slug);
+      return {
+        slug: child.slug,
+        title: child.title,
+        name: child.title,
+        description: apiChild?.description ?? "",
+        href: child.href,
+        image: parent.image,
+        origin: "child" as const,
+        hidden: false,
+        parentSlug: parent.slug,
+        children: [],
+        showPerfumeFilters: parent.showPerfumeFilters,
+        showClothingSizes: parent.showClothingSizes,
+        breadcrumbs: [
+          { label: "Anasayfa", href: "/" },
+          { label: parent.title, href: parent.href },
+          { label: child.title, href: child.href },
+        ],
+        match: (product: Product) =>
+          product.categoryLeafSlug === child.slug ||
+          product.subcategory === child.title,
+      };
+    }),
+  );
+
+  return [...parents, ...childPages];
 }
 
 export function findResolvedCategory(
   slug: string,
   categories: ResolvedCategory[],
 ): ResolvedCategory | undefined {
-  return categories.find((category) => category.slug === slug);
+  const normalized = slug.replace(/^\/+|\/+$/g, "");
+  return categories.find(
+    (category) =>
+      category.slug === normalized ||
+      category.href === `/${normalized}` ||
+      (category.parentSlug &&
+        `${category.parentSlug}/${category.slug}` === normalized),
+  );
 }
 
 export function isCategoryHidden(
@@ -459,7 +539,23 @@ export function filterDesktopNav(
       return [item];
     }
 
-    const megaItems = item.mega.items.filter((entry) =>
+    const slug = slugFromHref(item.href);
+    const self = slug ? findResolvedCategory(slug, categories) : undefined;
+    const fromChildren =
+      self && self.children.length > 0
+        ? [
+            ...self.children.map((child) => ({
+              label: child.title,
+              href: child.href,
+            })),
+            ...item.mega.items.filter(
+              (entry) =>
+                entry.href === "/yeni-gelenler" || entry.href === "/cok-satanlar",
+            ),
+          ]
+        : null;
+
+    const megaItems = (fromChildren ?? item.mega.items).filter((entry) =>
       isStorefrontHrefVisible(entry.href, categories),
     );
 
@@ -487,6 +583,23 @@ export function filterDesktopNav(
       id: category.slug,
       label: category.title,
       href: category.href,
+      mega:
+        category.children.length > 0
+          ? {
+              id: category.slug,
+              label: category.title,
+              href: category.href,
+              items: category.children.map((child) => ({
+                label: child.title,
+                href: child.href,
+              })),
+              image: {
+                src: category.image,
+                alt: category.title,
+                caption: category.title,
+              },
+            }
+          : undefined,
     }));
 
   return [...filtered, ...extras];
