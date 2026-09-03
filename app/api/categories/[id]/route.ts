@@ -4,8 +4,8 @@ import { getCurrentUser, requireAdmin } from "@/server/auth/authorization";
 import { apiRoute } from "@/server/api/handler";
 import { jsonSuccess } from "@/server/api/http";
 import {
+  deleteCategory,
   getCategoryById,
-  hideCategory,
   parsePatchCategory,
   updateCategory,
 } from "@/server/services/categories";
@@ -35,5 +35,5 @@ export const PATCH = apiRoute(async (request: NextRequest, context: IdContext) =
 export const DELETE = apiRoute(async (_request: NextRequest, context: IdContext) => {
   await requireAdmin();
   const { id } = await context.params;
-  return jsonSuccess(await hideCategory(id));
+  return jsonSuccess(await deleteCategory(id));
 });

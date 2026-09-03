@@ -265,14 +265,25 @@ export async function updateCategory(
   }
 }
 
-export async function hideCategory(id: string): Promise<CategoryDto> {
-  await requireCategory(requireId(id));
+export async function deleteCategory(id: string): Promise<{ id: string }> {
+  const categoryId = requireId(id);
+  const category = await requireCategory(categoryId);
+  const childIds = category.children.map((child) => child.id);
 
-  const category = await getPrisma().category.update({
-    where: { id },
-    data: { isActive: false },
-    include: CATEGORY_TREE_INCLUDE,
+  const productCount = await getPrisma().product.count({
+    where: { categoryId: { in: [categoryId, ...childIds] } },
   });
 
-  return toCategoryDto(category);
+  if (productCount > 0) {
+    conflict(
+      "Bu kategoride ürün var. Önce ürünleri silin veya başka kategoriye taşıyın.",
+    );
+  }
+
+  await getPrisma().$transaction(async (tx) => {
+    await tx.category.deleteMany({ where: { parentId: categoryId } });
+    await tx.category.delete({ where: { id: categoryId } });
+  });
+
+  return { id: categoryId };
 }

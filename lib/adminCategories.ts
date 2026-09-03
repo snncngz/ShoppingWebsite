@@ -58,8 +58,8 @@ export async function setAdminApiCategoryActive(
   return updateAdminApiCategory(id, { isActive });
 }
 
-export async function hideAdminApiCategory(id: string): Promise<CategoryDto> {
-  return adminRequest<CategoryDto>(`/api/categories/${id}`, {
+export async function deleteAdminApiCategory(id: string): Promise<{ id: string }> {
+  return adminRequest<{ id: string }>(`/api/categories/${id}`, {
     method: "DELETE",
   });
 }

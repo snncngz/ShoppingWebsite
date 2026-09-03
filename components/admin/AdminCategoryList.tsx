@@ -6,7 +6,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { AdminApiError, getAdminErrorMessage } from "@/lib/adminApi";
 import {
   createAdminApiCategory,
-  hideAdminApiCategory,
+  deleteAdminApiCategory,
   listAdminApiCategories,
   setAdminApiCategoryActive,
   updateAdminApiCategory,
@@ -30,6 +30,8 @@ export function AdminCategoryList() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryDto | null>(null);
+  const [visibilityTarget, setVisibilityTarget] = useState<CategoryDto | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -55,14 +57,20 @@ export function AdminCategoryList() {
     );
   };
 
-  const toggleHidden = async (row: CategoryDto) => {
-    setPendingId(row.id);
+  const confirmVisibility = async () => {
+    if (!visibilityTarget) {
+      return;
+    }
+
+    const publish = !visibilityTarget.isActive;
+    setPendingId(visibilityTarget.id);
     setError("");
     setNotice("");
     try {
-      const updated = await setAdminApiCategoryActive(row.id, !row.isActive);
+      const updated = await setAdminApiCategoryActive(visibilityTarget.id, publish);
       replaceRow(updated);
       setNotice(updated.isActive ? "Kategori yayınlandı." : "Kategori gizlendi.");
+      setVisibilityTarget(null);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -70,18 +78,19 @@ export function AdminCategoryList() {
     }
   };
 
-  const removeRow = async (row: CategoryDto) => {
-    if (!window.confirm("Bu kategori gizlensin mi? Bağlı ürünler silinmez.")) {
+  const confirmDelete = async () => {
+    if (!deleteTarget) {
       return;
     }
 
-    setPendingId(row.id);
+    setPendingId(deleteTarget.id);
     setError("");
     setNotice("");
     try {
-      const updated = await hideAdminApiCategory(row.id);
-      replaceRow(updated);
-      setNotice("Kategori gizlendi.");
+      await deleteAdminApiCategory(deleteTarget.id);
+      setRows((current) => current.filter((row) => row.id !== deleteTarget.id));
+      setNotice(`"${deleteTarget.name}" silindi.`);
+      setDeleteTarget(null);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
     } finally {
@@ -121,9 +130,8 @@ export function AdminCategoryList() {
           <p className="text-12 tracking-label text-taupe">Taxonomy</p>
           <h1 className="mt-3 font-heading text-32 text-black">Kategoriler</h1>
           <p className="mt-3 max-w-2xl text-14 text-taupe">
-            Kategori kayıtları PostgreSQL üzerindedir. Yeni kategori eklerken alt
-            kategori de yazabilirsiniz. Gizle işlemi `isActive=false` yapar;
-            bağlı ürünler silinmez.
+            Yeni kategori eklerken alt kategori de yazabilirsiniz. Silme işlemi
+            kategoriyi veritabanından kaldırır.
           </p>
         </div>
         <button
@@ -189,14 +197,96 @@ export function AdminCategoryList() {
                     .map((child) => child.name)}
                   disabled={pendingId === row.id}
                   onSave={(next) => saveRow(row, next)}
-                  onToggle={() => void toggleHidden(row)}
-                  onDelete={() => void removeRow(row)}
+                  onToggle={() => setVisibilityTarget(row)}
+                  onDelete={() => setDeleteTarget(row)}
                 />
               </li>
             ))}
           </ul>
         </>
       )}
+
+      {visibilityTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="visibility-category-title"
+        >
+          <div className="w-full max-w-md border border-border bg-ivory p-6 shadow-lg">
+            <h2 id="visibility-category-title" className="font-heading text-24 text-black">
+              {visibilityTarget.isActive ? "Kategoriyi gizle" : "Kategoriyi yayınla"}
+            </h2>
+            <p className="mt-4 text-14 text-charcoal">
+              <span className="font-medium">{visibilityTarget.name}</span> kategorisini{" "}
+              {visibilityTarget.isActive
+                ? "gizlemek istediğinizden emin misiniz? Gizli kategori sitede görünmez."
+                : "yayınlamak istediğinizden emin misiniz?"}
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={pendingId === visibilityTarget.id}
+                onClick={() => setVisibilityTarget(null)}
+                className="inline-flex h-11 items-center border border-charcoal px-6 text-12 tracking-nav text-charcoal disabled:opacity-50"
+              >
+                Hayır
+              </button>
+              <button
+                type="button"
+                disabled={pendingId === visibilityTarget.id}
+                onClick={() => void confirmVisibility()}
+                className="inline-flex h-11 items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
+              >
+                {pendingId === visibilityTarget.id
+                  ? visibilityTarget.isActive
+                    ? "Gizleniyor…"
+                    : "Yayınlanıyor…"
+                  : visibilityTarget.isActive
+                    ? "Evet, gizle"
+                    : "Evet, yayınla"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {deleteTarget ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-charcoal/50 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-category-title"
+        >
+          <div className="w-full max-w-md border border-border bg-ivory p-6 shadow-lg">
+            <h2 id="delete-category-title" className="font-heading text-24 text-black">
+              Kategoriyi sil
+            </h2>
+            <p className="mt-4 text-14 text-charcoal">
+              <span className="font-medium">{deleteTarget.name}</span> kategorisini silmek
+              istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-end gap-3">
+              <button
+                type="button"
+                disabled={pendingId === deleteTarget.id}
+                onClick={() => setDeleteTarget(null)}
+                className="inline-flex h-11 items-center border border-charcoal px-6 text-12 tracking-nav text-charcoal disabled:opacity-50"
+              >
+                Hayır
+              </button>
+              <button
+                type="button"
+                disabled={pendingId === deleteTarget.id}
+                onClick={() => void confirmDelete()}
+                className="inline-flex h-11 items-center bg-accent px-6 text-12 tracking-nav text-ivory hover:bg-accent/90 disabled:opacity-50"
+              >
+                {pendingId === deleteTarget.id ? "Siliniyor…" : "Evet, sil"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
