@@ -2,6 +2,7 @@ import type { Category, Product } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
 import type {
+  CategoryChildDto,
   CategoryDetailDto,
   CategoryDto,
   CategorySummaryDto,
@@ -15,7 +16,14 @@ export const productCategoryInclude = {
       id: true,
       name: true,
       slug: true,
-      parent: { select: { id: true, name: true, slug: true } },
+      parent: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          parent: { select: { id: true, name: true, slug: true } },
+        },
+      },
     },
   },
 } satisfies Prisma.ProductInclude;
@@ -38,7 +46,11 @@ export function toDecimal(value: number): Prisma.Decimal {
 
 export function toCategorySummaryDto(
   category: Pick<Category, "id" | "name" | "slug"> & {
-    parent?: Pick<Category, "id" | "name" | "slug"> | null;
+    parent?:
+      | (Pick<Category, "id" | "name" | "slug"> & {
+          parent?: Pick<Category, "id" | "name" | "slug"> | null;
+        })
+      | null;
   },
 ): CategorySummaryDto {
   return {
@@ -46,13 +58,26 @@ export function toCategorySummaryDto(
     name: category.name,
     slug: category.slug,
     parent: category.parent
-      ? {
-          id: category.parent.id,
-          name: category.parent.name,
-          slug: category.parent.slug,
-          parent: null,
-        }
+      ? toCategorySummaryDto(category.parent)
       : null,
+  };
+}
+
+type CategoryNode = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  children?: CategoryNode[];
+};
+
+export function toCategoryChildDto(node: CategoryNode): CategoryChildDto {
+  return {
+    id: node.id,
+    name: node.name,
+    slug: node.slug,
+    isActive: node.isActive,
+    children: (node.children ?? []).map(toCategoryChildDto),
   };
 }
 
@@ -98,7 +123,7 @@ export function toProductDto(product: ProductWithCategory): ProductDto {
 export function toCategoryDto(
   category: Category & {
     parent?: Pick<Category, "id" | "name" | "slug"> | null;
-    children?: Pick<Category, "id" | "name" | "slug" | "isActive">[];
+    children?: CategoryNode[];
   },
 ): CategoryDto {
   return {
@@ -109,12 +134,7 @@ export function toCategoryDto(
     isActive: category.isActive,
     parentId: category.parentId,
     parentSlug: category.parent?.slug ?? null,
-    children: (category.children ?? []).map((child) => ({
-      id: child.id,
-      name: child.name,
-      slug: child.slug,
-      isActive: child.isActive,
-    })),
+    children: (category.children ?? []).map(toCategoryChildDto),
     createdAt: category.createdAt.toISOString(),
     updatedAt: category.updatedAt.toISOString(),
   };

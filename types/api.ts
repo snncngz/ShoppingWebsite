@@ -46,6 +46,7 @@ export type CategoryChildDto = {
   name: string;
   slug: string;
   isActive: boolean;
+  children: CategoryChildDto[];
 };
 
 export type ProductSummaryDto = {

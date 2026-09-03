@@ -29,15 +29,19 @@ export function toPerfumeDetails(value: unknown): PerfumeDetails | undefined {
 }
 
 export function toStorefrontProduct(dto: ProductDto): Product {
-  const parent = dto.category.parent;
+  const path = [dto.category.parent?.parent, dto.category.parent, dto.category].filter(
+    (item): item is NonNullable<typeof item> => Boolean(item),
+  );
+  const root = path[0] ?? dto.category;
+  const leaf = path[path.length - 1] ?? dto.category;
   const product: Product = {
     id: dto.id,
     slug: dto.slug,
     name: dto.name,
-    category: parent?.name ?? dto.category.name,
-    categorySlug: parent?.slug ?? dto.category.slug,
-    categoryLeafSlug: dto.category.slug,
-    subcategory: parent ? dto.category.name : dto.subcategory,
+    category: root.name,
+    categorySlug: root.slug,
+    categoryLeafSlug: leaf.slug,
+    subcategory: path.length > 1 ? leaf.name : dto.subcategory,
     price: dto.price,
     description: dto.description,
     images: dto.images,

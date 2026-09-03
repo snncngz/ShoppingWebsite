@@ -31,6 +31,7 @@ export type AdminProductWriteInput = {
   isNew: boolean;
   badge?: string | null;
   perfumeDetails?: PerfumeDetails;
+  categoryId?: string;
   categoryName: string;
   rating?: number;
   reviewCount?: number;
@@ -189,7 +190,9 @@ function toProductBody(
 export async function createAdminApiProduct(
   input: AdminProductWriteInput,
 ): Promise<ProductDto> {
-  const categoryId = await resolveCategoryId(input.categoryName, input.subcategory);
+  const categoryId =
+    input.categoryId ??
+    (await resolveCategoryId(input.categoryName, input.subcategory));
   return adminRequest<ProductDto>("/api/products", {
     method: "POST",
     body: JSON.stringify({
@@ -203,7 +206,9 @@ export async function updateAdminApiProduct(
   id: string,
   input: AdminProductWriteInput,
 ): Promise<ProductDto> {
-  const categoryId = await resolveCategoryId(input.categoryName, input.subcategory);
+  const categoryId =
+    input.categoryId ??
+    (await resolveCategoryId(input.categoryName, input.subcategory));
   return adminRequest<ProductDto>(`/api/products/${id}`, {
     method: "PATCH",
     body: JSON.stringify(toProductBody(input, categoryId, "update")),

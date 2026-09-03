@@ -4,7 +4,7 @@ import { Camera, CirclePlay, Globe } from "lucide-react";
 import Link from "next/link";
 
 import { useCatalog } from "@/context/CatalogContext";
-import { filterNavLinks } from "@/lib/catalog";
+import { buildStorefrontNav } from "@/lib/catalog";
 import { BRAND_NAME } from "@/lib/constants";
 import { footerColumns } from "@/lib/navigation";
 
@@ -74,7 +74,13 @@ export function Footer() {
                 <p className="text-12 tracking-label text-black">{column.title}</p>
                 <ul className="mt-5 flex flex-col gap-3">
                   {(column.title === "Shop"
-                    ? filterNavLinks(column.links, categories)
+                    ? [
+                        ...buildStorefrontNav(categories)
+                          .filter((item) => !["yeni-gelenler", "cok-satanlar"].includes(item.id))
+                          .map((item) => ({ label: item.label, href: item.href })),
+                        { label: "Yeni Gelenler", href: "/yeni-gelenler" },
+                        { label: "Çok Satanlar", href: "/cok-satanlar" },
+                      ]
                     : column.links
                   ).map((link) => (
                     <li key={`${link.href}-${link.label}`}>

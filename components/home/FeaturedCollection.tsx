@@ -30,7 +30,7 @@ export function FeaturedCollection({ products }: FeaturedCollectionProps) {
             cilde yakın bir imza koku.
           </p>
           <Link
-            href="/giyim"
+            href="/yeni-gelenler"
             className="mt-8 inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
           >
             Koleksiyonu Keşfet

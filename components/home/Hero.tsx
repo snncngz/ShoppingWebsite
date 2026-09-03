@@ -35,7 +35,7 @@ export function Hero() {
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
             <Link
-              href="/giyim"
+              href="/yeni-gelenler"
               className="inline-flex h-12 items-center justify-center bg-ivory px-8 text-12 tracking-nav text-black transition-colors hover:bg-off-white"
             >
               Koleksiyonu Keşfet

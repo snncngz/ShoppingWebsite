@@ -22,14 +22,26 @@ type CategoryWriteInput = {
   description?: string;
   isActive?: boolean;
   subcategories?: string[];
+  parentId?: string;
+};
+
+const nestedChildrenInclude = {
+  orderBy: { name: "asc" as const },
+  include: {
+    children: {
+      orderBy: { name: "asc" as const },
+      include: {
+        children: {
+          orderBy: { name: "asc" as const },
+        },
+      },
+    },
+  },
 };
 
 const CATEGORY_TREE_INCLUDE = {
   parent: { select: { id: true, name: true, slug: true } },
-  children: {
-    select: { id: true, name: true, slug: true, isActive: true },
-    orderBy: { name: "asc" as const },
-  },
+  children: nestedChildrenInclude,
 };
 
 function isUniqueSlugError(error: unknown): boolean {
@@ -82,10 +94,6 @@ async function syncSubcategories(
     where: { id: parentId },
     include: { children: true },
   });
-
-  if (parent.parentId) {
-    badRequest("Alt kategoriye alt kategori eklenemez");
-  }
 
   const wanted = [
     ...new Set(names.map((name) => name.trim()).filter(Boolean)),
@@ -145,6 +153,7 @@ export function parseCreateCategory(body: Record<string, unknown>) {
     slug: requireString(body, "slug"),
     description: optionalString(body, "description", 8000) ?? "",
     isActive: optionalBoolean(body, "isActive") ?? true,
+    parentId: optionalString(body, "parentId") || undefined,
     subcategories: optionalStringArray(body, "subcategories", 30, 80) ?? [],
   };
 }
@@ -170,6 +179,33 @@ export function parsePatchCategory(
   }
 
   return patch;
+}
+
+export async function getCategorySubtreeIdsBySlug(slug: string): Promise<string[] | null> {
+  const rows = await getPrisma().category.findMany({
+    select: { id: true, slug: true, parentId: true },
+  });
+  const root = rows.find((row) => row.slug === slug);
+  if (!root) {
+    return null;
+  }
+
+  const byParent = new Map<string | null, string[]>();
+  for (const row of rows) {
+    const list = byParent.get(row.parentId) ?? [];
+    list.push(row.id);
+    byParent.set(row.parentId, list);
+  }
+
+  const ids: string[] = [];
+  const walk = (id: string) => {
+    ids.push(id);
+    for (const childId of byParent.get(id) ?? []) {
+      walk(childId);
+    }
+  };
+  walk(root.id);
+  return ids;
 }
 
 export async function listCategories(input: {
@@ -216,13 +252,18 @@ export async function getCategoryById(
 export async function createCategory(
   input: ReturnType<typeof parseCreateCategory>,
 ): Promise<CategoryDto> {
+  if (input.parentId) {
+    await requireCategory(input.parentId);
+  }
+
   try {
     const category = await getPrisma().category.create({
       data: {
         name: input.name,
-        slug: input.slug,
+        slug: await allocateSlug(input.slug || input.name),
         description: input.description,
         isActive: input.isActive,
+        parentId: input.parentId,
       },
     });
     if (input.subcategories.length > 0) {
@@ -267,11 +308,23 @@ export async function updateCategory(
 
 export async function deleteCategory(id: string): Promise<{ id: string }> {
   const categoryId = requireId(id);
-  const category = await requireCategory(categoryId);
-  const childIds = category.children.map((child) => child.id);
+  await requireCategory(categoryId);
+
+  const descendantIds: string[] = [];
+  const collect = async (parentId: string) => {
+    const children = await getPrisma().category.findMany({
+      where: { parentId },
+      select: { id: true },
+    });
+    for (const child of children) {
+      await collect(child.id);
+      descendantIds.push(child.id);
+    }
+  };
+  await collect(categoryId);
 
   const productCount = await getPrisma().product.count({
-    where: { categoryId: { in: [categoryId, ...childIds] } },
+    where: { categoryId: { in: [categoryId, ...descendantIds] } },
   });
 
   if (productCount > 0) {
@@ -281,7 +334,9 @@ export async function deleteCategory(id: string): Promise<{ id: string }> {
   }
 
   await getPrisma().$transaction(async (tx) => {
-    await tx.category.deleteMany({ where: { parentId: categoryId } });
+    for (const childId of descendantIds) {
+      await tx.category.delete({ where: { id: childId } });
+    }
     await tx.category.delete({ where: { id: categoryId } });
   });
 

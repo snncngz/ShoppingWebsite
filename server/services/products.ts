@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 
 import { badRequest, conflict, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
+import { getCategorySubtreeIdsBySlug } from "@/server/services/categories";
 import { toDecimal, toProductDto, productCategoryInclude } from "@/server/dto/catalog";
 import {
   applyAbsoluteStock,
@@ -223,12 +224,8 @@ export async function listProducts(
   };
 
   if (input.category) {
-    where.category = {
-      OR: [
-        { slug: input.category },
-        { parent: { slug: input.category } },
-      ],
-    };
+    const ids = await getCategorySubtreeIdsBySlug(input.category);
+    where.categoryId = { in: ids ?? [] };
   }
 
   if (input.slug) {

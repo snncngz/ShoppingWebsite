@@ -6,6 +6,7 @@ export type AdminCategoryWriteInput = {
   slug: string;
   description: string;
   isActive: boolean;
+  parentId?: string;
   subcategories?: string[];
 };
 

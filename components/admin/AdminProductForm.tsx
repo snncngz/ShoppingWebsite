@@ -18,7 +18,56 @@ import {
 import { CATEGORY_PLACEHOLDERS, getPlaceholderForCategory } from "@/lib/catalog";
 import { CATEGORY_NAMES } from "@/lib/constants";
 import { toSlug } from "@/lib/utils";
-import type { CategoryDto, ProductDto } from "@/types/api";
+import type { CategoryChildDto, CategoryDto, ProductDto } from "@/types/api";
+
+type CategoryNode = {
+  id: string;
+  name: string;
+  slug: string;
+  children: CategoryChildDto[];
+};
+
+function activeChildren(nodes: CategoryChildDto[]): CategoryNode[] {
+  return nodes
+    .filter((node) => node.isActive)
+    .map((node) => ({
+      id: node.id,
+      name: node.name,
+      slug: node.slug,
+      children: node.children,
+    }));
+}
+
+function findCategoryNode(nodes: CategoryNode[], id: string): CategoryNode | undefined {
+  for (const node of nodes) {
+    if (node.id === id) {
+      return node;
+    }
+    const nested = findCategoryNode(activeChildren(node.children), id);
+    if (nested) {
+      return nested;
+    }
+  }
+  return undefined;
+}
+
+function productCategoryPath(product?: ProductDto | null): string[] {
+  if (!product) {
+    return [];
+  }
+
+  const ids: string[] = [];
+  let current: ProductDto["category"] | null = product.category;
+  while (current) {
+    ids.unshift(current.id);
+    current = current.parent;
+  }
+  return ids;
+}
+
+function isPerfumeNode(node?: CategoryNode): boolean {
+  return node?.slug === "parfum" || node?.name === "Parfüm";
+}
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none focus:border-taupe";
@@ -150,15 +199,15 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const existing = product ?? undefined;
   const isCreate = !existing;
   const perfume = readPerfumeDetails(existing?.perfumeDetails);
-  const initialCategory =
-    existing?.category.parent?.name ?? existing?.category.name ?? "T-Shirt";
-  const initialSubcategory = existing?.category.parent
-    ? existing.category.name
-    : (existing?.subcategory ?? "");
+  const initialPath = productCategoryPath(existing);
+  const initialCategoryName =
+    existing?.category.parent?.parent?.name ??
+    existing?.category.parent?.name ??
+    existing?.category.name ??
+    "T-Shirt";
 
   const [name, setName] = useState(existing?.name ?? "");
-  const [category, setCategory] = useState(initialCategory);
-  const [subcategory, setSubcategory] = useState(initialSubcategory);
+  const [categoryPath, setCategoryPath] = useState<string[]>(initialPath);
   const [price, setPrice] = useState(existing ? String(existing.price) : "");
   const [oldPrice, setOldPrice] = useState(
     existing?.oldPrice ? String(existing.oldPrice) : "",
@@ -178,7 +227,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [images, setImages] = useState<string[]>(
     existing?.images?.length
       ? existing.images
-      : [getPlaceholderForCategory(existing?.category.name ?? "T-Shirt")],
+      : [getPlaceholderForCategory(initialCategoryName)],
   );
   const [uploading, setUploading] = useState(false);
   const [fragranceFamily, setFragranceFamily] = useState(
@@ -197,13 +246,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
   const [categoryRecords, setCategoryRecords] = useState<CategoryDto[]>([]);
-  const [categoryOptions, setCategoryOptions] = useState<string[]>(() => {
-    const names: string[] = [...CATEGORY_NAMES];
-    if (initialCategory && !names.includes(initialCategory)) {
-      return [initialCategory, ...names];
-    }
-    return names;
-  });
+  const [categoriesReady, setCategoriesReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,52 +255,80 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         if (cancelled) {
           return;
         }
-        const parents = categories.filter((item) => !item.parentId);
-        setCategoryRecords(parents);
-        const names = [
-          initialCategory,
-          ...CATEGORY_NAMES,
-          ...parents.map((item) => item.name),
-        ];
-        setCategoryOptions([...new Set(names)]);
+        setCategoryRecords(categories.filter((item) => !item.parentId));
       })
       .catch(() => {
-        /* Keep the local fallback list if categories cannot be loaded. */
+        if (!cancelled) {
+          setCategoryRecords([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setCategoriesReady(true);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [initialCategory]);
+  }, []);
 
-  const selectedCategory = categoryRecords.find((item) => item.name === category);
-  const subcategoryOptions = (selectedCategory?.children ?? [])
+  const rootNodes: CategoryNode[] = categoryRecords
     .filter((item) => item.isActive)
-    .map((item) => item.name);
-  const isPerfume =
-    category === "Parfüm" || selectedCategory?.slug === "parfum";
+    .map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      children: item.children,
+    }));
 
-  useEffect(() => {
-    if (!isCreate || subcategory || subcategoryOptions.length === 0) {
-      return;
+  const selectedNodes = categoryPath
+    .map((id) => findCategoryNode(rootNodes, id))
+    .filter((node): node is CategoryNode => Boolean(node));
+  const rootCategory = selectedNodes[0];
+  const leafCategory = selectedNodes[selectedNodes.length - 1];
+  const categoryName = rootCategory?.name ?? initialCategoryName;
+  const isPerfume = selectedNodes.some(isPerfumeNode);
+
+  const selectLevels: { label: string; value: string; options: CategoryNode[] }[] = [];
+  let levelOptions = rootNodes;
+  for (let index = 0; index <= categoryPath.length; index += 1) {
+    if (levelOptions.length === 0) {
+      break;
     }
-    setSubcategory(subcategoryOptions[0]);
-  }, [isCreate, subcategory, subcategoryOptions]);
+    selectLevels.push({
+      label: `${index + 1}. kategori`,
+      value: categoryPath[index] ?? "",
+      options: levelOptions,
+    });
+    const selected = categoryPath[index]
+      ? findCategoryNode(rootNodes, categoryPath[index])
+      : undefined;
+    if (!selected) {
+      break;
+    }
+    levelOptions = activeChildren(selected.children);
+  }
 
-  const handleCategoryChange = (next: string) => {
-    setCategory(next);
-    const nextRecord = categoryRecords.find((item) => item.name === next);
-    const nextSubs = (nextRecord?.children ?? [])
-      .filter((item) => item.isActive)
-      .map((item) => item.name);
-    setSubcategory(nextSubs[0] ?? "");
+  const handleCategoryLevelChange = (level: number, nextId: string) => {
+    const nextPath = nextId
+      ? [...categoryPath.slice(0, level), nextId]
+      : categoryPath.slice(0, level);
+    setCategoryPath(nextPath);
+
+    const nextRoot =
+      (nextPath[0] ? findCategoryNode(rootNodes, nextPath[0]) : undefined) ??
+      rootCategory;
+    const nextName = nextRoot?.name ?? categoryName;
     setImages((current) => {
       const hasCustom = current.some((src) => !isPlaceholderImage(src));
       if (hasCustom) {
         return current;
       }
-      return [getPlaceholderForCategory(next)];
+      return [getPlaceholderForCategory(nextName)];
     });
-    setSizes((SIZE_PRESETS[next] ?? SIZE_PRESETS["T-Shirt"]).join(", "));
+    if (level === 0) {
+      setSizes((SIZE_PRESETS[nextName] ?? SIZE_PRESETS["T-Shirt"]).join(", "));
+    }
   };
 
   const handleUpload = async (fileList: FileList | null) => {
@@ -326,6 +397,15 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       return;
     }
 
+    if (!leafCategory) {
+      setError("1. kategoriyi seçin.");
+      return;
+    }
+    if (activeChildren(leafCategory.children).length > 0) {
+      setError("Bu kategorinin alt kategorisi var. Alt kategoriyi de seçin.");
+      return;
+    }
+
     const slug =
       existing?.slug && !isCreate ? existing.slug : toSlug(name) || "urun";
     const discount =
@@ -341,14 +421,15 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       oldPrice: parsedOld && parsedOld > parsedPrice ? parsedOld : null,
       discount: discount ?? null,
       stock: parsedStock,
-      subcategory: subcategory.trim(),
-      images: images.length > 0 ? images : [getPlaceholderForCategory(category)],
+      subcategory: selectedNodes.length > 1 ? leafCategory.name : "",
+      images: images.length > 0 ? images : [getPlaceholderForCategory(categoryName)],
       colors: colorList,
       sizes: sizeList,
       isPopular,
       isNew,
       badge: badge.trim() || null,
-      categoryName: category,
+      categoryId: leafCategory.id,
+      categoryName,
       rating: existing?.rating,
       reviewCount: existing?.reviewCount,
       perfumeDetails:
@@ -393,44 +474,36 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
           Ürün adı
           <input value={name} onChange={(event) => setName(event.target.value)} className={fieldClass} />
         </label>
-        <label className="text-12 tracking-label text-charcoal">
-          Kategori
-          <select
-            value={category}
-            onChange={(event) => handleCategoryChange(event.target.value)}
-            className={fieldClass}
-          >
-            {categoryOptions.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-12 tracking-label text-charcoal">
-          Alt kategori
-          {subcategoryOptions.length > 0 ? (
-            <select
-              value={subcategory}
-              onChange={(event) => setSubcategory(event.target.value)}
-              className={fieldClass}
-            >
-              <option value="">Ana kategori</option>
-              {subcategoryOptions.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={subcategory}
-              onChange={(event) => setSubcategory(event.target.value)}
-              placeholder="Örn. Women's"
-              className={fieldClass}
-            />
-          )}
-        </label>
+        {!categoriesReady ? (
+          <p className="text-12 tracking-label text-taupe sm:col-span-2">
+            Kategoriler yükleniyor
+          </p>
+        ) : rootNodes.length === 0 ? (
+          <p className="text-14 text-accent sm:col-span-2">
+            Önce Kategoriler sayfasından bir kategori ekleyin.
+          </p>
+        ) : (
+          selectLevels.map((level, index) => (
+            <label key={level.label} className="text-12 tracking-label text-charcoal">
+              {level.label}
+              <select
+                required
+                value={level.value}
+                onChange={(event) =>
+                  handleCategoryLevelChange(index, event.target.value)
+                }
+                className={fieldClass}
+              >
+                <option value="">Seçin</option>
+                {level.options.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))
+        )}
         <label className="text-12 tracking-label text-charcoal">
           Fiyat (TL)
           <input
@@ -502,7 +575,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
                       const next = current.filter((item) => item !== src);
                       return next.length > 0
                         ? next
-                        : [getPlaceholderForCategory(category)];
+                        : [getPlaceholderForCategory(categoryName)];
                     })
                   }
                   className="absolute right-1 top-1 bg-charcoal/80 px-2 py-1 text-12 tracking-nav text-ivory"

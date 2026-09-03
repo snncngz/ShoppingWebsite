@@ -13,8 +13,7 @@ import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { BRAND_NAME } from "@/lib/constants";
-import { filterDesktopNav } from "@/lib/catalog";
-import { desktopNavItems } from "@/lib/navigation";
+import { buildStorefrontNav } from "@/lib/catalog";
 
 const iconButtonClass =
   "relative flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:text-black";
@@ -23,7 +22,7 @@ export function Navbar() {
   const { itemCount } = useCart();
   const { count: wishlistCount } = useWishlist();
   const { categories } = useCatalog();
-  const navItems = filterDesktopNav(desktopNavItems, categories);
+  const navItems = buildStorefrontNav(categories);
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
   const [openMegaId, setOpenMegaId] = useState<string | null>(
@@ -181,9 +180,9 @@ export function Navbar() {
               }
 
               return (
-                <button
+                <Link
                   key={item.id}
-                  type="button"
+                  href={item.href}
                   className={`text-12 tracking-nav transition-colors ${
                     isActive ? "text-black" : "text-charcoal hover:text-black"
                   }`}
@@ -202,19 +201,9 @@ export function Navbar() {
                     cancelClose();
                     setOpenMegaId(mega.id);
                   }}
-                  onClick={() => {
-                    cancelClose();
-                    if (Date.now() - megaOpenedAt.current < 280) {
-                      setOpenMegaId(mega.id);
-                      return;
-                    }
-                    setOpenMegaId((current) =>
-                      current === mega.id ? null : mega.id,
-                    );
-                  }}
                 >
                   {item.label}
-                </button>
+                </Link>
               );
             })}
           </nav>

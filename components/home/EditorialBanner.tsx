@@ -22,7 +22,7 @@ export function EditorialBanner() {
           Discover pieces designed to become part of your everyday identity.
         </p>
         <Link
-          href="/giyim"
+          href="/yeni-gelenler"
           className="mt-8 inline-flex h-12 items-center justify-center bg-ivory px-8 text-12 tracking-nav text-black transition-colors hover:bg-off-white"
         >
           Keşfet

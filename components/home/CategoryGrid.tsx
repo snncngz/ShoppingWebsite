@@ -4,42 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { useCatalog } from "@/context/CatalogContext";
-import { getVisibleCategories, isStorefrontHrefVisible } from "@/lib/catalog";
-
-const featuredCards = [
-  {
-    name: "Parfüm",
-    href: "/parfum",
-    image: "/placeholders/parfum.svg",
-    imageClass: "object-center",
-    frameClass: "aspect-[3/4]",
-    offsetClass: "",
-  },
-  {
-    name: "T-Shirt",
-    href: "/tshirt",
-    image: "/placeholders/tshirt.svg",
-    imageClass: "object-[center_38%]",
-    frameClass: "aspect-[4/5]",
-    offsetClass: "lg:mt-12",
-  },
-  {
-    name: "Pantolon",
-    href: "/pantolon",
-    image: "/placeholders/pantolon.svg",
-    imageClass: "object-top",
-    frameClass: "aspect-[3/4]",
-    offsetClass: "",
-  },
-  {
-    name: "Aksesuar",
-    href: "/aksesuar",
-    image: "/placeholders/aksesuar.svg",
-    imageClass: "object-center",
-    frameClass: "aspect-[4/5]",
-    offsetClass: "lg:mt-12",
-  },
-] as const;
+import { getVisibleCategories, VIRTUAL_CATEGORY_SLUGS } from "@/lib/catalog";
 
 export function CategoryGrid() {
   const { categories, hydrated, error } = useCatalog();
@@ -58,27 +23,21 @@ export function CategoryGrid() {
     return null;
   }
 
-  const visible = getVisibleCategories(categories);
-  const featured = featuredCards
-    .filter((category) => isStorefrontHrefVisible(category.href, categories))
-    .map((category) => {
-      const match = visible.find((item) => item.href === category.href);
-      return {
-        ...category,
-        name: match?.title ?? category.name,
-      };
-    });
-  const extras = visible
-    .filter((category) => category.origin === "new")
+  const cards = getVisibleCategories(categories)
+    .filter(
+      (category) =>
+        !category.parentSlug &&
+        category.origin !== "child" &&
+        !VIRTUAL_CATEGORY_SLUGS.has(category.slug),
+    )
     .map((category, index) => ({
       name: category.title,
       href: category.href,
       image: category.image,
       imageClass: "object-center",
-      frameClass: "aspect-[4/5]",
+      frameClass: index % 2 === 0 ? "aspect-[3/4]" : "aspect-[4/5]",
       offsetClass: index % 2 === 1 ? "lg:mt-12" : "",
     }));
-  const cards = [...featured, ...extras];
 
   if (cards.length === 0) {
     return null;

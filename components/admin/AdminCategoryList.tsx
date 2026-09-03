@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 
+import {
+  DraftCategoryTree,
+  SavedCategoryTree,
+  type DraftCategoryNode,
+} from "@/components/admin/CategoryTreeEditor";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { AdminApiError, getAdminErrorMessage } from "@/lib/adminApi";
 import {
@@ -21,6 +26,22 @@ function isBlockedAdminSlug(slug: string): boolean {
     return false;
   }
   return isReservedCategorySlug(slug);
+}
+
+async function createDraftTree(
+  node: DraftCategoryNode,
+  parentId: string,
+): Promise<void> {
+  const created = await createAdminApiCategory({
+    name: node.name,
+    slug: toSlug(node.name) || "kategori",
+    description: "",
+    isActive: true,
+    parentId,
+  });
+  for (const child of node.children) {
+    await createDraftTree(child, created.id);
+  }
 }
 
 export function AdminCategoryList() {
@@ -88,34 +109,11 @@ export function AdminCategoryList() {
     setNotice("");
     try {
       await deleteAdminApiCategory(deleteTarget.id);
-      setRows((current) => current.filter((row) => row.id !== deleteTarget.id));
+      await load();
       setNotice(`"${deleteTarget.name}" silindi.`);
       setDeleteTarget(null);
     } catch (caught) {
       setError(getAdminErrorMessage(caught));
-    } finally {
-      setPendingId(null);
-    }
-  };
-
-  const saveRow = async (
-    row: CategoryDto,
-    next: { title: string; description: string; subcategories: string[] },
-  ) => {
-    setPendingId(row.id);
-    setError("");
-    setNotice("");
-    try {
-      const updated = await updateAdminApiCategory(row.id, {
-        name: next.title,
-        description: next.description,
-        subcategories: next.subcategories,
-      });
-      replaceRow(updated);
-      setNotice("Kategori kaydedildi.");
-    } catch (caught) {
-      setError(getAdminErrorMessage(caught));
-      throw caught;
     } finally {
       setPendingId(null);
     }
@@ -130,8 +128,9 @@ export function AdminCategoryList() {
           <p className="text-12 tracking-label text-taupe">Taxonomy</p>
           <h1 className="mt-3 font-heading text-32 text-black">Kategoriler</h1>
           <p className="mt-3 max-w-2xl text-14 text-taupe">
-            Yeni kategori eklerken alt kategori de yazabilirsiniz. Silme işlemi
-            kategoriyi veritabanından kaldırır.
+            Alt kategori eklemek için kutuya yazıp Ekle’ye basın. Bir alt
+            kategorinin üzerindeki + ile onun altına da kategori açabilirsiniz.
+            Silme işlemi kategoriyi veritabanından kaldırır.
           </p>
         </div>
         <button
@@ -148,8 +147,8 @@ export function AdminCategoryList() {
           <NewCategoryForm
             existingSlugs={parents.map((row) => row.slug)}
             onCancel={() => setCreating(false)}
-            onCreated={(category) => {
-              replaceRow(category);
+            onCreated={async () => {
+              await load();
               setCreating(false);
               setNotice("Kategori oluşturuldu.");
               setError("");
@@ -172,10 +171,8 @@ export function AdminCategoryList() {
           <p className="font-heading text-24 text-black">Henüz kategori yok</p>
           <p className="mt-3 max-w-xl text-14 text-taupe">
             Veritabanında kategori kaydı bulunamadı. Sitede gördüğünüz menü
-            sabit navigasyondur. Ürün eklerken listelenen isimler de çoğu zaman
-            formun yedek listesidir. Buradan &quot;+ Yeni Kategori&quot; ile
-            ekleyin veya sunucuda{" "}
-            <code className="text-12">npm run ensure-categories</code> çalıştırın.
+            yalnızca burada eklediğiniz kategorilerden oluşur. &quot;+ Yeni
+            Kategori&quot; ile ekleyin.
           </p>
           <p className="mt-4 text-14 text-charcoal">Toplam: 0</p>
         </div>
@@ -188,15 +185,16 @@ export function AdminCategoryList() {
             {parents.map((row) => (
               <li key={row.id} className="border border-border bg-off-white p-6">
                 <CategoryEditor
-                  slug={row.slug}
-                  title={row.name}
-                  description={row.description}
-                  hidden={!row.isActive}
-                  subcategories={row.children
-                    .filter((child) => child.isActive)
-                    .map((child) => child.name)}
+                  row={row}
                   disabled={pendingId === row.id}
-                  onSave={(next) => saveRow(row, next)}
+                  onSaved={(updated) => {
+                    replaceRow(updated);
+                    setNotice("Kategori kaydedildi.");
+                  }}
+                  onTreeChanged={async () => {
+                    await load();
+                    setNotice("Kategori ağacı güncellendi.");
+                  }}
                   onToggle={() => setVisibilityTarget(row)}
                   onDelete={() => setDeleteTarget(row)}
                 />
@@ -264,7 +262,8 @@ export function AdminCategoryList() {
             </h2>
             <p className="mt-4 text-14 text-charcoal">
               <span className="font-medium">{deleteTarget.name}</span> kategorisini silmek
-              istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              istediğinizden emin misiniz? Alt kategoriler de silinir. Bu işlem geri
+              alınamaz.
             </p>
             <div className="mt-6 flex flex-wrap justify-end gap-3">
               <button
@@ -297,12 +296,12 @@ function NewCategoryForm({
   onCancel,
 }: {
   existingSlugs: string[];
-  onCreated: (category: CategoryDto) => void;
+  onCreated: () => Promise<void>;
   onCancel: () => void;
 }) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [subcategories, setSubcategories] = useState("");
+  const [tree, setTree] = useState<DraftCategoryNode[]>([]);
   const [visible, setVisible] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -334,12 +333,11 @@ function NewCategoryForm({
         slug,
         description: description.trim(),
         isActive: visible,
-        subcategories: subcategories
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
       });
-      onCreated(created);
+      for (const node of tree) {
+        await createDraftTree(node, created.id);
+      }
+      await onCreated();
     } catch (caught) {
       if (caught instanceof AdminApiError && caught.code === "CONFLICT") {
         setError("Bu kategori yolu zaten kullanılıyor.");
@@ -370,15 +368,7 @@ function NewCategoryForm({
           className="mt-2 min-h-24 w-full border border-border bg-ivory px-4 py-3 text-14"
         />
       </label>
-      <label className="text-12 tracking-label text-charcoal">
-        Alt kategoriler (virgülle)
-        <input
-          value={subcategories}
-          onChange={(event) => setSubcategories(event.target.value)}
-          placeholder="Örn. Women's, Men's, Unisex"
-          className="mt-2 h-12 w-full border border-border bg-ivory px-4 text-14"
-        />
-      </label>
+      <DraftCategoryTree nodes={tree} onChange={setTree} />
       <label className="flex min-h-11 items-center gap-3 text-14 text-charcoal">
         <input
           type="checkbox"
@@ -409,36 +399,60 @@ function NewCategoryForm({
 }
 
 function CategoryEditor({
-  slug,
-  title,
-  description,
-  hidden,
-  subcategories,
+  row,
   disabled,
-  onSave,
+  onSaved,
+  onTreeChanged,
   onToggle,
   onDelete,
 }: {
-  slug: string;
-  title: string;
-  description: string;
-  hidden: boolean;
-  subcategories: string[];
+  row: CategoryDto;
   disabled: boolean;
-  onSave: (next: {
-    title: string;
-    description: string;
-    subcategories: string[];
-  }) => Promise<void>;
+  onSaved: (updated: CategoryDto) => void;
+  onTreeChanged: () => Promise<void>;
   onToggle: () => void;
   onDelete: () => void;
 }) {
-  const [nextTitle, setNextTitle] = useState(title);
-  const [nextDescription, setNextDescription] = useState(description);
-  const [nextSubcategories, setNextSubcategories] = useState(subcategories.join(", "));
+  const [nextTitle, setNextTitle] = useState(row.name);
+  const [nextDescription, setNextDescription] = useState(row.description);
   const [saving, setSaving] = useState(false);
+  const [treeBusy, setTreeBusy] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+
+  const handleAddChild = async (parentId: string | null, name: string) => {
+    setError("");
+    setSuccess("");
+    setTreeBusy(true);
+    try {
+      await createAdminApiCategory({
+        name,
+        slug: toSlug(name) || "kategori",
+        description: "",
+        isActive: true,
+        parentId: parentId ?? row.id,
+      });
+      await onTreeChanged();
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setTreeBusy(false);
+    }
+  };
+
+  const handleRemoveChild = async (id: string) => {
+    setError("");
+    setSuccess("");
+    setTreeBusy(true);
+    try {
+      await deleteAdminApiCategory(id);
+      await onTreeChanged();
+    } catch (caught) {
+      setError(getAdminErrorMessage(caught));
+    } finally {
+      setTreeBusy(false);
+    }
+  };
 
   return (
     <form
@@ -447,15 +461,12 @@ function CategoryEditor({
         setError("");
         setSuccess("");
         setSaving(true);
-        void onSave({
-          title: nextTitle.trim() || title,
+        void updateAdminApiCategory(row.id, {
+          name: nextTitle.trim() || row.name,
           description: nextDescription.trim(),
-          subcategories: nextSubcategories
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean),
         })
-          .then(() => {
+          .then((updated) => {
+            onSaved(updated);
             setSuccess("Kaydedildi.");
           })
           .catch((caught) => {
@@ -469,20 +480,20 @@ function CategoryEditor({
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-12 tracking-label text-taupe">
-          /{slug} · {hidden ? "Gizli" : "Yayında"}
+          /{row.slug} · {row.isActive ? "Yayında" : "Gizli"}
         </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            disabled={disabled || saving}
+            disabled={disabled || saving || treeBusy}
             onClick={onToggle}
             className="inline-flex h-11 items-center border border-charcoal px-4 text-12 tracking-nav text-charcoal hover:bg-charcoal hover:text-ivory disabled:opacity-50"
           >
-            {hidden ? "Yayınla" : "Gizle"}
+            {row.isActive ? "Gizle" : "Yayınla"}
           </button>
           <button
             type="button"
-            disabled={disabled || saving}
+            disabled={disabled || saving || treeBusy}
             onClick={onDelete}
             className="inline-flex h-11 items-center px-4 text-12 tracking-nav text-accent disabled:opacity-50"
           >
@@ -506,20 +517,18 @@ function CategoryEditor({
           className="mt-2 min-h-24 w-full border border-border bg-ivory px-4 py-3 text-14"
         />
       </label>
-      <label className="text-12 tracking-label text-charcoal">
-        Alt kategoriler (virgülle)
-        <input
-          value={nextSubcategories}
-          onChange={(event) => setNextSubcategories(event.target.value)}
-          placeholder="Örn. Women's, Men's, Unisex"
-          className="mt-2 h-12 w-full border border-border bg-ivory px-4 text-14"
+      <div className={treeBusy ? "pointer-events-none opacity-60" : ""}>
+        <SavedCategoryTree
+          nodes={row.children}
+          onAdd={handleAddChild}
+          onRemove={handleRemoveChild}
         />
-      </label>
+      </div>
       {error ? <p className="text-14 text-accent">{error}</p> : null}
       {success ? <p className="text-14 text-charcoal">{success}</p> : null}
       <button
         type="submit"
-        disabled={disabled || saving}
+        disabled={disabled || saving || treeBusy}
         className="inline-flex h-12 w-fit items-center bg-charcoal px-6 text-12 tracking-nav text-ivory hover:bg-black disabled:opacity-50"
       >
         {saving ? "Kaydediliyor" : "Kaydet"}

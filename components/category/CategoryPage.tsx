@@ -83,7 +83,7 @@ export function CategoryPage({
 
     const category = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
       ? undefined
-      : resolved.parentSlug ?? resolved.slug;
+      : resolved.slug;
 
     void fetchStorefrontProductList({
       category,
@@ -95,9 +95,7 @@ export function CategoryPage({
         }
         const scoped = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
           ? items.filter(resolved.match)
-          : resolved.origin === "child"
-            ? items.filter(resolved.match)
-            : items;
+          : items;
         setApiProducts(scoped);
         setListLoading(false);
       })

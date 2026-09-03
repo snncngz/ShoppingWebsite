@@ -8,9 +8,72 @@ import Link from "next/link";
 
 import { useCatalog } from "@/context/CatalogContext";
 import { BRAND_NAME } from "@/lib/constants";
-import { filterNavLinks } from "@/lib/catalog";
-import { mobileAccordions, mobileUtilityLinks } from "@/lib/navigation";
+import { buildStorefrontNav } from "@/lib/catalog";
+import { mobileUtilityLinks, type NavLink } from "@/lib/navigation";
 import { useFocusTrap } from "@/lib/use-focus-trap";
+
+type MobileMenuProps = {
+  isOpen: boolean;
+  onClose: () => void;
+};
+
+function MobileNavTree({
+  items,
+  onClose,
+}: {
+  items: NavLink[];
+  onClose: () => void;
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <ul className="flex flex-col gap-3">
+      {items.map((item) => {
+        const key = `${item.href}-${item.label}`;
+        const hasChildren = Boolean(item.children?.length);
+        const isOpen = expanded === key;
+
+        return (
+          <li key={key}>
+            <div className="flex items-center gap-2">
+              <Link
+                href={item.href}
+                onClick={onClose}
+                className="min-w-0 flex-1 text-16 text-charcoal transition-colors hover:text-accent"
+              >
+                {item.label}
+              </Link>
+              {hasChildren ? (
+                <button
+                  type="button"
+                  aria-label={`${item.label} alt kategorileri`}
+                  aria-expanded={isOpen}
+                  onClick={() =>
+                    setExpanded((current) => (current === key ? null : key))
+                  }
+                  className="flex h-11 w-11 items-center justify-center text-taupe"
+                >
+                  <motion.span
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: reduceMotion ? 0 : 0.22 }}
+                  >
+                    <ChevronDown size={16} strokeWidth={1.4} />
+                  </motion.span>
+                </button>
+              ) : null}
+            </div>
+            {hasChildren && isOpen && item.children ? (
+              <div className="mt-3 border-l border-border pl-4">
+                <MobileNavTree items={item.children} onClose={onClose} />
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
 
 type MobileMenuProps = {
   isOpen: boolean;
@@ -20,15 +83,9 @@ type MobileMenuProps = {
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { categories } = useCatalog();
   const [expanded, setExpanded] = useState<string | null>(null);
-  const sections = mobileAccordions
-    .map((section) => ({
-      ...section,
-      items: filterNavLinks(section.items, categories).filter((item) =>
-        section.items.some((original) => original.href === item.href),
-      ),
-    }))
-    .filter((section) => section.items.length > 0);
-  const extraCategories = filterNavLinks([], categories);
+  const navItems = buildStorefrontNav(categories);
+  const sections = navItems.filter((item) => item.mega);
+  const extraCategories = navItems.filter((item) => !item.mega);
   const reduceMotion = useReducedMotion();
   const titleId = useId();
   const panelRef = useRef<HTMLElement>(null);
@@ -111,28 +168,34 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
 
                   return (
                     <li key={section.id} className="border-b border-border">
-                      <button
-                        type="button"
-                        aria-expanded={isExpanded}
-                        aria-controls={panelId}
-                        onClick={() =>
-                          setExpanded((current) =>
-                            current === section.id ? null : section.id,
-                          )
-                        }
-                        className="flex w-full items-center justify-between py-5 text-left"
-                      >
-                        <span className="font-heading text-32 tracking-[0.08em] text-black">
-                          {section.label}
-                        </span>
-                        <motion.span
-                          animate={{ rotate: isExpanded ? 180 : 0 }}
-                          transition={{ duration: reduceMotion ? 0 : 0.22 }}
-                          className="text-taupe"
+                      <div className="flex items-center justify-between gap-2 py-5">
+                        <Link
+                          href={section.href}
+                          onClick={onClose}
+                          className="min-w-0 flex-1 font-heading text-32 tracking-[0.08em] text-black"
                         >
-                          <ChevronDown size={20} strokeWidth={1.4} />
-                        </motion.span>
-                      </button>
+                          {section.label}
+                        </Link>
+                        <button
+                          type="button"
+                          aria-label={`${section.label} alt kategorileri`}
+                          aria-expanded={isExpanded}
+                          aria-controls={panelId}
+                          onClick={() =>
+                            setExpanded((current) =>
+                              current === section.id ? null : section.id,
+                            )
+                          }
+                          className="flex h-11 w-11 items-center justify-center text-taupe"
+                        >
+                          <motion.span
+                            animate={{ rotate: isExpanded ? 180 : 0 }}
+                            transition={{ duration: reduceMotion ? 0 : 0.22 }}
+                          >
+                            <ChevronDown size={20} strokeWidth={1.4} />
+                          </motion.span>
+                        </button>
+                      </div>
 
                       <AnimatePresence initial={false}>
                         {isExpanded ? (
@@ -144,19 +207,12 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                             transition={{ duration: reduceMotion ? 0 : 0.28 }}
                             className="overflow-hidden"
                           >
-                            <ul className="flex flex-col gap-3 pb-6 pl-1">
-                              {section.items.map((item) => (
-                                <li key={item.href}>
-                                  <Link
-                                    href={item.href}
-                                    onClick={onClose}
-                                    className="text-16 text-charcoal transition-colors hover:text-accent"
-                                  >
-                                    {item.label}
-                                  </Link>
-                                </li>
-                              ))}
-                            </ul>
+                            <div className="pb-6 pl-1">
+                              <MobileNavTree
+                                items={section.mega?.items ?? []}
+                                onClose={onClose}
+                              />
+                            </div>
                           </motion.div>
                         ) : null}
                       </AnimatePresence>
