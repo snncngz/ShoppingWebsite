@@ -6,6 +6,7 @@ import {
   categoryPages,
   type BreadcrumbItem,
 } from "@/lib/category-pages";
+import { BRAND_MEDIA } from "@/lib/brandMedia";
 import { CATEGORY_NAMES, type CategoryName } from "@/lib/constants";
 import type { DesktopNavItem, NavLink } from "@/lib/navigation";
 import type { Product } from "@/types";
@@ -16,7 +17,7 @@ export const ORIGINAL_PRODUCT_IDS = new Set(sourceProducts.map((product) => prod
 export const CATEGORY_PLACEHOLDERS: Record<CategoryName, string> = {
   "T-Shirt": "/placeholders/tshirt.svg",
   Pantolon: "/placeholders/pantolon.svg",
-  "Parfüm": "/placeholders/parfum.svg",
+  "Parfüm": BRAND_MEDIA.nav,
   Kemer: "/placeholders/kemer.svg",
   "Çanta": "/placeholders/canta.svg",
   Aksesuar: "/placeholders/aksesuar.svg",

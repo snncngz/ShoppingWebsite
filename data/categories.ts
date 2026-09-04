@@ -20,7 +20,7 @@ export const categories: Category[] = [
     slug: "parfum",
     name: "Parfüm",
     description: "Odun, amber, çiçek ve misk etrafında editorial kokular.",
-    image: "/placeholders/parfum.svg",
+    image: "/brand/resim10.jpeg",
   },
   {
     id: "kemer",

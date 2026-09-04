@@ -36,7 +36,7 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
       { label: "Best Sellers", href: "/cok-satanlar" },
     ],
     image: {
-      src: "/placeholders/parfum.svg",
+      src: "/brand/resim10.jpeg",
       alt: "Lucien Perrin parfüm",
       caption: "Parfüm",
     },

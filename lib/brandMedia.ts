@@ -1,0 +1,14 @@
+export const BRAND_MEDIA = {
+  hero: "/brand/main_image2.jpg",
+  shopStart: "/brand/resim1.jpeg",
+  collection: "/brand/resim10.jpeg",
+  women: "/brand/resim9.jpeg",
+  men: "/brand/resim4.jpeg",
+  editorial: "/brand/resim2.jpeg",
+  story: "/brand/resim7.jpeg",
+  featured: "/brand/resim5.jpeg",
+  stillLife: "/brand/resim3.jpeg",
+  citrus: "/brand/resim8.jpeg",
+  portrait: "/brand/resim6.jpeg",
+  nav: "/brand/resim10.jpeg",
+} as const;

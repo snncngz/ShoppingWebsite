@@ -8,10 +8,14 @@ import { useCatalog } from "@/context/CatalogContext";
 import { pickDiverse } from "@/lib/catalog";
 
 const featuredIds = [
-  "soft-grain-leather-tote",
   "velvet-oud-edp",
-  "metal-minimalist-bracelet",
+  "woody-amber-edp",
+  "rose-saffron-elixir",
 ] as const;
+
+function isPerfume(product: { category: string; categorySlug?: string }) {
+  return product.category === "Parfüm" || product.categorySlug === "parfum";
+}
 
 export function HomeProductFeed() {
   const { products, getById, hydrated, error, refresh } = useCatalog();
@@ -39,40 +43,47 @@ export function HomeProductFeed() {
     );
   }
 
+  const perfumes = products.filter(isPerfume);
   const popular = pickDiverse(
-    products.filter((product) => product.isPopular),
+    perfumes.filter((product) => product.isPopular),
     4,
   );
   const arrivals = pickDiverse(
-    products.filter((product) => product.isNew),
+    perfumes.filter((product) => product.isNew),
     6,
   );
   const featured = featuredIds
     .map((id) => getById(id))
-    .filter((product): product is NonNullable<typeof product> => Boolean(product));
+    .filter((product): product is NonNullable<typeof product> =>
+      Boolean(product && isPerfume(product)),
+    );
   const featuredProducts =
-    featured.length > 0 ? featured : pickDiverse(products, 3);
+    featured.length > 0 ? featured : pickDiverse(perfumes, 3);
 
   return (
     <>
-      <Reveal>
-        <ProductSection
-          title="Çok Satanlar"
-          products={popular}
-          viewAllHref="/cok-satanlar"
-          viewAllLabel="Tüm Çok Satanları Gör →"
-          variant="standard"
-        />
-      </Reveal>
-      <Reveal>
-        <ProductSection
-          title="Yeni Gelenler"
-          products={arrivals}
-          viewAllHref="/yeni-gelenler"
-          viewAllLabel="Tüm Yeni Gelenleri Gör →"
-          variant="editorial"
-        />
-      </Reveal>
+      {popular.length > 0 ? (
+        <Reveal>
+          <ProductSection
+            title="Çok Satanlar"
+            products={popular}
+            viewAllHref="/cok-satanlar"
+            viewAllLabel="Tüm çok satan parfümler →"
+            variant="standard"
+          />
+        </Reveal>
+      ) : null}
+      {arrivals.length > 0 ? (
+        <Reveal>
+          <ProductSection
+            title="Yeni Gelenler"
+            products={arrivals}
+            viewAllHref="/yeni-gelenler"
+            viewAllLabel="Tüm yeni extrait’ler →"
+            variant="editorial"
+          />
+        </Reveal>
+      ) : null}
       <Reveal>
         <FeaturedCollection products={featuredProducts} />
       </Reveal>

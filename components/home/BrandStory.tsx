@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { BRAND_MEDIA } from "@/lib/brandMedia";
+
 export function BrandStory() {
   return (
     <section className="bg-off-white px-6 py-24 lg:px-8 lg:py-32">
@@ -7,31 +9,39 @@ export function BrandStory() {
         <div className="max-w-lg lg:order-1">
           <p className="text-12 tracking-label text-taupe">Maison</p>
           <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
-            Detaylarda Saklı Bir Tarz
+            Sessiz bir imza
           </h2>
           <p className="mt-6 text-16 text-charcoal">
-            Lucien Perrin, giyim, parfüm ve aksesuarı aynı sessiz lüks dilinde
-            birleştiren modern bir butik. Her parça günlük ritüelin bir parçası
-            olacak kadar sade; koleksiyonda yerini dolduracak kadar özenli.
+            Lucien Perrin, parfümü günlük bir ritüel olarak ele alır. Her
+            extrait ölçülü, kalıcı ve cilde yakın — yüksek sesle konuşmak
+            zorunda kalmayan bir lüks.
           </p>
           <p className="mt-4 text-16 text-charcoal">
-            Form, doku ve koku aynı hizada durduğunda tarz yüksek sesle
-            konuşmak zorunda kalmaz.
+            Odun, amber, çiçek ve misk aynı hizada durduğunda koku bir aksesuar
+            değil, tarzın kendisi olur.
           </p>
-          <Link
-            href="/hakkimizda"
-            className="mt-8 inline-flex h-12 items-center justify-center border border-charcoal px-8 text-12 tracking-nav text-charcoal transition-colors hover:bg-charcoal hover:text-ivory"
-          >
-            Hakkımızda
-          </Link>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              href="/parfum"
+              className="inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
+            >
+              Alışverişe Başla
+            </Link>
+            <Link
+              href="/hakkimizda"
+              className="inline-flex h-12 items-center justify-center border border-charcoal px-8 text-12 tracking-nav text-charcoal transition-colors hover:bg-charcoal hover:text-ivory"
+            >
+              Hakkımızda
+            </Link>
+          </div>
         </div>
 
         <div className="relative aspect-[4/5] overflow-hidden bg-ivory lg:order-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/placeholders/pantolon.svg"
-            alt="Lucien Perrin pantolon silueti"
-            className="h-full w-full object-cover object-top lg:scale-105 lg:object-[center_12%]"
+            src={BRAND_MEDIA.story}
+            alt="Kum ve odun üzerinde Lucien Perrin extrait"
+            className="h-full w-full object-cover"
           />
         </div>
       </div>

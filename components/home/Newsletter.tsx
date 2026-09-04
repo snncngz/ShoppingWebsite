@@ -18,7 +18,7 @@ export function Newsletter() {
           Stay in the Know
         </h2>
         <p className="mt-4 text-16 text-charcoal">
-          Yeni koleksiyonlar, özel fırsatlar ve markadan haberler.
+          Yeni extrait’ler, sınırlı lansmanlar ve maison’dan haberler.
         </p>
 
         {submitted ? (

@@ -84,16 +84,18 @@ export function MegaMenu({ menu, isOpen, onMouseEnter, onMouseLeave }: MegaMenuP
           <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_280px] gap-16 px-8 py-12 xl:px-12">
             <MegaLinkList key={menuKey} items={menu.items} />
 
-            <div className="relative overflow-hidden rounded-sm border border-border bg-off-white">
+            <div className="relative h-64 overflow-hidden rounded-sm border border-border bg-charcoal">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={menu.image.src}
                 alt={menu.image.alt}
-                className="h-64 w-full object-cover"
+                className="h-full w-full object-cover"
               />
-              <p className="absolute bottom-4 left-0 right-0 text-center text-12 tracking-label text-taupe">
-                {menu.image.caption}
-              </p>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-4">
+                <p className="text-center text-12 tracking-label text-ivory/90">
+                  {menu.image.caption}
+                </p>
+              </div>
             </div>
           </div>
         </motion.div>

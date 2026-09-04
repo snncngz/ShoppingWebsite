@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ProductCard } from "@/components/product/ProductCard";
+import { BRAND_MEDIA } from "@/lib/brandMedia";
 import type { Product } from "@/types";
 
 type FeaturedCollectionProps = {
@@ -14,26 +15,25 @@ export function FeaturedCollection({ products }: FeaturedCollectionProps) {
         <div className="relative aspect-[4/5] overflow-hidden bg-off-white lg:col-span-7 lg:aspect-[3/4]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/placeholders/parfum.svg"
-            alt="Lucien Perrin parfüm koleksiyonu"
-            className="h-full w-full object-cover object-[center_30%] lg:scale-110"
+            src={BRAND_MEDIA.featured}
+            alt="Lucien Perrin extrait, villa terasında"
+            className="h-full w-full object-cover object-[center_30%] lg:scale-105"
           />
         </div>
 
         <div className="lg:col-span-5">
           <p className="text-12 tracking-label text-taupe">Collection</p>
           <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
-            The Essential Collection
+            The Extrait Collection
           </h2>
           <p className="mt-6 text-16 text-charcoal">
-            Günün omurgasını kuran parçalar — yumuşak jersey, net bir paça ve
-            cilde yakın bir imza koku.
+            Günün imzasını kuran kokular — cilde yakın, ölçülü ve kalıcı.
           </p>
           <Link
-            href="/yeni-gelenler"
+            href="/parfum"
             className="mt-8 inline-flex h-12 items-center justify-center bg-charcoal px-8 text-12 tracking-nav text-ivory transition-colors hover:bg-black"
           >
-            Koleksiyonu Keşfet
+            Alışverişe Başla
           </Link>
 
           <ul className="mt-12 flex flex-col gap-6">
