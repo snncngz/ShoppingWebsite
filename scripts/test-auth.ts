@@ -276,6 +276,100 @@ async function main() {
   }
   pass("ADMIN can open admin panel");
 
+  const extraEmail = `auth-del-${stamp}@velora.test`;
+  const extraRegister = await request("/api/auth/register", {
+    method: "POST",
+    body: JSON.stringify({
+      name: "Delete Target",
+      email: extraEmail,
+      password,
+    }),
+  });
+  expectStatus("register delete target", extraRegister.status, 201);
+  const extraVerified = await verifyFromRegister(request, extraRegister);
+  const extraMe = extraVerified.body.data as { id?: string };
+  const extraId = extraMe.id;
+  if (!extraId) {
+    throw new Error("verified user did not include id");
+  }
+
+  const adminUsers = await request("/api/admin/users?search=auth-del-", {
+    cookie: adminLogin.cookie,
+  });
+  expectStatus("admin users list", adminUsers.status, 200);
+  const listed = adminUsers.body.data as {
+    items?: { id: string; email: string; name?: string; passwordHash?: unknown }[];
+  };
+  if (listed.items?.some((item) => item.passwordHash)) {
+    throw new Error("admin users list leaked passwordHash");
+  }
+  if (!listed.items?.some((item) => item.email === extraEmail)) {
+    throw new Error("admin users list missing newly registered user");
+  }
+  pass("ADMIN can list users");
+
+  const adminSelf = await request("/api/auth/me", { cookie: adminLogin.cookie });
+  const adminSelfUser = adminSelf.body.data as { id?: string };
+  if (!adminSelfUser.id) {
+    throw new Error("admin me missing id");
+  }
+  const deleteSelf = await request(`/api/admin/users/${adminSelfUser.id}`, {
+    method: "DELETE",
+    cookie: adminLogin.cookie,
+  });
+  expectStatus("admin cannot delete self", deleteSelf.status, 403);
+  pass("Admin cannot delete own account from panel");
+
+  const userDeleteOther = await request(`/api/admin/users/${extraId}`, {
+    method: "DELETE",
+    cookie: userRelogin.cookie,
+  });
+  expectStatus("user cannot admin-delete", userDeleteOther.status, 403);
+  pass("USER cannot delete users via admin API");
+
+  const adminDelete = await request(`/api/admin/users/${extraId}`, {
+    method: "DELETE",
+    cookie: adminLogin.cookie,
+  });
+  expectStatus("admin delete user", adminDelete.status, 200);
+  const extraGone = await prisma.user.findUnique({ where: { email: extraEmail } });
+  if (extraGone) {
+    throw new Error("admin delete did not remove user");
+  }
+  pass("ADMIN can delete a member");
+
+  const wrongDelete = await request("/api/auth/me", {
+    method: "DELETE",
+    cookie: userRelogin.cookie,
+    body: JSON.stringify({ password: "Wrongpass1" }),
+  });
+  expectStatus("delete account wrong password", wrongDelete.status, 401);
+  pass("Own account delete rejects wrong password");
+
+  const missingPassword = await request("/api/auth/me", {
+    method: "DELETE",
+    cookie: userRelogin.cookie,
+    body: JSON.stringify({}),
+  });
+  expectStatus("delete account missing password", missingPassword.status, 400);
+  pass("Own account delete requires password");
+
+  const selfDelete = await request("/api/auth/me", {
+    method: "DELETE",
+    cookie: userRelogin.cookie,
+    body: JSON.stringify({ password }),
+  });
+  expectStatus("delete own account", selfDelete.status, 200);
+  const meAfterDelete = await request("/api/auth/me", {
+    cookie: userRelogin.cookie,
+  });
+  expectStatus("me after self delete", meAfterDelete.status, 401);
+  const storedAfterDelete = await prisma.user.findUnique({ where: { email } });
+  if (storedAfterDelete) {
+    throw new Error("self delete did not remove user");
+  }
+  pass("User can delete own account");
+
   await prisma.user.delete({ where: { email } }).catch(() => undefined);
 }
 

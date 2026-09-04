@@ -1,10 +1,21 @@
 import { apiRoute } from "@/server/api/handler";
 import { jsonSuccess } from "@/server/api/http";
-import { getAuthenticatedUser } from "@/server/services/auth";
+import {
+  deleteOwnAccount,
+  getAuthenticatedUser,
+  parseDeleteOwnAccountInput,
+} from "@/server/services/auth";
+import { asJsonObject, readJsonBody } from "@/server/utils/json";
 
 export const dynamic = "force-dynamic";
 
 export const GET = apiRoute(async () => {
   const user = await getAuthenticatedUser();
   return jsonSuccess(user);
+});
+
+export const DELETE = apiRoute(async (request) => {
+  const body = asJsonObject(await readJsonBody(request));
+  const { password } = parseDeleteOwnAccountInput(body);
+  return jsonSuccess(await deleteOwnAccount(password));
 });

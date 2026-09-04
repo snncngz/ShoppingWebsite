@@ -11,6 +11,7 @@ import {
 
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
 import {
+  deleteAccountRequest,
   fetchCurrentUser,
   loginRequest,
   logoutRequest,
@@ -37,6 +38,7 @@ type AuthContextValue = {
   verifyEmail: (token: string) => Promise<SafeUser>;
   resendVerification: (email: string) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 };
 
 const AuthContext = getSingletonContext<AuthContextValue | null>(
@@ -103,6 +105,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthUser(null);
   }, []);
 
+  const deleteAccount = useCallback(async (password: string) => {
+    await deleteAccountRequest(password);
+    setAuthUser(null);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: authUser ? toStorefrontUser(authUser) : null,
@@ -114,8 +121,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       verifyEmail,
       resendVerification,
       logout,
+      deleteAccount,
     }),
-    [authUser, isLoading, login, logout, register, resendVerification, verifyEmail],
+    [authUser, isLoading, login, logout, register, resendVerification, verifyEmail, deleteAccount],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

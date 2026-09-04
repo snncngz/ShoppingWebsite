@@ -68,6 +68,7 @@ async function main() {
     "/sepet",
     "/favoriler",
     "/admin/giris",
+    "/admin/kullanicilar",
   ];
   for (const path of pages) {
     const status = await getPage(path);

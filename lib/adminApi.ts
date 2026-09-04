@@ -92,6 +92,15 @@ export async function adminRequest<T>(
 
 export function getAdminErrorMessage(error: unknown): string {
   if (error instanceof AdminApiError) {
+    if (error.message.toLowerCase().includes("last admin")) {
+      return "Son yönetici hesabı silinemez.";
+    }
+    if (error.message.toLowerCase().includes("own account from the admin")) {
+      return "Kendi hesabınızı bu listeden silemezsiniz.";
+    }
+    if (error.message === "User not found") {
+      return "Kullanıcı bulunamadı.";
+    }
     return error.message;
   }
 

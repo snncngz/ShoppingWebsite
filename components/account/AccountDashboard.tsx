@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { AccountDeleteSection } from "@/components/account/AccountDeleteSection";
 import { useAuth } from "@/context/AuthContext";
 import { useWishlist } from "@/context/WishlistContext";
 import { demoOrders } from "@/data/orders";
@@ -116,6 +117,8 @@ export function AccountDashboard() {
             Çıkış Yap
           </button>
         </section>
+
+        <AccountDeleteSection />
       </div>
     </section>
   );

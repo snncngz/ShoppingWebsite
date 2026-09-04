@@ -86,6 +86,9 @@ export function isUnverifiedEmailError(error: unknown): boolean {
 export function getAuthErrorMessage(error: unknown): string {
   if (error instanceof AuthApiError) {
     if (error.code === "CONFLICT") {
+      if (error.message.toLowerCase().includes("last admin")) {
+        return "Son yönetici hesabı silinemez.";
+      }
       return "Bu e-posta ile kayıtlı bir hesap var.";
     }
 
@@ -172,5 +175,12 @@ export async function resendVerificationRequest(email: string): Promise<{ ok: tr
 export async function logoutRequest(): Promise<void> {
   await authRequest<{ ok: true }>("/api/auth/logout", {
     method: "POST",
+  });
+}
+
+export async function deleteAccountRequest(password: string): Promise<void> {
+  await authRequest<{ ok: true }>("/api/auth/me", {
+    method: "DELETE",
+    body: JSON.stringify({ password }),
   });
 }

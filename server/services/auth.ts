@@ -12,6 +12,7 @@ import { isDisposableEmail } from "@/server/mail/disposable-domains";
 import { isMailConfigured, sendMail } from "@/server/mail/mailer";
 import { verificationEmailContent } from "@/server/mail/templates";
 import { assertRateLimit } from "@/server/security/http-guards";
+import { assertNotLastAdmin, purgeUserById } from "@/server/services/users";
 import { hasField } from "@/server/utils/validation";
 import type { RegisterPendingDto, SafeUser } from "@/types/auth";
 
@@ -139,6 +140,15 @@ export function parseResendVerificationInput(body: Record<string, unknown>): {
   email: string;
 } {
   return { email: parseEmail(body.email) };
+}
+
+export function parseDeleteOwnAccountInput(body: Record<string, unknown>): {
+  password: string;
+} {
+  if (typeof body.password !== "string" || body.password.length === 0) {
+    badRequest("password is required");
+  }
+  return { password: body.password };
 }
 
 function verifyUrl(token: string): string {
@@ -309,6 +319,24 @@ export async function resendVerification(email: string): Promise<{ ok: true }> {
 
 export async function logoutUser(): Promise<void> {
   await clearSession();
+}
+
+export async function deleteOwnAccount(password: string): Promise<{ ok: true }> {
+  const current = await requireAuth();
+  const row = await getPrisma().user.findUnique({
+    where: { id: current.id },
+  });
+  const passwordHash = row?.passwordHash ?? DUMMY_PASSWORD_HASH;
+  const matches = await verifyPassword(password, passwordHash);
+
+  if (!row || !matches) {
+    unauthorized("Invalid email or password");
+  }
+
+  await assertNotLastAdmin(row.role);
+  await getPrisma().$transaction((tx) => purgeUserById(tx, row.id));
+  await clearSession();
+  return { ok: true };
 }
 
 export async function getAuthenticatedUser(): Promise<SafeUser> {

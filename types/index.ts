@@ -104,6 +104,7 @@ export type {
   PaymentStatusDto,
   PaymentDto,
   PaymentCreateDto,
+  AdminUserListItemDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
 export type { AuthUser, RegisterPendingDto, SafeUser, SessionUser, UserRole } from "@/types/auth";

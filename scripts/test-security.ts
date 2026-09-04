@@ -108,6 +108,8 @@ async function main() {
   expectStatus("anon orders", anonOrders.status, 401);
   const anonAdmin = await request("/api/admin/orders");
   expectStatus("anon admin orders", anonAdmin.status, 401);
+  const anonUsers = await request("/api/admin/users");
+  expectStatus("anon admin users", anonUsers.status, 401);
   const anonInventory = await request("/api/admin/inventory");
   expectStatus("anon inventory", anonInventory.status, 401);
   const invalidSession = await request("/api/auth/me", {
@@ -161,6 +163,17 @@ async function main() {
 
   const userAdmin = await request("/api/admin/orders", { cookie: cookieA });
   expectStatus("user admin orders", userAdmin.status, 403);
+  const userUsers = await request("/api/admin/users", { cookie: cookieA });
+  expectStatus("user admin users", userUsers.status, 403);
+  const otherId = (verifiedB.body.data as { id?: string }).id;
+  if (!otherId) {
+    throw new Error("user B missing id");
+  }
+  const crossDelete = await request(`/api/admin/users/${otherId}`, {
+    method: "DELETE",
+    cookie: cookieA,
+  });
+  expectStatus("user delete other user", crossDelete.status, 403);
   const userProduct = await request("/api/products", {
     method: "POST",
     cookie: cookieA,
