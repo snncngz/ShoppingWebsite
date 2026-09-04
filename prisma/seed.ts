@@ -33,12 +33,14 @@ async function main() {
       name: DEV_SEED.userName,
       role: UserRole.USER,
       passwordHash: await hashPassword(randomBytes(24).toString("hex")),
+      emailVerifiedAt: new Date(),
     },
     create: {
       name: DEV_SEED.userName,
       email: DEV_SEED.userEmail,
       passwordHash: await hashPassword(randomBytes(24).toString("hex")),
       role: UserRole.USER,
+      emailVerifiedAt: new Date(),
     },
   });
 

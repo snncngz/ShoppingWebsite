@@ -28,6 +28,10 @@ Do not run `npm run dev` as the production process. Use `npm run build` then `np
 | `IYZICO_SECRET_KEY` | when `PAYMENT_PROVIDER=iyzico` | Live secret only |
 | `IYZICO_BASE_URL` | when live iyzico | Must not be sandbox in hosted production |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | bootstrap only | Used by `npm run create-admin` |
+| `MAIL_FROM` | yes (hosted) | From address for verification emails |
+| `RESEND_API_KEY` | one of mail options | Resend API |
+| `SMTP_HOST` / `SMTP_USER` / `SMTP_PASS` | one of mail options | Alternative to Resend |
+| `SMTP_PORT` | no | Defaults to `587` |
 
 Startup validation runs from `instrumentation.ts` via `assertProductionEnv()` (skipped during `next build`). Missing names are reported; secret values are never logged.
 

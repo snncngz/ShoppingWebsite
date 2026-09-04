@@ -75,11 +75,6 @@ function MobileNavTree({
   );
 }
 
-type MobileMenuProps = {
-  isOpen: boolean;
-  onClose: () => void;
-};
-
 export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
   const { categories } = useCatalog();
   const [expanded, setExpanded] = useState<string | null>(null);

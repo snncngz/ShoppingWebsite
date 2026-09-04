@@ -22,7 +22,8 @@ GitHub
 2. Generate secrets (`AUTH_SECRET`, `PAYMENT_WEBHOOK_SECRET`) with a CSPRNG — never reuse development values.
 3. Set `API_BASE_URL` to the public `https://` origin.
 4. Configure payment: either keep `PAYMENT_PROVIDER=test` until go-live, or set live iyzico keys + non-sandbox `IYZICO_BASE_URL`.
-5. Point DNS / TLS termination at the Node process (or reverse proxy).
+5. Set `MAIL_FROM` and either `RESEND_API_KEY` or SMTP (`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`) so new users can verify their email.
+6. Point DNS / TLS termination at the Node process (or reverse proxy).
 
 ## Deploy commands
 

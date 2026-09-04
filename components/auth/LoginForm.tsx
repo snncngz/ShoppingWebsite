@@ -6,18 +6,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
-import { getAuthErrorMessage } from "@/lib/authApi";
+import { getAuthErrorMessage, isUnverifiedEmailError } from "@/lib/authApi";
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none placeholder:text-taupe focus:border-taupe";
 
 export function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, resendVerification } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [unverified, setUnverified] = useState(false);
   const [pending, setPending] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -29,15 +32,37 @@ export function LoginForm() {
 
     setPending(true);
     setError("");
+    setNotice("");
+    setUnverified(false);
 
     try {
       const user = await login(email, password);
       router.push(user.role === "ADMIN" ? "/admin" : "/hesabim");
       router.refresh();
     } catch (caught) {
+      setUnverified(isUnverifiedEmailError(caught));
       setError(getAuthErrorMessage(caught));
     } finally {
       setPending(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email.trim()) {
+      setError("Doğrulama maili için e-posta gerekli.");
+      return;
+    }
+
+    setResending(true);
+    setError("");
+    setNotice("");
+    try {
+      await resendVerification(email);
+      setNotice("Doğrulama bağlantısı yeniden gönderildi. Gelen kutunuzu kontrol edin.");
+    } catch (caught) {
+      setError(getAuthErrorMessage(caught));
+    } finally {
+      setResending(false);
     }
   };
 
@@ -75,6 +100,18 @@ export function LoginForm() {
           </label>
 
           {error ? <p className="text-14 text-accent">{error}</p> : null}
+          {notice ? <p className="text-14 text-charcoal">{notice}</p> : null}
+
+          {unverified ? (
+            <button
+              type="button"
+              disabled={resending}
+              onClick={() => void handleResend()}
+              className="inline-flex h-12 items-center justify-center border border-charcoal text-12 tracking-nav text-charcoal hover:bg-warm-beige/40 disabled:opacity-60"
+            >
+              {resending ? "Gönderiliyor" : "Doğrulama mailini tekrar gönder"}
+            </button>
+          ) : null}
 
           <button
             type="submit"

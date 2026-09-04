@@ -19,6 +19,12 @@ export type ServerEnv = {
   iyzicoApiKey: string | undefined;
   iyzicoSecretKey: string | undefined;
   iyzicoBaseUrl: string;
+  mailFrom: string | undefined;
+  smtpHost: string | undefined;
+  smtpPort: number;
+  smtpUser: string | undefined;
+  smtpPassword: string | undefined;
+  resendApiKey: string | undefined;
 };
 
 export class EnvValidationError extends Error {
@@ -64,6 +70,12 @@ export function getServerEnv(): ServerEnv {
     iyzicoSecretKey: readOptional("IYZICO_SECRET_KEY"),
     iyzicoBaseUrl:
       readOptional("IYZICO_BASE_URL") ?? "https://sandbox-api.iyzipay.com",
+    mailFrom: readOptional("MAIL_FROM"),
+    smtpHost: readOptional("SMTP_HOST"),
+    smtpPort: Number(readOptional("SMTP_PORT") ?? "587") || 587,
+    smtpUser: readOptional("SMTP_USER"),
+    smtpPassword: readOptional("SMTP_PASS"),
+    resendApiKey: readOptional("RESEND_API_KEY"),
   };
 }
 
@@ -193,6 +205,17 @@ export function assertProductionEnv(): void {
         "IYZICO_BASE_URL must not point at sandbox in production when PAYMENT_PROVIDER=iyzico",
         ["IYZICO_BASE_URL"],
       );
+    }
+  }
+
+  if (!localHost) {
+    if (!env.mailFrom) {
+      missing.push("MAIL_FROM");
+    }
+    const hasResend = Boolean(env.resendApiKey);
+    const hasSmtp = Boolean(env.smtpHost && env.smtpUser && env.smtpPassword);
+    if (!hasResend && !hasSmtp) {
+      missing.push("RESEND_API_KEY or SMTP_HOST/SMTP_USER/SMTP_PASS");
     }
   }
 

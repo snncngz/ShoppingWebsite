@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { loadLocalEnv } from "../prisma/load-env";
+import { verifyFromRegister } from "./verification-token";
 
 loadLocalEnv();
 
@@ -101,7 +102,7 @@ async function main() {
     body: JSON.stringify({ name: "Order Customer", email, password }),
   });
   expectStatus("register user", user.status, 201);
-  const userCookie = user.cookie;
+  const userCookie = (await verifyFromRegister(request, user)).cookie;
 
   const userList = await request("/api/admin/orders", { cookie: userCookie });
   expectStatus("user list", userList.status, 403);
@@ -141,7 +142,8 @@ async function main() {
     }),
   });
   expectStatus("register other user", other.status, 201);
-  const otherOrders = await request("/api/orders", { cookie: other.cookie });
+  const otherCookie = (await verifyFromRegister(request, other)).cookie;
+  const otherOrders = await request("/api/orders", { cookie: otherCookie });
   expectStatus("other user orders", otherOrders.status, 200);
   const otherIds = (otherOrders.body.data as { id: string }[]).map((item) => item.id);
   if (otherIds.includes(orderId)) {
@@ -154,7 +156,7 @@ async function main() {
     throw new Error("owner cannot see own order on GET /api/orders");
   }
   const otherDetail = await request(`/api/orders/${orderId}`, {
-    cookie: other.cookie,
+    cookie: otherCookie,
   });
   expectStatus("other user order detail", otherDetail.status, 404);
   pass("12.8 Regression");

@@ -3,7 +3,6 @@
 import { useState, type FormEvent } from "react";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage } from "@/lib/authApi";
@@ -12,7 +11,6 @@ const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none placeholder:text-taupe focus:border-taupe";
 
 export function RegisterForm() {
-  const router = useRouter();
   const { register } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,6 +18,7 @@ export function RegisterForm() {
   const [passwordAgain, setPasswordAgain] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  const [sentTo, setSentTo] = useState("");
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,9 +47,8 @@ export function RegisterForm() {
     setError("");
 
     try {
-      await register({ name, email, password });
-      router.push("/hesabim");
-      router.refresh();
+      const result = await register({ name, email, password });
+      setSentTo(result.email);
     } catch (caught) {
       setError(getAuthErrorMessage(caught));
     } finally {
@@ -58,13 +56,40 @@ export function RegisterForm() {
     }
   };
 
+  if (sentTo) {
+    return (
+      <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-md">
+          <p className="text-12 tracking-label text-taupe">Account</p>
+          <h1 className="mt-3 font-heading text-32 text-black lg:text-48">
+            E-postanızı doğrulayın
+          </h1>
+          <p className="mt-4 text-14 text-charcoal">
+            <span className="font-medium">{sentTo}</span> adresine bir doğrulama
+            bağlantısı gönderdik. Hesabınız, bağlantıya tıklayana kadar açılmaz.
+          </p>
+          <p className="mt-4 text-14 text-taupe">
+            Mail gelmediyse spam klasörüne bakın veya giriş sayfasından yeni
+            bağlantı isteyin.
+          </p>
+          <p className="mt-8 text-14 text-taupe">
+            <Link href="/login" className="text-charcoal underline-offset-4 hover:underline">
+              Giriş sayfasına dön
+            </Link>
+          </p>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
       <div className="mx-auto max-w-md">
         <p className="text-12 tracking-label text-taupe">Account</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Kayıt</h1>
         <p className="mt-4 text-14 text-taupe">
-          Hesap oluşturun. Şifreniz güvenli şekilde saklanır.
+          Gerçek bir e-posta kullanın. Hesap, doğrulama bağlantısına tıklayınca
+          açılır.
         </p>
 
         <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">

@@ -10,8 +10,15 @@ export type SafeUser = {
   name: string;
   email: string;
   role: UserRole;
+  emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+export type RegisterPendingDto = {
+  pendingVerification: true;
+  email: string;
+  verificationToken?: string;
 };
 
 export type AuthUser = SafeUser;

@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
 import { loadLocalEnv } from "../prisma/load-env";
+import { verifyFromRegister } from "./verification-token";
 
 loadLocalEnv();
 
@@ -121,13 +122,13 @@ async function main() {
     body: JSON.stringify({ name: "Cart A", email: emailA, password }),
   });
   expectStatus("register A", userA.status, 201);
-  const cookieA = userA.cookie;
+  const cookieA = (await verifyFromRegister(request, userA)).cookie;
   const userB = await request("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ name: "Cart B", email: emailB, password }),
   });
   expectStatus("register B", userB.status, 201);
-  const cookieB = userB.cookie;
+  const cookieB = (await verifyFromRegister(request, userB)).cookie;
 
   const emptyCart = await request("/api/cart", { cookie: cookieA });
   expectStatus("cart get", emptyCart.status, 200);

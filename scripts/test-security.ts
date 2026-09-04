@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { loadLocalEnv } from "../prisma/load-env";
+import { verifyFromRegister } from "./verification-token";
 
 loadLocalEnv();
 
@@ -142,8 +143,9 @@ async function main() {
     body: JSON.stringify({ name: "Sec User A", email: emailA, password }),
   });
   expectStatus("register A", userA.status, 201);
-  const cookieA = userA.cookie;
-  const registered = userA.body.data as { role?: string; passwordHash?: unknown };
+  const verifiedA = await verifyFromRegister(request, userA);
+  const cookieA = verifiedA.cookie;
+  const registered = verifiedA.body.data as { role?: string; passwordHash?: unknown };
   if (registered.role !== "USER" || registered.passwordHash) {
     throw new Error("register leaked privileged fields");
   }
@@ -153,7 +155,8 @@ async function main() {
     body: JSON.stringify({ name: "Sec User B", email: emailB, password }),
   });
   expectStatus("register B", userB.status, 201);
-  const cookieB = userB.cookie;
+  const verifiedB = await verifyFromRegister(request, userB);
+  const cookieB = verifiedB.cookie;
   pass("Mass Assignment Register");
 
   const userAdmin = await request("/api/admin/orders", { cookie: cookieA });

@@ -1,18 +1,25 @@
 import { Prisma } from "@prisma/client";
 
-import { badRequest, conflict, unauthorized } from "@/server/api/errors";
-import { requireAuth, toSafeUser } from "@/server/auth/authorization";
+import { badRequest, conflict, forbidden, internalError, unauthorized } from "@/server/api/errors";
+import { getCurrentUser, requireAuth, toSafeUser } from "@/server/auth/authorization";
+import { createEmailToken, hashEmailToken } from "@/server/auth/email-token";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { clearSession, createSession } from "@/server/auth/session";
+import { getServerEnv } from "@/server/config/env";
 import { getPrisma } from "@/server/db/prisma";
+import { logger } from "@/server/logging/logger";
+import { isDisposableEmail } from "@/server/mail/disposable-domains";
+import { isMailConfigured, sendMail } from "@/server/mail/mailer";
+import { verificationEmailContent } from "@/server/mail/templates";
 import { assertRateLimit } from "@/server/security/http-guards";
 import { hasField } from "@/server/utils/validation";
-import type { SafeUser } from "@/types/auth";
+import type { RegisterPendingDto, SafeUser } from "@/types/auth";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_LETTER = /[A-Za-z]/;
 const PASSWORD_NUMBER = /[0-9]/;
 const DUMMY_PASSWORD_HASH = `scrypt:${"00".repeat(16)}:${"00".repeat(64)}`;
+const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
 const CLIENT_OWNED_FIELDS = [
   "role",
   "userId",
@@ -20,7 +27,10 @@ const CLIENT_OWNED_FIELDS = [
   "passwordHash",
   "createdAt",
   "updatedAt",
+  "emailVerifiedAt",
 ] as const;
+
+export const EMAIL_NOT_VERIFIED_MESSAGE = "Email is not verified";
 
 function isUniqueEmailError(error: unknown): boolean {
   return (
@@ -79,6 +89,17 @@ function parseName(value: unknown): string {
   return name;
 }
 
+function parseToken(value: unknown): string {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    badRequest("token is required");
+  }
+  const token = value.trim();
+  if (token.length < 32 || token.length > 128) {
+    badRequest("token is invalid");
+  }
+  return token;
+}
+
 export function parseRegisterInput(body: Record<string, unknown>): {
   name: string;
   email: string;
@@ -110,29 +131,113 @@ export function parseLoginInput(body: Record<string, unknown>): {
   };
 }
 
+export function parseVerifyEmailInput(body: Record<string, unknown>): { token: string } {
+  return { token: parseToken(body.token) };
+}
+
+export function parseResendVerificationInput(body: Record<string, unknown>): {
+  email: string;
+} {
+  return { email: parseEmail(body.email) };
+}
+
+function verifyUrl(token: string): string {
+  const origin = getServerEnv().apiBaseUrl.replace(/\/$/, "");
+  return `${origin}/dogrula?token=${encodeURIComponent(token)}`;
+}
+
+async function issueVerification(user: {
+  id: string;
+  name: string;
+  email: string;
+}): Promise<string> {
+  const prisma = getPrisma();
+  await prisma.emailVerificationToken.deleteMany({ where: { userId: user.id } });
+
+  const token = createEmailToken();
+  await prisma.emailVerificationToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashEmailToken(token),
+      expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+    },
+  });
+
+  const content = verificationEmailContent({
+    name: user.name,
+    verifyUrl: verifyUrl(token),
+  });
+  await sendMail({
+    to: user.email,
+    subject: content.subject,
+    text: content.text,
+    html: content.html,
+  }).catch((error: unknown) => {
+    logger.error("verification email failed", {
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+    internalError("Could not send verification email");
+  });
+
+  return token;
+}
+
+function pendingPayload(email: string, token: string): RegisterPendingDto {
+  const pending: RegisterPendingDto = {
+    pendingVerification: true,
+    email,
+  };
+  if (!isMailConfigured()) {
+    pending.verificationToken = token;
+  }
+  return pending;
+}
+
 export async function registerUser(input: {
   name: string;
   email: string;
   password: string;
-}): Promise<SafeUser> {
+}): Promise<RegisterPendingDto> {
+  if (isDisposableEmail(input.email)) {
+    badRequest("Use a real email address");
+  }
+
+  const prisma = getPrisma();
+  const existing = await prisma.user.findUnique({
+    where: { email: input.email },
+  });
+
+  if (existing?.emailVerifiedAt) {
+    conflict("An account with this email already exists");
+  }
+
   const passwordHash = await hashPassword(input.password);
 
   try {
-    const user = await getPrisma().user.create({
-      data: {
-        name: input.name,
-        email: input.email,
-        passwordHash,
-        role: "USER",
-      },
-    });
-    await createSession(user.id, user.role);
-    return toSafeUser(user);
+    const user = existing
+      ? await prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name: input.name,
+            passwordHash,
+            role: "USER",
+          },
+        })
+      : await prisma.user.create({
+          data: {
+            name: input.name,
+            email: input.email,
+            passwordHash,
+            role: "USER",
+          },
+        });
+
+    const token = await issueVerification(user);
+    return pendingPayload(user.email, token);
   } catch (error) {
     if (isUniqueEmailError(error)) {
       conflict("An account with this email already exists");
     }
-
     throw error;
   }
 }
@@ -153,8 +258,53 @@ export async function loginUser(input: {
     unauthorized("Invalid email or password");
   }
 
+  if (!user.emailVerifiedAt) {
+    forbidden(EMAIL_NOT_VERIFIED_MESSAGE);
+  }
+
   await createSession(user.id, user.role);
   return toSafeUser(user);
+}
+
+export async function verifyEmail(token: string): Promise<SafeUser> {
+  const tokenHash = hashEmailToken(token);
+  const row = await getPrisma().emailVerificationToken.findUnique({
+    where: { tokenHash },
+    include: { user: true },
+  });
+
+  if (!row || row.expiresAt.getTime() < Date.now()) {
+    const current = await getCurrentUser();
+    if (current?.emailVerified) {
+      return current;
+    }
+    badRequest("Verification link is invalid or expired");
+  }
+
+  const user = await getPrisma().$transaction(async (tx) => {
+    await tx.emailVerificationToken.deleteMany({ where: { userId: row.userId } });
+    return tx.user.update({
+      where: { id: row.userId },
+      data: { emailVerifiedAt: row.user.emailVerifiedAt ?? new Date() },
+    });
+  });
+
+  await createSession(user.id, user.role);
+  return toSafeUser(user);
+}
+
+export async function resendVerification(email: string): Promise<{ ok: true }> {
+  assertRateLimit(`verify-resend:${email}`, 5, 15 * 60 * 1000);
+
+  const user = await getPrisma().user.findUnique({
+    where: { email },
+  });
+
+  if (user && !user.emailVerifiedAt) {
+    await issueVerification(user);
+  }
+
+  return { ok: true };
 }
 
 export async function logoutUser(): Promise<void> {

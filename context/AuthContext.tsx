@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -14,10 +15,12 @@ import {
   loginRequest,
   logoutRequest,
   registerRequest,
+  resendVerificationRequest,
+  verifyEmailRequest,
 } from "@/lib/authApi";
 import { toStorefrontUser } from "@/lib/mappers/user";
 import { getSingletonContext } from "@/lib/singleton-context";
-import type { SafeUser, UserRole } from "@/types/auth";
+import type { RegisterPendingDto, SafeUser, UserRole } from "@/types/auth";
 import type { User } from "@/types";
 
 type AuthContextValue = {
@@ -30,7 +33,9 @@ type AuthContextValue = {
     name: string;
     email: string;
     password: string;
-  }) => Promise<SafeUser>;
+  }) => Promise<RegisterPendingDto>;
+  verifyEmail: (token: string) => Promise<SafeUser>;
+  resendVerification: (email: string) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -70,28 +75,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const login = useCallback(async (email: string, password: string) => {
+    const user = await loginRequest(email, password);
+    setAuthUser(user);
+    return user;
+  }, []);
+
+  const register = useCallback(
+    async (input: { name: string; email: string; password: string }) => {
+      return registerRequest(input);
+    },
+    [],
+  );
+
+  const verifyEmail = useCallback(async (token: string) => {
+    const user = await verifyEmailRequest(token);
+    setAuthUser(user);
+    return user;
+  }, []);
+
+  const resendVerification = useCallback(async (email: string) => {
+    await resendVerificationRequest(email);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await logoutRequest();
+    setAuthUser(null);
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: authUser ? toStorefrontUser(authUser) : null,
       role: authUser?.role ?? null,
       isLoggedIn: Boolean(authUser),
       isLoading,
-      login: async (email, password) => {
-        const user = await loginRequest(email, password);
-        setAuthUser(user);
-        return user;
-      },
-      register: async (input) => {
-        const user = await registerRequest(input);
-        setAuthUser(user);
-        return user;
-      },
-      logout: async () => {
-        await logoutRequest();
-        setAuthUser(null);
-      },
+      login,
+      register,
+      verifyEmail,
+      resendVerification,
+      logout,
     }),
-    [authUser, isLoading],
+    [authUser, isLoading, login, logout, register, resendVerification, verifyEmail],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

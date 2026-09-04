@@ -134,7 +134,13 @@ function limitFor(pathname: string, method: string): { limit: number; windowMs: 
     return { limit: 80, windowMs: 10 * 60 * 1000 };
   }
   if (pathname === "/api/auth/register") {
-    return { limit: 60, windowMs: 10 * 60 * 1000 };
+    return { limit: 20, windowMs: 10 * 60 * 1000 };
+  }
+  if (pathname === "/api/auth/resend-verification") {
+    return { limit: 8, windowMs: 15 * 60 * 1000 };
+  }
+  if (pathname === "/api/auth/verify-email") {
+    return { limit: 30, windowMs: 10 * 60 * 1000 };
   }
   if (pathname.startsWith("/api/auth/")) {
     return { limit: 60, windowMs: 10 * 60 * 1000 };

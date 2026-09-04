@@ -193,6 +193,7 @@ export const RESERVED_CATEGORY_SLUGS = new Set([
   "api",
   "giris",
   "kayit",
+  "dogrula",
   "hesabim",
   "sepet",
   "favoriler",

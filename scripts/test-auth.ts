@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { loadLocalEnv } from "../prisma/load-env";
 import { verifyPassword } from "../server/auth/password";
+import { verifyFromRegister } from "./verification-token";
 
 loadLocalEnv();
 
@@ -88,17 +89,36 @@ async function main() {
     }),
   });
   expectStatus("register", registered.status, 201);
-  const user = registered.body.data as { email?: string; role?: string; passwordHash?: unknown };
-  if (user.email !== email || user.role !== "USER" || user.passwordHash) {
-    throw new Error("register response leaked hash or had wrong role");
+  const pending = registered.body.data as {
+    pendingVerification?: boolean;
+    email?: string;
+    role?: string;
+    passwordHash?: unknown;
+  };
+  if (!pending.pendingVerification || pending.email !== email || pending.passwordHash) {
+    throw new Error("register should wait for email verification");
   }
-  pass("Register creates USER session");
+  pass("Register waits for email verification");
 
-  const duplicate = await request("/api/auth/register", {
+  const beforeVerify = await request("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  expectStatus("login before verify", beforeVerify.status, 403);
+  pass("Unverified user cannot log in");
+
+  const verified = await verifyFromRegister(request, registered);
+  const user = verified.body.data as { email?: string; role?: string; passwordHash?: unknown };
+  if (user.email !== email || user.role !== "USER" || user.passwordHash) {
+    throw new Error("verify response leaked hash or had wrong role");
+  }
+  pass("Email verification creates USER session");
+
+  const duplicatePending = await request("/api/auth/register", {
     method: "POST",
     body: JSON.stringify({ name: "Auth Test", email, password }),
   });
-  expectStatus("duplicate email", duplicate.status, 409);
+  expectStatus("duplicate email", duplicatePending.status, 409);
   pass("Duplicate email rejected");
 
   const invalidEmail = await request("/api/auth/register", {

@@ -15,12 +15,14 @@ export async function upsertAdminUser(
       name: input.name,
       passwordHash,
       role: UserRole.ADMIN,
+      emailVerifiedAt: new Date(),
     },
     create: {
       name: input.name,
       email,
       passwordHash,
       role: UserRole.ADMIN,
+      emailVerifiedAt: new Date(),
     },
   });
 }

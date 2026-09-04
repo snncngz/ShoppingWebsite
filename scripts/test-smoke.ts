@@ -63,6 +63,7 @@ async function main() {
     "/tshirt",
     "/login",
     "/register",
+    "/dogrula",
     "/hesabim",
     "/sepet",
     "/favoriler",

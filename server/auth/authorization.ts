@@ -11,6 +11,7 @@ export function toSafeUser(user: User): SafeUser {
     name: user.name,
     email: user.email,
     role: user.role,
+    emailVerified: Boolean(user.emailVerifiedAt),
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -26,7 +27,7 @@ export async function getCurrentUser(): Promise<SafeUser | null> {
     where: { id: session.userId },
   });
 
-  if (!user) {
+  if (!user || !user.emailVerifiedAt) {
     return null;
   }
 

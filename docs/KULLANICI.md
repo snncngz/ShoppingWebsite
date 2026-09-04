@@ -13,7 +13,8 @@ Canlı site adresinizi Render Web Service URL’si ile değiştirin
 2. [Admin paneline giriş](#2-admin-paneline-giriş)
 3. [Kategori eklemek](#3-kategori-eklemek)
 4. [Varsayılan kategorileri toplu eklemek](#4-varsayılan-kategorileri-toplu-eklemek)
-5. [Kodu canlıya almak](#5-kodu-canlıya-almak)
+5. [E-posta doğrulama](#5-e-posta-doğrulama)
+6. [Kodu canlıya almak](#6-kodu-canlıya-almak)
 
 ---
 
@@ -90,7 +91,21 @@ Parfüm, T-Shirt, Pantolon, Gömlek, Ceket, Aksesuar, Kemer, Çanta eklenir.
 
 ---
 
-## 5) Kodu canlıya almak
+## 5) E-posta doğrulama
+
+Yeni üyeler maildeki bağlantıya tıklamadan giriş yapamaz.
+
+Render → Web Service → **Environment** içine şunları ekleyin:
+
+- `MAIL_FROM` — örn. `Lucien Perrin <no-reply@sizin-alanadiniz.com>`
+- Ya `RESEND_API_KEY` (Resend)
+- Ya da SMTP: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` (`SMTP_PORT` varsayılan 587)
+
+Gmail kullanıyorsanız uygulama şifresi gerekir.
+
+---
+
+## 6) Kodu canlıya almak
 
 1. Değişiklikleri kaydedin
 2. GitHub `main` branch’ine push edin

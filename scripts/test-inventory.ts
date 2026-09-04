@@ -1,6 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 
 import { loadLocalEnv } from "../prisma/load-env";
+import { verifyFromRegister } from "./verification-token";
 
 loadLocalEnv();
 
@@ -79,7 +80,7 @@ async function registerUser(name: string, email: string, password: string) {
   });
   expectStatus(`register ${email}`, registered.status, 201);
   userEmails.push(email);
-  return registered.cookie;
+  return (await verifyFromRegister(request, registered)).cookie;
 }
 
 async function main() {

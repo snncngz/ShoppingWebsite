@@ -1,5 +1,5 @@
 import type { ApiErrorResponse, ApiSuccessResponse } from "@/types/api";
-import type { SafeUser } from "@/types/auth";
+import type { RegisterPendingDto, SafeUser } from "@/types/auth";
 
 export class AuthApiError extends Error {
   readonly status: number;
@@ -79,6 +79,10 @@ async function authRequest<T>(path: string, init?: RequestInit): Promise<T> {
   return (payload as ApiSuccessResponse<T>).data;
 }
 
+export function isUnverifiedEmailError(error: unknown): boolean {
+  return error instanceof AuthApiError && error.message === "Email is not verified";
+}
+
 export function getAuthErrorMessage(error: unknown): string {
   if (error instanceof AuthApiError) {
     if (error.code === "CONFLICT") {
@@ -90,10 +94,22 @@ export function getAuthErrorMessage(error: unknown): string {
     }
 
     if (error.code === "FORBIDDEN") {
+      if (error.message === "Email is not verified") {
+        return "E-posta adresiniz henüz doğrulanmadı. Gelen kutunuzdaki bağlantıya tıklayın.";
+      }
       if (error.message.toLowerCase().includes("cross-origin")) {
         return "Güvenlik engeli: site adresi (API_BASE_URL) uyuşmuyor olabilir. Sayfayı yenileyip tekrar deneyin.";
       }
       return "Bu işlem için yetkiniz yok.";
+    }
+
+    if (error.code === "BAD_REQUEST") {
+      if (error.message.toLowerCase().includes("real email")) {
+        return "Geçici / sahte e-posta adresleriyle kayıt olunamaz.";
+      }
+      if (error.message.toLowerCase().includes("verification link")) {
+        return "Doğrulama bağlantısı geçersiz veya süresi dolmuş. Yeni bir bağlantı isteyin.";
+      }
     }
 
     return error.message;
@@ -132,10 +148,24 @@ export async function registerRequest(input: {
   name: string;
   email: string;
   password: string;
-}): Promise<SafeUser> {
-  return authRequest<SafeUser>("/api/auth/register", {
+}): Promise<RegisterPendingDto> {
+  return authRequest<RegisterPendingDto>("/api/auth/register", {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export async function verifyEmailRequest(token: string): Promise<SafeUser> {
+  return authRequest<SafeUser>("/api/auth/verify-email", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+export async function resendVerificationRequest(email: string): Promise<{ ok: true }> {
+  return authRequest<{ ok: true }>("/api/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify({ email }),
   });
 }
 
