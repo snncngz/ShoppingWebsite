@@ -41,7 +41,7 @@ On Render (and similar hosts), set **Build Command** to a single line:
 npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
 ```
 
-Use `npm ci --include=dev` so Tailwind/PostCSS/TypeScript install even when `NODE_ENV=production` is set for runtime. **Start Command** stays `npm run start`.
+Use `npm ci --include=dev`. Render sets `NODE_ENV=production` during build, so a plain `npm ci` skips `devDependencies` and `next build` fails (missing Tailwind/PostCSS). Tailwind CSS packages also live in `dependencies` so a production install can still compile styles. **Start Command** stays `npm run start`.
 
 Health check path: `/api/health`.
 
