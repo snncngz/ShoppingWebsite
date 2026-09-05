@@ -15,7 +15,7 @@ export function AboutPage() {
           <div className="absolute inset-0 bg-black/40" />
         </div>
         <div className="relative mx-auto flex min-h-[70vh] max-w-7xl flex-col justify-end px-6 pb-16 pt-32 lg:min-h-[80vh] lg:px-8 lg:pb-24">
-          <p className="text-12 tracking-label text-ivory/80">Maison</p>
+          <p className="text-12 tracking-label text-ivory/80">Marka</p>
           <h1 className="mt-4 max-w-2xl font-heading text-48 text-ivory lg:text-64">
             Sessiz bir lüks.
           </h1>

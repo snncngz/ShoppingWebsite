@@ -1,6 +1,7 @@
 import { adminRequest } from "@/lib/adminApi";
 import { listAdminApiCategories } from "@/lib/adminCategories";
 import { toSlug } from "@/lib/utils";
+import { toPerfumeDetails } from "@/lib/mappers/product";
 import type { PerfumeDetails } from "@/types";
 import type { CategoryDto, PaginatedDto, ProductDto } from "@/types/api";
 
@@ -30,6 +31,7 @@ export type AdminProductWriteInput = {
   isPopular: boolean;
   isNew: boolean;
   badge?: string | null;
+  campaignPercent?: number | null;
   perfumeDetails?: PerfumeDetails;
   categoryId?: string;
   categoryName: string;
@@ -172,6 +174,12 @@ function toProductBody(
     body.discount = null;
   }
 
+  if (input.campaignPercent != null) {
+    body.campaignPercent = input.campaignPercent;
+  } else if (mode === "update") {
+    body.campaignPercent = null;
+  }
+
   if (input.rating !== undefined) {
     body.rating = input.rating;
   }
@@ -242,33 +250,5 @@ export async function uploadAdminProductImage(file: File): Promise<string> {
 }
 
 export function readPerfumeDetails(value: unknown): PerfumeDetails | undefined {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return undefined;
-  }
-
-  const record = value as Record<string, unknown>;
-  const volume = Array.isArray(record.volume)
-    ? record.volume.filter((item): item is string => typeof item === "string")
-    : [];
-  const topNotes = Array.isArray(record.topNotes)
-    ? record.topNotes.filter((item): item is string => typeof item === "string")
-    : [];
-  const heartNotes = Array.isArray(record.heartNotes)
-    ? record.heartNotes.filter((item): item is string => typeof item === "string")
-    : [];
-  const baseNotes = Array.isArray(record.baseNotes)
-    ? record.baseNotes.filter((item): item is string => typeof item === "string")
-    : [];
-
-  if (typeof record.fragranceFamily !== "string") {
-    return undefined;
-  }
-
-  return {
-    volume,
-    fragranceFamily: record.fragranceFamily,
-    topNotes,
-    heartNotes,
-    baseNotes,
-  };
+  return toPerfumeDetails(value);
 }

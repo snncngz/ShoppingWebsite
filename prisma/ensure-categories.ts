@@ -87,8 +87,8 @@ async function main() {
     const parfum = await prisma.category.findUnique({ where: { slug: "parfum" } });
     if (parfum) {
       const perfumeSubs = [
-        { name: "Women's", slug: "womens" },
-        { name: "Men's", slug: "mens" },
+        { name: "Kadın", slug: "womens" },
+        { name: "Erkek", slug: "mens" },
         { name: "Unisex", slug: "unisex" },
       ] as const;
       for (const child of perfumeSubs) {

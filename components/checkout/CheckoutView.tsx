@@ -9,11 +9,13 @@ import { CartSkeleton } from "@/components/ui/Skeleton";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
-import { DEMO_ADDRESS, EXPRESS_SHIPPING_FEE } from "@/lib/auth";
+import { EXPRESS_SHIPPING_FEE } from "@/lib/auth";
 import {
   FREE_SHIPPING_THRESHOLD,
+  GIFT_WRAP_FEE,
   getShippingFee,
 } from "@/lib/cart";
+import { displayPricing, toPricedProduct } from "@/lib/pricing";
 import { formatOrderNumber, nextCheckoutOrderNumber } from "@/lib/orders";
 import { createOrder, createPayment, getShopErrorMessage } from "@/lib/shopApi";
 import { formatPrice } from "@/lib/utils";
@@ -33,13 +35,14 @@ export function CheckoutView() {
   const [pending, setPending] = useState(false);
   const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("standard");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [giftWrap, setGiftWrap] = useState(false);
   const [name, setName] = useState(
     user ? `${user.firstName} ${user.lastName}`.trim() : "",
   );
   const [email, setEmail] = useState(user?.email ?? "");
   const [phone, setPhone] = useState(user?.phone ?? "");
-  const [address, setAddress] = useState<string>(DEMO_ADDRESS.line);
-  const [city, setCity] = useState<string>(DEMO_ADDRESS.city);
+  const [address, setAddress] = useState(user?.addressLine ?? "");
+  const [city, setCity] = useState(user?.addressCity ?? "");
 
   useEffect(() => {
     if (!user) {
@@ -49,6 +52,8 @@ export function CheckoutView() {
     setName((current) => current || `${user.firstName} ${user.lastName}`.trim());
     setEmail((current) => current || user.email);
     setPhone((current) => current || user.phone || "");
+    setAddress((current) => current || user.addressLine || "");
+    setCity((current) => current || user.addressCity || "");
   }, [user]);
 
   const lines = useMemo(
@@ -65,22 +70,21 @@ export function CheckoutView() {
     [getById, items],
   );
 
-  const subtotal = lines.reduce(
-    (total, line) => total + line.product.price * line.item.quantity,
-    0,
-  );
+  const subtotal = lines.reduce((total, line) => {
+    const unit = displayPricing(toPricedProduct(line.product), line.item.size).price;
+    return total + unit * line.item.quantity;
+  }, 0);
   const discount = lines.reduce((total, line) => {
-    if (!line.product.oldPrice || line.product.oldPrice <= line.product.price) {
+    const pricing = displayPricing(toPricedProduct(line.product), line.item.size);
+    if (!pricing.oldPrice || pricing.oldPrice <= pricing.price) {
       return total;
     }
-    return (
-      total + (line.product.oldPrice - line.product.price) * line.item.quantity
-    );
+    return total + (pricing.oldPrice - pricing.price) * line.item.quantity;
   }, 0);
   const standardShipping = getShippingFee(subtotal);
   const shipping =
     shippingMethod === "express" ? EXPRESS_SHIPPING_FEE : standardShipping;
-  const total = subtotal + shipping;
+  const total = subtotal + shipping + (giftWrap ? GIFT_WRAP_FEE : 0);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -102,7 +106,7 @@ export function CheckoutView() {
     setError("");
 
     try {
-      const order = await createOrder();
+      const order = await createOrder({ giftWrap });
       const payment = await createPayment(order.id);
       if (payment.checkoutUrl) {
         window.location.assign(payment.checkoutUrl);
@@ -173,7 +177,7 @@ export function CheckoutView() {
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-7xl">
-        <p className="text-12 tracking-label text-taupe">Checkout</p>
+        <p className="text-12 tracking-label text-taupe">Sipariş</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Ödeme</h1>
 
         <form
@@ -279,6 +283,23 @@ export function CheckoutView() {
               </div>
             </fieldset>
 
+            <label className="flex min-h-12 cursor-pointer items-start gap-3 border border-border bg-off-white px-4 py-4 text-14 text-charcoal">
+              <input
+                type="checkbox"
+                checked={giftWrap}
+                onChange={(event) => setGiftWrap(event.target.checked)}
+                className="mt-1"
+              />
+              <span>
+                <span className="block text-12 tracking-label text-black">
+                  Hediye paketi
+                </span>
+                <span className="mt-1 block text-14 text-taupe">
+                  Ürünleriniz hediye paketiyle gönderilsin · {formatPrice(GIFT_WRAP_FEE)}
+                </span>
+              </span>
+            </label>
+
             <fieldset>
               <legend className="text-12 tracking-label text-black">
                 Ödeme Yöntemi
@@ -355,7 +376,11 @@ export function CheckoutView() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-14 text-black">{product.name}</p>
                     <p className="text-12 text-taupe">
-                      {item.quantity} × {formatPrice(product.price)}
+                      {item.quantity} ×{" "}
+                      {formatPrice(
+                        displayPricing(toPricedProduct(product), item.size).price,
+                      )}
+                      {item.size ? ` · ${item.size}` : ""}
                     </p>
                   </div>
                 </li>
@@ -378,6 +403,12 @@ export function CheckoutView() {
                   {shipping === 0 ? "Ücretsiz Kargo" : formatPrice(shipping)}
                 </dd>
               </div>
+              {giftWrap ? (
+                <div className="flex justify-between">
+                  <dt className="text-taupe">Hediye paketi</dt>
+                  <dd>{formatPrice(GIFT_WRAP_FEE)}</dd>
+                </div>
+              ) : null}
               {shippingMethod === "standard" && shipping > 0 ? (
                 <p className="text-12 text-taupe">
                   {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)} daha ekleyin,

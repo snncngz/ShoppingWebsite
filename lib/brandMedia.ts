@@ -11,4 +11,5 @@ export const BRAND_MEDIA = {
   citrus: "/brand/resim8.jpeg",
   portrait: "/brand/resim6.jpeg",
   nav: "/brand/resim10.jpeg",
+  logo: "/brand/logo.jpeg",
 } as const;

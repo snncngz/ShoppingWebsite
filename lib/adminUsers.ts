@@ -1,5 +1,5 @@
 import { adminRequest } from "@/lib/adminApi";
-import type { AdminUserListItemDto, PaginatedDto } from "@/types/api";
+import type { AdminUserDetailDto, AdminUserListItemDto, PaginatedDto } from "@/types/api";
 
 export type AdminUserListQuery = {
   page?: number;
@@ -30,4 +30,8 @@ export async function deleteAdminUser(id: string): Promise<{ id: string }> {
   return adminRequest<{ id: string }>(`/api/admin/users/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function getAdminUser(id: string): Promise<AdminUserDetailDto> {
+  return adminRequest<AdminUserDetailDto>(`/api/admin/users/${id}`);
 }

@@ -110,8 +110,8 @@ export function getAuthErrorMessage(error: unknown): string {
       if (error.message.toLowerCase().includes("real email")) {
         return "Geçici / sahte e-posta adresleriyle kayıt olunamaz.";
       }
-      if (error.message.toLowerCase().includes("verification link")) {
-        return "Doğrulama bağlantısı geçersiz veya süresi dolmuş. Yeni bir bağlantı isteyin.";
+      if (error.message.toLowerCase().includes("reset link")) {
+        return "Şifre yenileme bağlantısı geçersiz veya süresi dolmuş.";
       }
     }
 
@@ -182,5 +182,35 @@ export async function deleteAccountRequest(password: string): Promise<void> {
   await authRequest<{ ok: true }>("/api/auth/me", {
     method: "DELETE",
     body: JSON.stringify({ password }),
+  });
+}
+
+export async function updateProfileRequest(input: {
+  name?: string;
+  phone: string;
+  addressTitle: string;
+  addressLine: string;
+  addressCity: string;
+}): Promise<SafeUser> {
+  return authRequest<SafeUser>("/api/auth/me", {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function forgotPasswordRequest(email: string): Promise<{ ok: true }> {
+  return authRequest<{ ok: true }>("/api/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function resetPasswordRequest(
+  token: string,
+  password: string,
+): Promise<{ ok: true }> {
+  return authRequest<{ ok: true }>("/api/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
   });
 }

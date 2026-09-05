@@ -82,6 +82,7 @@ function toOrderItemDto(
     quantity: item.quantity,
     unitPrice,
     lineTotal: Number((unitPrice * item.quantity).toFixed(2)),
+    variant: item.variant,
     product: toProductSummaryDto(item.product),
     createdAt: item.createdAt.toISOString(),
   };
@@ -92,6 +93,7 @@ function toAdminOrderDetailDto(order: AdminOrderRecord): AdminOrderDetailDto {
     id: order.id,
     status: order.status,
     total: decimalToNumber(order.total),
+    giftWrap: order.giftWrap,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map(toOrderItemDto),

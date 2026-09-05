@@ -11,6 +11,10 @@ export type SafeUser = {
   email: string;
   role: UserRole;
   emailVerified: boolean;
+  phone: string;
+  addressTitle: string;
+  addressLine: string;
+  addressCity: string;
   createdAt: string;
   updatedAt: string;
 };

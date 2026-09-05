@@ -212,6 +212,9 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [oldPrice, setOldPrice] = useState(
     existing?.oldPrice ? String(existing.oldPrice) : "",
   );
+  const [campaignPercent, setCampaignPercent] = useState(
+    existing?.campaignPercent ? String(existing.campaignPercent) : "",
+  );
   const [description, setDescription] = useState(existing?.description ?? "");
   const [colors, setColors] = useState((existing?.colors ?? ["Siyah"]).join(", "));
   const [sizes, setSizes] = useState(
@@ -242,6 +245,28 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   const [baseNotes, setBaseNotes] = useState(
     (perfume?.baseNotes ?? ["Amber"]).join(", "),
   );
+  const [volumeRows, setVolumeRows] = useState<
+    { volume: string; price: string; oldPrice: string }[]
+  >(() => {
+    if (perfume?.volumePrices?.length) {
+      return perfume.volumePrices.map((row) => ({
+        volume: row.volume,
+        price: String(row.price),
+        oldPrice: row.oldPrice ? String(row.oldPrice) : "",
+      }));
+    }
+    const volumes =
+      perfume?.volume?.length
+        ? perfume.volume
+        : existing?.sizes?.length
+          ? existing.sizes
+          : ["50 ml", "100 ml"];
+    return volumes.map((volume) => ({
+      volume,
+      price: existing ? String(existing.price) : "",
+      oldPrice: existing?.oldPrice ? String(existing.oldPrice) : "",
+    }));
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
@@ -376,11 +401,49 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       return;
     }
 
-    const parsedPrice = Number(price);
     const parsedStock = Number(stock);
-    const parsedOld = oldPrice ? Number(oldPrice) : undefined;
 
-    if (!name.trim() || !description.trim() || Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+    const colorList = splitList(colors).length > 0 ? splitList(colors) : ["Doğal"];
+    let sizeList = splitList(sizes);
+    let parsedPrice = Number(price);
+    let parsedOld = oldPrice ? Number(oldPrice) : undefined;
+    let volumePrices:
+      | { volume: string; price: number; oldPrice?: number }[]
+      | undefined;
+
+    if (isPerfume) {
+      volumePrices = volumeRows
+        .map((row) => {
+          const volume = row.volume.trim();
+          const rowPrice = Number(row.price);
+          const rowOld = row.oldPrice ? Number(row.oldPrice) : undefined;
+          if (!volume || Number.isNaN(rowPrice) || rowPrice <= 0) {
+            return null;
+          }
+          return {
+            volume,
+            price: rowPrice,
+            oldPrice: rowOld && rowOld > rowPrice ? rowOld : undefined,
+          };
+        })
+        .filter((row): row is NonNullable<typeof row> => Boolean(row));
+
+      if (volumePrices.length === 0) {
+        setError("En az bir hacim ve fiyat girin.");
+        return;
+      }
+
+      sizeList = volumePrices.map((row) => row.volume);
+      parsedPrice = volumePrices[0].price;
+      parsedOld = volumePrices[0].oldPrice;
+    }
+
+    if (Number.isNaN(parsedPrice) || parsedPrice <= 0) {
+      setError("Ad, açıklama ve geçerli bir fiyat gerekli.");
+      return;
+    }
+
+    if (!name.trim() || !description.trim()) {
       setError("Ad, açıklama ve geçerli bir fiyat gerekli.");
       return;
     }
@@ -390,8 +453,6 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       return;
     }
 
-    const colorList = splitList(colors);
-    const sizeList = splitList(sizes);
     if (colorList.length === 0 || sizeList.length === 0) {
       setError("En az bir renk ve beden/hacim girin.");
       return;
@@ -406,10 +467,17 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       return;
     }
 
+    const parsedCampaign = campaignPercent ? Number(campaignPercent) : 0;
+    const campaign =
+      Number.isInteger(parsedCampaign) && parsedCampaign > 0 && parsedCampaign <= 90
+        ? parsedCampaign
+        : null;
+
     const slug =
       existing?.slug && !isCreate ? existing.slug : toSlug(name) || "urun";
-    const discount =
-      parsedOld && parsedOld > parsedPrice
+    const discount = campaign
+      ? campaign
+      : parsedOld && parsedOld > parsedPrice
         ? Math.round(((parsedOld - parsedPrice) / parsedOld) * 100)
         : undefined;
 
@@ -427,7 +495,8 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       sizes: sizeList,
       isPopular,
       isNew,
-      badge: badge.trim() || null,
+      badge: badge.trim() || (campaign ? "Kampanya" : null),
+      campaignPercent: campaign,
       categoryId: leafCategory.id,
       categoryName,
       rating: existing?.rating,
@@ -436,6 +505,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
         isPerfume
           ? {
               volume: sizeList,
+              volumePrices,
               fragranceFamily: fragranceFamily.trim() || "Odunsu",
               topNotes: splitList(topNotes),
               heartNotes: splitList(heartNotes),
@@ -463,7 +533,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
   return (
     <form onSubmit={(event) => void handleSubmit(event)} className="max-w-3xl">
       <p className="text-12 tracking-label text-taupe">
-        {isCreate ? "Create" : "Edit"}
+        {isCreate ? "Yeni" : "Düzenle"}
       </p>
       <h1 className="mt-3 font-heading text-32 text-black">
         {isCreate ? "Yeni ürün" : existing?.name}
@@ -504,6 +574,8 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
             </label>
           ))
         )}
+        {!isPerfume ? (
+          <>
         <label className="text-12 tracking-label text-charcoal">
           Fiyat (TL)
           <input
@@ -524,6 +596,20 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
             className={fieldClass}
           />
         </label>
+          </>
+        ) : null}
+        <label className="text-12 tracking-label text-charcoal">
+          Kampanya indirimi (%)
+          <input
+            type="number"
+            min={0}
+            max={90}
+            value={campaignPercent}
+            onChange={(event) => setCampaignPercent(event.target.value)}
+            placeholder="Örn. 20"
+            className={fieldClass}
+          />
+        </label>
         <label className="text-12 tracking-label text-charcoal sm:col-span-2">
           Açıklama
           <textarea
@@ -536,10 +622,96 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
           Renkler (virgülle)
           <input value={colors} onChange={(event) => setColors(event.target.value)} className={fieldClass} />
         </label>
+        {!isPerfume ? (
         <label className="text-12 tracking-label text-charcoal sm:col-span-2">
           Beden / hacim (virgülle)
           <input value={sizes} onChange={(event) => setSizes(event.target.value)} className={fieldClass} />
         </label>
+        ) : (
+          <fieldset className="sm:col-span-2">
+            <legend className="text-12 tracking-label text-charcoal">Hacim ve fiyat</legend>
+            <p className="mt-2 text-12 text-taupe">
+              İstediğiniz ml değerini ekleyin. Sitede seçilince o hacmin fiyatı görünür.
+            </p>
+            <div className="mt-3 flex flex-col gap-3">
+              {volumeRows.map((row, index) => (
+                <div key={`${row.volume}-${index}`} className="grid gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                  <input
+                    value={row.volume}
+                    placeholder="50 ml"
+                    onChange={(event) =>
+                      setVolumeRows((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, volume: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    className={fieldClass}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={row.price}
+                    placeholder="Fiyat"
+                    onChange={(event) =>
+                      setVolumeRows((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, price: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    className={fieldClass}
+                  />
+                  <input
+                    type="number"
+                    min={0}
+                    value={row.oldPrice}
+                    placeholder="Eski fiyat"
+                    onChange={(event) =>
+                      setVolumeRows((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, oldPrice: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    className={fieldClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVolumeRows((current) =>
+                        current.length > 1
+                          ? current.filter((_, itemIndex) => itemIndex !== index)
+                          : current,
+                      )
+                    }
+                    className="h-12 px-3 text-12 tracking-nav text-accent"
+                  >
+                    Sil
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setVolumeRows((current) => [
+                  ...current,
+                  { volume: "", price: "", oldPrice: "" },
+                ])
+              }
+              className="mt-3 inline-flex h-11 items-center border border-charcoal px-4 text-12 tracking-nav text-charcoal"
+            >
+              Hacim ekle
+            </button>
+          </fieldset>
+        )}
         <label className="text-12 tracking-label text-charcoal">
           Stok
           <input

@@ -8,6 +8,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
   getShippingFee,
 } from "@/lib/cart";
+import { displayPricing, toPricedProduct } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
 import { Minus, Plus, X } from "lucide-react";
 import Link from "next/link";
@@ -33,18 +34,16 @@ export function CartView() {
     })
     .filter((line): line is NonNullable<typeof line> => Boolean(line));
 
-  const subtotal = lines.reduce(
-    (total, line) => total + line.product.price * line.item.quantity,
-    0,
-  );
+  const subtotal = lines.reduce((total, line) => {
+    const unit = displayPricing(toPricedProduct(line.product), line.item.size).price;
+    return total + unit * line.item.quantity;
+  }, 0);
   const discount = lines.reduce((total, line) => {
-    if (!line.product.oldPrice || line.product.oldPrice <= line.product.price) {
+    const pricing = displayPricing(toPricedProduct(line.product), line.item.size);
+    if (!pricing.oldPrice || pricing.oldPrice <= pricing.price) {
       return total;
     }
-
-    return (
-      total + (line.product.oldPrice - line.product.price) * line.item.quantity
-    );
+    return total + (pricing.oldPrice - pricing.price) * line.item.quantity;
   }, 0);
   const shipping = getShippingFee(subtotal);
   const total = subtotal + shipping;
@@ -71,7 +70,7 @@ export function CartView() {
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-7xl">
-        <p className="text-12 tracking-label text-taupe">Bag</p>
+        <p className="text-12 tracking-label text-taupe">Alışveriş</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Sepet</h1>
 
         <div className="mt-12 grid gap-16 lg:grid-cols-[minmax(0,1fr)_20rem]">
@@ -149,7 +148,10 @@ export function CartView() {
                         </button>
                       </div>
                       <p className="text-14 text-charcoal">
-                        {formatPrice(product.price * item.quantity)}
+                        {formatPrice(
+                          displayPricing(toPricedProduct(product), item.size).price *
+                            item.quantity,
+                        )}
                       </p>
                     </div>
                   </div>

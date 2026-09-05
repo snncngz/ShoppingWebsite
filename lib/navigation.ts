@@ -29,11 +29,11 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     label: "Parfüm",
     href: "/parfum",
     items: [
-      { label: "Women's", href: "/parfum/womens" },
-      { label: "Men's", href: "/parfum/mens" },
+      { label: "Kadın", href: "/parfum/womens" },
+      { label: "Erkek", href: "/parfum/mens" },
       { label: "Unisex", href: "/parfum/unisex" },
-      { label: "New Arrivals", href: "/yeni-gelenler" },
-      { label: "Best Sellers", href: "/cok-satanlar" },
+      { label: "Yeni Gelenler", href: "/yeni-gelenler" },
+      { label: "Çok Satanlar", href: "/cok-satanlar" },
     ],
     image: {
       src: "/brand/resim10.jpeg",
@@ -46,10 +46,10 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     label: "Giyim",
     href: "/giyim",
     items: [
-      { label: "T-Shirts", href: "/tshirt" },
-      { label: "Trousers", href: "/pantolon" },
-      { label: "Shirts", href: "/gomlek" },
-      { label: "Jackets", href: "/ceket" },
+      { label: "T-Shirt", href: "/tshirt" },
+      { label: "Pantolon", href: "/pantolon" },
+      { label: "Gömlek", href: "/gomlek" },
+      { label: "Ceket", href: "/ceket" },
     ],
     image: {
       src: "/placeholders/tshirt.svg",
@@ -62,10 +62,10 @@ export const megaMenus: Record<MegaMenuContent["id"], MegaMenuContent> = {
     label: "Aksesuar",
     href: "/aksesuar",
     items: [
-      { label: "Belts", href: "/kemer" },
-      { label: "Bags", href: "/canta" },
-      { label: "Wallets", href: "/aksesuar" },
-      { label: "Hats", href: "/aksesuar" },
+      { label: "Kemer", href: "/kemer" },
+      { label: "Çanta", href: "/canta" },
+      { label: "Cüzdan", href: "/aksesuar" },
+      { label: "Şapka", href: "/aksesuar" },
     ],
     image: {
       src: "/placeholders/aksesuar.svg",
@@ -92,18 +92,18 @@ export const mobileAccordions: {
     id: "giyim",
     label: "Giyim",
     items: [
-      { label: "T-Shirts", href: "/tshirt" },
-      { label: "Trousers", href: "/pantolon" },
-      { label: "Shirts", href: "/gomlek" },
-      { label: "Jackets", href: "/ceket" },
+      { label: "T-Shirt", href: "/tshirt" },
+      { label: "Pantolon", href: "/pantolon" },
+      { label: "Gömlek", href: "/gomlek" },
+      { label: "Ceket", href: "/ceket" },
     ],
   },
   {
     id: "parfum",
     label: "Parfüm",
     items: [
-      { label: "Women's", href: "/parfum/womens" },
-      { label: "Men's", href: "/parfum/mens" },
+      { label: "Kadın", href: "/parfum/womens" },
+      { label: "Erkek", href: "/parfum/mens" },
       { label: "Unisex", href: "/parfum/unisex" },
     ],
   },
@@ -111,23 +111,23 @@ export const mobileAccordions: {
     id: "aksesuar",
     label: "Aksesuar",
     items: [
-      { label: "Belts", href: "/kemer" },
-      { label: "Bags", href: "/canta" },
-      { label: "Wallets", href: "/aksesuar" },
+      { label: "Kemer", href: "/kemer" },
+      { label: "Çanta", href: "/canta" },
+      { label: "Cüzdan", href: "/aksesuar" },
     ],
   },
 ];
 
 export const mobileUtilityLinks: NavLink[] = [
-  { label: "Account", href: "/hesabim" },
-  { label: "Wishlist", href: "/favoriler" },
-  { label: "Orders", href: "/siparislerim" },
-  { label: "Contact", href: "/iletisim" },
+  { label: "Hesabım", href: "/hesabim" },
+  { label: "Favoriler", href: "/favoriler" },
+  { label: "Siparişlerim", href: "/siparislerim" },
+  { label: "İletişim", href: "/iletisim" },
 ];
 
 export const footerColumns: { title: string; links: NavLink[] }[] = [
   {
-    title: "Shop",
+    title: "Mağaza",
     links: [
       { label: "Parfüm", href: "/parfum" },
       { label: "T-Shirt", href: "/tshirt" },
@@ -139,7 +139,7 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
     ],
   },
   {
-    title: "Customer",
+    title: "Müşteri",
     links: [
       { label: "Siparişlerim", href: "/siparislerim" },
       { label: "Kargo ve Teslimat", href: "/kargo-ve-teslimat" },
@@ -148,14 +148,14 @@ export const footerColumns: { title: string; links: NavLink[] }[] = [
     ],
   },
   {
-    title: "About",
+    title: "Hakkımızda",
     links: [
       { label: "Hakkımızda", href: "/hakkimizda" },
       { label: "İletişim", href: "/iletisim" },
     ],
   },
   {
-    title: "Legal",
+    title: "Yasal",
     links: [
       { label: "Gizlilik Politikası", href: "/gizlilik-politikasi" },
       { label: "KVKK", href: "/kvkk" },

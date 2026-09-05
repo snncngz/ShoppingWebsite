@@ -69,7 +69,7 @@ export function LoginForm() {
   return (
     <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
       <div className="mx-auto max-w-md">
-        <p className="text-12 tracking-label text-taupe">Account</p>
+        <p className="text-12 tracking-label text-taupe">Hesap</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Giriş</h1>
         <p className="mt-4 text-14 text-taupe">
           Lucien Perrin hesabınıza e-posta ve şifrenizle giriş yapın.
@@ -98,6 +98,12 @@ export function LoginForm() {
               className={fieldClass}
             />
           </label>
+
+          <p className="text-14">
+            <Link href="/sifremi-unuttum" className="text-charcoal underline-offset-4 hover:underline">
+              Şifremi unuttum
+            </Link>
+          </p>
 
           {error ? <p className="text-14 text-accent">{error}</p> : null}
           {notice ? <p className="text-14 text-charcoal">{notice}</p> : null}

@@ -1,17 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/category/EmptyState";
-import { OrderDetailModal } from "@/components/orders/OrderDetailModal";
-import { demoOrders } from "@/data/orders";
-import { formatOrderDate, formatOrderNumber, ORDER_STATUS_LABELS } from "@/lib/orders";
-import type { Order } from "@/types";
+import { ADMIN_ORDER_STATUS_LABELS, formatOrderDate, formatOrderNumber } from "@/lib/orders";
+import { fetchOrders, getShopErrorMessage } from "@/lib/shopApi";
+import { formatPrice } from "@/lib/utils";
+import type { OrderDto } from "@/types/api";
 
 export function OrderList() {
-  const [selected, setSelected] = useState<Order | null>(null);
+  const [orders, setOrders] = useState<OrderDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  if (demoOrders.length === 0) {
+  useEffect(() => {
+    void fetchOrders()
+      .then((data) => {
+        setOrders(data);
+        setError("");
+      })
+      .catch((caught) => {
+        setOrders([]);
+        setError(getShopErrorMessage(caught));
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-12 tracking-label text-taupe">Yükleniyor</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
+        <div className="mx-auto max-w-3xl">
+          <EmptyState title="Siparişler yüklenemedi" message={error} />
+        </div>
+      </section>
+    );
+  }
+
+  if (orders.length === 0) {
     return (
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl">
@@ -29,36 +64,43 @@ export function OrderList() {
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
       <div className="mx-auto max-w-3xl">
-        <p className="text-12 tracking-label text-taupe">Orders</p>
+        <p className="text-12 tracking-label text-taupe">Siparişler</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">
           Siparişlerim
         </h1>
 
         <ul className="mt-12 flex flex-col gap-4">
-          {demoOrders.map((order) => (
-            <li key={order.id}>
-              <button
-                type="button"
-                onClick={() => setSelected(order)}
-                className="flex w-full items-center justify-between gap-4 border border-border bg-off-white px-6 py-5 text-left transition-colors hover:border-taupe"
-              >
+          {orders.map((order) => (
+            <li key={order.id} className="border border-border bg-off-white px-6 py-5">
+              <div className="flex items-center justify-between gap-4">
                 <span>
                   <span className="block font-heading text-24 text-black">
-                    {formatOrderNumber(order.id)}
+                    {formatOrderNumber(order.id.slice(0, 8).toUpperCase())}
                   </span>
                   <span className="mt-1 block text-12 text-taupe">
                     {formatOrderDate(order.createdAt)}
                   </span>
                 </span>
                 <span className="text-12 tracking-label text-charcoal">
-                  {ORDER_STATUS_LABELS[order.status]}
+                  {ADMIN_ORDER_STATUS_LABELS[order.status]}
                 </span>
-              </button>
+              </div>
+              <ul className="mt-4 flex flex-col gap-2 text-14 text-taupe">
+                {order.items.map((item) => (
+                  <li key={item.id}>
+                    {item.product.name}
+                    {item.variant ? ` · ${item.variant}` : ""} × {item.quantity}
+                  </li>
+                ))}
+              </ul>
+              {order.giftWrap ? (
+                <p className="mt-3 text-12 text-charcoal">Hediye paketi seçildi</p>
+              ) : null}
+              <p className="mt-3 text-14 text-black">{formatPrice(order.total)}</p>
             </li>
           ))}
         </ul>
       </div>
-      <OrderDetailModal order={selected} onClose={() => setSelected(null)} />
     </section>
   );
 }

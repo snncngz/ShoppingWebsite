@@ -1,3 +1,4 @@
+import { catalogVolumes } from "@/lib/pricing";
 import type { Product } from "@/types";
 
 export type VariantConfig = {
@@ -11,9 +12,7 @@ export type VariantConfig = {
 export function getVariantConfig(product: Product): VariantConfig {
   const isPerfume = Boolean(product.perfumeDetails);
   const colors = product.colors;
-  const options = isPerfume
-    ? (product.perfumeDetails?.volume ?? [])
-    : product.sizes;
+  const options = isPerfume ? catalogVolumes(product) : product.sizes;
   const selectableOptions = isPerfume
     ? options
     : options.filter((size) => size !== "Tek Beden");

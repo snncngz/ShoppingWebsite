@@ -7,7 +7,7 @@ export function toFrontendCartItem(item: CartItemDto): CartItem {
     productId: item.productId,
     quantity: item.quantity,
     color: item.product.colors[0] ?? "",
-    size: item.product.sizes[0] ?? "",
+    size: item.variant || item.product.sizes[0] || "",
   };
 }
 

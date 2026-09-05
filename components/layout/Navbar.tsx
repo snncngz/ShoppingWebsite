@@ -12,6 +12,7 @@ import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { BRAND_MEDIA } from "@/lib/brandMedia";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildStorefrontNav } from "@/lib/catalog";
 
@@ -144,16 +145,30 @@ export function Navbar() {
             </button>
             <Link
               href="/"
-              className="hidden font-heading text-24 tracking-[0.32em] text-black lg:inline-block"
+              className="hidden items-center gap-3 lg:inline-flex"
             >
-              {BRAND_NAME}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={BRAND_MEDIA.logo}
+                alt=""
+                className="h-9 w-9 object-contain"
+              />
+              <span className="font-heading text-24 tracking-[0.32em] text-black">
+                {BRAND_NAME}
+              </span>
             </Link>
           </div>
 
           <Link
             href="/"
-            className="font-heading text-24 tracking-[0.32em] text-black lg:hidden"
+            className="inline-flex items-center gap-2 font-heading text-24 tracking-[0.32em] text-black lg:hidden"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={BRAND_MEDIA.logo}
+              alt=""
+              className="h-8 w-8 object-contain"
+            />
             {BRAND_NAME}
           </Link>
 

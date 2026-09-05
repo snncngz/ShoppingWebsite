@@ -6,10 +6,10 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Heart } from "lucide-react";
 import Link from "next/link";
 
+import { ProductPrice } from "@/components/product/ProductPrice";
 import { QuickAddModal } from "@/components/product/QuickAddModal";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { formatPrice } from "@/lib/utils";
 import { getDefaultCartVariant, getVariantConfig } from "@/lib/variants";
 import type { Product } from "@/types";
 
@@ -94,7 +94,9 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
               {product.name}
             </h3>
           </Link>
-          <p className="mt-2 text-14 text-charcoal">{formatPrice(product.price)}</p>
+          <div className="mt-2">
+            <ProductPrice product={product} size="sm" />
+          </div>
         </div>
       </article>
     );
@@ -119,7 +121,11 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           />
         </Link>
 
-        {product.badge ? (
+        {product.campaignPercent ? (
+          <span className="pointer-events-none absolute left-3 top-3 z-10 bg-accent px-2 py-1 text-12 tracking-label text-ivory">
+            Kampanya
+          </span>
+        ) : product.badge ? (
           <span className="pointer-events-none absolute left-3 top-3 z-10 bg-ivory/90 px-2 py-1 text-12 tracking-label text-charcoal">
             {product.badge}
           </span>
@@ -184,13 +190,8 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             {product.name}
           </h3>
         </Link>
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-14 text-charcoal">{formatPrice(product.price)}</span>
-          {product.oldPrice ? (
-            <span className="text-12 text-taupe line-through">
-              {formatPrice(product.oldPrice)}
-            </span>
-          ) : null}
+        <div className="mt-2">
+          <ProductPrice product={product} size="sm" />
         </div>
       </div>
 

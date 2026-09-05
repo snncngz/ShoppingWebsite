@@ -40,6 +40,7 @@ function toCartItemDto(item: CartItemWithProduct): CartItemDto {
     id: item.id,
     productId: item.productId,
     quantity: item.quantity,
+    variant: item.variant,
     product: toProductDto(item.product),
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
@@ -116,15 +117,32 @@ async function requireOwnedCartItem(
   return item;
 }
 
+function parseCartVariant(body: Record<string, unknown>): string {
+  const raw = hasField(body, "variant")
+    ? body.variant
+    : hasField(body, "size")
+      ? body.size
+      : "";
+  if (raw === undefined || raw === null) {
+    return "";
+  }
+  if (typeof raw !== "string") {
+    badRequest("variant must be a string");
+  }
+  return raw.trim().slice(0, 40);
+}
+
 export function parseAddCartItem(body: Record<string, unknown>): {
   productId: string;
   quantity: number;
+  variant: string;
 } {
   return {
     productId: requireString(body, "productId"),
     quantity: hasField(body, "quantity")
       ? requirePositiveInt(body, "quantity", 50)
       : 1,
+    variant: parseCartVariant(body),
   };
 }
 
@@ -139,6 +157,7 @@ export function parseUpdateCartItem(body: Record<string, unknown>): {
 export function parseMergeCartItems(body: Record<string, unknown>): {
   productId: string;
   quantity: number;
+  variant: string;
 }[] {
   const items = body.items;
   if (!Array.isArray(items)) {
@@ -160,6 +179,7 @@ export function parseMergeCartItems(body: Record<string, unknown>): {
       quantity: hasField(record, "quantity")
         ? requirePositiveInt(record, "quantity", 50)
         : 1,
+      variant: parseCartVariant(record),
     };
   });
 }
@@ -171,13 +191,18 @@ export async function getCart(userId: string): Promise<CartDto> {
 
 export async function addCartItem(
   userId: string,
-  input: { productId: string; quantity: number },
+  input: { productId: string; quantity: number; variant: string },
 ): Promise<CartDto> {
   const product = await requireSellableProduct(input.productId);
   const cart = await getOrCreateCart(userId);
+  const variant = input.variant;
   const existing = await getPrisma().cartItem.findUnique({
     where: {
-      cartId_productId: { cartId: cart.id, productId: product.id },
+      cartId_productId_variant: {
+        cartId: cart.id,
+        productId: product.id,
+        variant,
+      },
     },
   });
 
@@ -196,6 +221,7 @@ export async function addCartItem(
           cartId: cart.id,
           productId: product.id,
           quantity: input.quantity,
+          variant,
         },
       });
     } catch (error) {
@@ -205,7 +231,11 @@ export async function addCartItem(
 
       const raced = await getPrisma().cartItem.findUniqueOrThrow({
         where: {
-          cartId_productId: { cartId: cart.id, productId: product.id },
+          cartId_productId_variant: {
+            cartId: cart.id,
+            productId: product.id,
+            variant,
+          },
         },
       });
       const racedQuantity = raced.quantity + input.quantity;
@@ -259,18 +289,24 @@ export async function clearCart(userId: string): Promise<CartDto> {
 
 export async function mergeCartItems(
   userId: string,
-  guestItems: { productId: string; quantity: number }[],
+  guestItems: { productId: string; quantity: number; variant: string }[],
 ): Promise<CartDto> {
-  const grouped = new Map<string, number>();
+  const grouped = new Map<string, { productId: string; variant: string; quantity: number }>();
   for (const item of guestItems) {
-    grouped.set(item.productId, (grouped.get(item.productId) ?? 0) + item.quantity);
+    const key = `${item.productId}::${item.variant}`;
+    const current = grouped.get(key);
+    grouped.set(key, {
+      productId: item.productId,
+      variant: item.variant,
+      quantity: (current?.quantity ?? 0) + item.quantity,
+    });
   }
 
   const cart = await getOrCreateCart(userId);
 
-  for (const [productId, guestQuantity] of grouped) {
+  for (const groupedItem of grouped.values()) {
     const product = await getPrisma().product.findUnique({
-      where: { id: productId },
+      where: { id: groupedItem.productId },
     });
     if (!product || !product.isActive || product.stock <= 0) {
       continue;
@@ -278,12 +314,16 @@ export async function mergeCartItems(
 
     const existing = await getPrisma().cartItem.findUnique({
       where: {
-        cartId_productId: { cartId: cart.id, productId: product.id },
+        cartId_productId_variant: {
+          cartId: cart.id,
+          productId: product.id,
+          variant: groupedItem.variant,
+        },
       },
     });
     const nextQuantity = Math.min(
       product.stock,
-      (existing?.quantity ?? 0) + guestQuantity,
+      (existing?.quantity ?? 0) + groupedItem.quantity,
     );
     if (nextQuantity < 1) {
       continue;
@@ -300,6 +340,7 @@ export async function mergeCartItems(
           cartId: cart.id,
           productId: product.id,
           quantity: nextQuantity,
+          variant: groupedItem.variant,
         },
       });
     }

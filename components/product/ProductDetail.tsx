@@ -8,12 +8,13 @@ import Link from "next/link";
 import { FragranceProfile } from "@/components/product/FragranceProfile";
 import { ProductAccordion } from "@/components/product/ProductAccordion";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { ProductPrice } from "@/components/product/ProductPrice";
 import { SizeGuideModal } from "@/components/product/SizeGuideModal";
 import { StarRating } from "@/components/product/StarRating";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { catalogVolumes } from "@/lib/pricing";
 import { getAccordionContent } from "@/lib/product-detail";
-import { formatPrice } from "@/lib/utils";
 import type { Product } from "@/types";
 
 type ProductDetailProps = {
@@ -26,7 +27,7 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
   const { hasItem, toggleItem } = useWishlist();
   const isPerfume = Boolean(product.perfumeDetails);
   const optionValues = isPerfume
-    ? (product.perfumeDetails?.volume ?? product.sizes)
+    ? catalogVolumes(product)
     : product.sizes;
 
   const [color, setColor] = useState(product.colors[0] ?? "");
@@ -82,18 +83,8 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
           <StarRating rating={product.rating} reviewCount={product.reviewCount} />
         </div>
 
-        <div className="mt-6 flex flex-wrap items-baseline gap-3">
-          <span className="text-24 text-black">{formatPrice(product.price)}</span>
-          {product.oldPrice ? (
-            <span className="text-14 text-taupe line-through">
-              {formatPrice(product.oldPrice)}
-            </span>
-          ) : null}
-          {product.discount ? (
-            <span className="text-12 tracking-label text-accent">
-              %{product.discount}
-            </span>
-          ) : null}
+        <div className="mt-6">
+          <ProductPrice product={product} variant={option} size="lg" />
         </div>
 
         {product.colors.length > 0 ? (

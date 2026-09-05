@@ -32,7 +32,7 @@ export function ProductSection({
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-12 tracking-label text-taupe">
-              {isEditorial ? "Just In" : "Bestsellers"}
+              {isEditorial ? "Yeni" : "Çok Satanlar"}
             </p>
             <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
               {title}

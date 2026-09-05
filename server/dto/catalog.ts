@@ -112,6 +112,7 @@ export function toProductDto(product: ProductWithCategory): ProductDto {
     isNew: product.isNew,
     isActive: product.isActive,
     badge: product.badge,
+    campaignPercent: product.campaignPercent,
     perfumeDetails: product.perfumeDetails,
     categoryId: product.categoryId,
     category: toCategorySummaryDto(product.category),

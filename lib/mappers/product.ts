@@ -15,13 +15,58 @@ export function toPerfumeDetails(value: unknown): PerfumeDetails | undefined {
   }
 
   const record = value as Record<string, unknown>;
-  if (typeof record.fragranceFamily !== "string") {
+  const fragranceFamily =
+    typeof record.fragranceFamily === "string" ? record.fragranceFamily : "";
+
+  const volumePrices = Array.isArray(record.volumePrices)
+    ? record.volumePrices.flatMap((entry) => {
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+          return [];
+        }
+        const row = entry as Record<string, unknown>;
+        const price =
+          typeof row.price === "number"
+            ? row.price
+            : typeof row.price === "string"
+              ? Number(row.price)
+              : NaN;
+        if (typeof row.volume !== "string" || !Number.isFinite(price) || price <= 0) {
+          return [];
+        }
+        const oldRaw =
+          typeof row.oldPrice === "number"
+            ? row.oldPrice
+            : typeof row.oldPrice === "string"
+              ? Number(row.oldPrice)
+              : undefined;
+        const oldPrice =
+          oldRaw !== undefined && Number.isFinite(oldRaw) && oldRaw > price
+            ? oldRaw
+            : undefined;
+        return [
+          {
+            volume: row.volume,
+            price,
+            oldPrice,
+          },
+        ];
+      })
+    : undefined;
+
+  const volume = asStringArray(record.volume);
+  const volumes =
+    volume.length > 0
+      ? volume
+      : (volumePrices ?? []).map((row) => row.volume);
+
+  if (!fragranceFamily && volumes.length === 0 && !(volumePrices && volumePrices.length > 0)) {
     return undefined;
   }
 
   return {
-    volume: asStringArray(record.volume),
-    fragranceFamily: record.fragranceFamily,
+    volume: volumes,
+    volumePrices,
+    fragranceFamily: fragranceFamily || "Odunsu",
     topNotes: asStringArray(record.topNotes),
     heartNotes: asStringArray(record.heartNotes),
     baseNotes: asStringArray(record.baseNotes),
@@ -64,6 +109,10 @@ export function toStorefrontProduct(dto: ProductDto): Product {
 
   if (dto.badge) {
     product.badge = dto.badge;
+  }
+
+  if (dto.campaignPercent != null && dto.campaignPercent > 0) {
+    product.campaignPercent = dto.campaignPercent;
   }
 
   const perfumeDetails = toPerfumeDetails(dto.perfumeDetails);

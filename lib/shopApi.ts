@@ -93,10 +93,15 @@ export async function fetchCart(): Promise<CartDto> {
 export async function addCartItem(input: {
   productId: string;
   quantity: number;
+  size?: string;
 }): Promise<CartDto> {
   return shopRequest<CartDto>("/api/cart/items", {
     method: "POST",
-    body: JSON.stringify(input),
+    body: JSON.stringify({
+      productId: input.productId,
+      quantity: input.quantity,
+      variant: input.size ?? "",
+    }),
   });
 }
 
@@ -129,6 +134,7 @@ export async function mergeCart(items: CartItem[]): Promise<CartDto> {
       items: items.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
+        variant: item.size,
       })),
     }),
   });
@@ -181,9 +187,10 @@ export function getShopErrorMessage(error: unknown): string {
   return "İşlem tamamlanamadı.";
 }
 
-export async function createOrder(): Promise<OrderDto> {
+export async function createOrder(input?: { giftWrap?: boolean }): Promise<OrderDto> {
   return shopRequest<OrderDto>("/api/orders", {
     method: "POST",
+    body: JSON.stringify({ giftWrap: Boolean(input?.giftWrap) }),
   });
 }
 

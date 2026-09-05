@@ -10,7 +10,7 @@ import { getPrisma } from "@/server/db/prisma";
 import { logger } from "@/server/logging/logger";
 import { isDisposableEmail } from "@/server/mail/disposable-domains";
 import { isMailConfigured, sendMail } from "@/server/mail/mailer";
-import { verificationEmailContent } from "@/server/mail/templates";
+import { verificationEmailContent, passwordResetEmailContent } from "@/server/mail/templates";
 import { assertRateLimit } from "@/server/security/http-guards";
 import { assertNotLastAdmin, purgeUserById } from "@/server/services/users";
 import { hasField } from "@/server/utils/validation";
@@ -337,6 +337,137 @@ export async function deleteOwnAccount(password: string): Promise<{ ok: true }> 
   await getPrisma().$transaction((tx) => purgeUserById(tx, row.id));
   await clearSession();
   return { ok: true };
+}
+
+export function parseForgotPasswordInput(body: Record<string, unknown>): {
+  email: string;
+} {
+  return { email: parseEmail(body.email) };
+}
+
+export function parseResetPasswordInput(body: Record<string, unknown>): {
+  token: string;
+  password: string;
+} {
+  return {
+    token: parseToken(body.token),
+    password: parsePassword(body.password),
+  };
+}
+
+export function parseUpdateProfileInput(body: Record<string, unknown>): {
+  name?: string;
+  phone: string;
+  addressTitle: string;
+  addressLine: string;
+  addressCity: string;
+} {
+  const phone =
+    typeof body.phone === "string" ? body.phone.trim().slice(0, 40) : "";
+  const addressTitle =
+    typeof body.addressTitle === "string"
+      ? body.addressTitle.trim().slice(0, 40) || "Ev"
+      : "Ev";
+  const addressLine =
+    typeof body.addressLine === "string"
+      ? body.addressLine.trim().slice(0, 200)
+      : "";
+  const addressCity =
+    typeof body.addressCity === "string"
+      ? body.addressCity.trim().slice(0, 80)
+      : "";
+
+  return {
+    name: hasField(body, "name") ? parseName(body.name) : undefined,
+    phone,
+    addressTitle,
+    addressLine,
+    addressCity,
+  };
+}
+
+function resetUrl(token: string): string {
+  const origin = getServerEnv().apiBaseUrl.replace(/\/$/, "");
+  return `${origin}/sifre-yenile?token=${encodeURIComponent(token)}`;
+}
+
+export async function requestPasswordReset(email: string): Promise<{ ok: true }> {
+  assertRateLimit(`password-reset:${email}`, 5, 15 * 60 * 1000);
+
+  const user = await getPrisma().user.findUnique({ where: { email } });
+  if (!user || !user.emailVerifiedAt) {
+    return { ok: true };
+  }
+
+  await getPrisma().passwordResetToken.deleteMany({ where: { userId: user.id } });
+  const token = createEmailToken();
+  await getPrisma().passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash: hashEmailToken(token),
+      expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+    },
+  });
+
+  const content = passwordResetEmailContent({
+    name: user.name,
+    resetUrl: resetUrl(token),
+  });
+  await sendMail({
+    to: user.email,
+    subject: content.subject,
+    text: content.text,
+    html: content.html,
+  }).catch((error: unknown) => {
+    logger.error("password reset email failed", {
+      reason: error instanceof Error ? error.message : "unknown",
+    });
+    internalError("Could not send password reset email");
+  });
+
+  return { ok: true };
+}
+
+export async function resetPassword(input: {
+  token: string;
+  password: string;
+}): Promise<{ ok: true }> {
+  const tokenHash = hashEmailToken(input.token);
+  const row = await getPrisma().passwordResetToken.findUnique({
+    where: { tokenHash },
+  });
+
+  if (!row || row.expiresAt.getTime() < Date.now()) {
+    badRequest("Reset link is invalid or expired");
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  await getPrisma().$transaction(async (tx) => {
+    await tx.passwordResetToken.deleteMany({ where: { userId: row.userId } });
+    await tx.user.update({
+      where: { id: row.userId },
+      data: { passwordHash },
+    });
+  });
+
+  return { ok: true };
+}
+
+export async function updateProfile(
+  input: ReturnType<typeof parseUpdateProfileInput>,
+): Promise<SafeUser> {
+  const current = await requireAuth();
+  const user = await getPrisma().user.update({
+    where: { id: current.id },
+    data: {
+      ...(input.name ? { name: input.name } : {}),
+      phone: input.phone,
+      addressTitle: input.addressTitle,
+      addressLine: input.addressLine,
+      addressCity: input.addressCity,
+    },
+  });
+  return toSafeUser(user);
 }
 
 export async function getAuthenticatedUser(): Promise<SafeUser> {

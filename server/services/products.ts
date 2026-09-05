@@ -59,6 +59,7 @@ type ProductWriteInput = {
   isNew?: boolean;
   isActive?: boolean;
   badge?: string | null;
+  campaignPercent?: number | null;
   perfumeDetails?: Record<string, unknown>;
   categoryId?: string;
 };
@@ -80,6 +81,25 @@ function sortToOrderBy(
     default:
       return [{ createdAt: "desc" }, { id: "asc" }];
   }
+}
+
+function optionalCampaignPercent(
+  body: Record<string, unknown>,
+): number | null | undefined {
+  if (!hasField(body, "campaignPercent")) {
+    return undefined;
+  }
+  if (body.campaignPercent === null || body.campaignPercent === "") {
+    return null;
+  }
+  const value = optionalNonNegativeInt(body, "campaignPercent");
+  if (value === undefined || value === 0) {
+    return null;
+  }
+  if (value > 90) {
+    badRequest("campaignPercent must be <= 90");
+  }
+  return value;
 }
 
 function isUniqueSlugError(error: unknown): boolean {
@@ -162,6 +182,7 @@ export function parseCreateProduct(body: Record<string, unknown>) {
     isNew: optionalBoolean(body, "isNew") ?? false,
     isActive: optionalBoolean(body, "isActive") ?? true,
     badge: optionalString(body, "badge") || null,
+    campaignPercent: optionalCampaignPercent(body) ?? null,
     perfumeDetails: optionalJsonObject(body, "perfumeDetails"),
     categoryId: requireString(body, "categoryId"),
   };
@@ -202,6 +223,10 @@ export function parsePatchProduct(body: Record<string, unknown>): ProductWriteIn
   if (hasField(body, "discount")) {
     patch.discount =
       body.discount === null ? null : optionalNonNegativeInt(body, "discount");
+  }
+
+  if (hasField(body, "campaignPercent")) {
+    patch.campaignPercent = optionalCampaignPercent(body) ?? null;
   }
 
   if (hasField(body, "badge")) {
@@ -300,6 +325,7 @@ export async function createProduct(
           isNew: input.isNew,
           isActive: input.isActive,
           badge: input.badge,
+          campaignPercent: input.campaignPercent ?? null,
           perfumeDetails: (input.perfumeDetails ??
             Prisma.JsonNull) as Prisma.InputJsonValue,
           categoryId: input.categoryId,
@@ -347,6 +373,7 @@ export async function updateProduct(
   if (input.isNew !== undefined) data.isNew = input.isNew;
   if (input.isActive !== undefined) data.isActive = input.isActive;
   if (input.badge !== undefined) data.badge = input.badge;
+  if (input.campaignPercent !== undefined) data.campaignPercent = input.campaignPercent;
   if (input.perfumeDetails !== undefined) {
     data.perfumeDetails = input.perfumeDetails as Prisma.InputJsonValue;
   }

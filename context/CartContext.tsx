@@ -277,7 +277,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        void addCartItemApi({ productId, quantity })
+        void addCartItemApi({ productId, quantity, size })
           .then((cart) => {
             dispatch({
               type: "HYDRATE",

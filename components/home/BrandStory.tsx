@@ -7,7 +7,7 @@ export function BrandStory() {
     <section className="bg-off-white px-6 py-24 lg:px-8 lg:py-32">
       <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-24">
         <div className="max-w-lg lg:order-1">
-          <p className="text-12 tracking-label text-taupe">Maison</p>
+          <p className="text-12 tracking-label text-taupe">Marka</p>
           <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
             Sessiz bir imza
           </h2>

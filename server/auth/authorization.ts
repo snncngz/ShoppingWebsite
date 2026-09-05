@@ -12,6 +12,10 @@ export function toSafeUser(user: User): SafeUser {
     email: user.email,
     role: user.role,
     emailVerified: Boolean(user.emailVerifiedAt),
+    phone: user.phone,
+    addressTitle: user.addressTitle,
+    addressLine: user.addressLine,
+    addressCity: user.addressCity,
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };

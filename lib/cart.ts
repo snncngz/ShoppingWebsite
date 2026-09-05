@@ -4,6 +4,7 @@ export const CART_STORAGE_KEY = "velora-cart";
 export const WISHLIST_STORAGE_KEY = "velora-wishlist";
 export const FREE_SHIPPING_THRESHOLD = 500;
 export const SHIPPING_FEE = 149;
+export const GIFT_WRAP_FEE = 75;
 
 export function getCartLineKey(
   productId: string,

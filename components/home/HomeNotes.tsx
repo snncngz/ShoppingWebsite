@@ -26,7 +26,7 @@ export function HomeNotes() {
         </div>
 
         <div className="max-w-lg">
-          <p className="text-12 tracking-label text-taupe">Notes</p>
+          <p className="text-12 tracking-label text-taupe">Notalar</p>
           <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
             Ciltte kalan bir iz
           </h2>

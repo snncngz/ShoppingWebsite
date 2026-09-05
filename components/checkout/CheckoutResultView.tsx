@@ -113,7 +113,7 @@ export function CheckoutResultView() {
   return (
     <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
       <div className="mx-auto max-w-3xl text-center">
-        <p className="text-12 tracking-label text-taupe">Checkout</p>
+        <p className="text-12 tracking-label text-taupe">Sipariş</p>
         <h1 className="mt-3 font-heading text-32 text-black">
           {paid ? "Ödeme alındı" : "Ödeme bekleniyor"}
         </h1>

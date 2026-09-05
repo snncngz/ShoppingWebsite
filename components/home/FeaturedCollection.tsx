@@ -22,9 +22,9 @@ export function FeaturedCollection({ products }: FeaturedCollectionProps) {
         </div>
 
         <div className="lg:col-span-5">
-          <p className="text-12 tracking-label text-taupe">Collection</p>
+          <p className="text-12 tracking-label text-taupe">Koleksiyon</p>
           <h2 className="mt-3 font-heading text-32 text-black lg:text-48">
-            The Extrait Collection
+            Extrait koleksiyonu
           </h2>
           <p className="mt-6 text-16 text-charcoal">
             Günün imzasını kuran kokular — cilde yakın, ölçülü ve kalıcı.

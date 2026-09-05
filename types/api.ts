@@ -75,6 +75,7 @@ export type ProductDto = {
   isNew: boolean;
   isActive: boolean;
   badge: string | null;
+  campaignPercent: number | null;
   perfumeDetails: unknown;
   categoryId: string;
   category: CategorySummaryDto;
@@ -115,6 +116,7 @@ export type CartItemDto = {
   id: string;
   productId: string;
   quantity: number;
+  variant: string;
   product: ProductDto;
   createdAt: string;
   updatedAt: string;
@@ -151,6 +153,7 @@ export type OrderItemDto = {
   quantity: number;
   unitPrice: number;
   lineTotal: number;
+  variant: string;
   product: ProductSummaryDto;
   createdAt: string;
 };
@@ -159,6 +162,7 @@ export type OrderDto = {
   id: string;
   status: OrderStatusDto;
   total: number;
+  giftWrap: boolean;
   createdAt: string;
   updatedAt: string;
   items: OrderItemDto[];
@@ -208,15 +212,24 @@ export type PaymentCreateDto = PaymentDto & {
   orderStatus: OrderStatusDto;
 };
 
-export type AdminUserListItemDto = {
+export type AdminUserDetailDto = AdminUserListItemDto & {
+  phone: string;
+  addressTitle: string;
+  addressLine: string;
+  addressCity: string;
+  updatedAt: string;
+};
+
+export type NewsletterSubscriberDto = {
   id: string;
-  name: string;
   email: string;
-  role: "USER" | "ADMIN";
-  emailVerified: boolean;
-  orderCount: number;
   createdAt: string;
-  canDelete: boolean;
+};
+
+export type AdminMailSendResultDto = {
+  sent: number;
+  failed: number;
+  skipped: number;
 };
 
 export type StockStatusDto = "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";

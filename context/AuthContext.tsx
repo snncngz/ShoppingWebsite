@@ -18,6 +18,7 @@ import {
   registerRequest,
   resendVerificationRequest,
   verifyEmailRequest,
+  updateProfileRequest,
 } from "@/lib/authApi";
 import { toStorefrontUser } from "@/lib/mappers/user";
 import { getSingletonContext } from "@/lib/singleton-context";
@@ -39,6 +40,13 @@ type AuthContextValue = {
   resendVerification: (email: string) => Promise<void>;
   logout: () => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
+  updateProfile: (input: {
+    name?: string;
+    phone: string;
+    addressTitle: string;
+    addressLine: string;
+    addressCity: string;
+  }) => Promise<void>;
 };
 
 const AuthContext = getSingletonContext<AuthContextValue | null>(
@@ -110,6 +118,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthUser(null);
   }, []);
 
+  const updateProfile = useCallback(
+    async (input: {
+      name?: string;
+      phone: string;
+      addressTitle: string;
+      addressLine: string;
+      addressCity: string;
+    }) => {
+      const user = await updateProfileRequest(input);
+      setAuthUser(user);
+    },
+    [],
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user: authUser ? toStorefrontUser(authUser) : null,
@@ -122,8 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       resendVerification,
       logout,
       deleteAccount,
+      updateProfile,
     }),
-    [authUser, isLoading, login, logout, register, resendVerification, verifyEmail, deleteAccount],
+    [authUser, isLoading, login, logout, register, resendVerification, verifyEmail, deleteAccount, updateProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

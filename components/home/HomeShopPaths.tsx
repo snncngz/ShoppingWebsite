@@ -6,7 +6,7 @@ const featured = [
   {
     href: "/parfum",
     label: "Alışverişe Başla",
-    kicker: "Boutique",
+    kicker: "Butik",
     image: BRAND_MEDIA.shopStart,
     alt: "Havuz kenarında Lucien Perrin parfüm şişesi",
     frame: "lg:col-span-7 aspect-[4/5] sm:aspect-[16/10] lg:aspect-[5/4]",
@@ -14,7 +14,7 @@ const featured = [
   {
     href: "/yeni-gelenler",
     label: "Koleksiyonu Keşfet",
-    kicker: "Just In",
+    kicker: "Yeni",
     image: BRAND_MEDIA.collection,
     alt: "Kıyıda Lucien Perrin extrait şişesi",
     frame: "lg:col-span-5 aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[28rem]",
@@ -25,21 +25,21 @@ const trails = [
   {
     href: "/parfum/womens",
     label: "Kadın Kokuları",
-    kicker: "Women’s",
+    kicker: "Kadın",
     image: BRAND_MEDIA.women,
     alt: "Lucien Perrin kadın extrait portresi",
   },
   {
     href: "/parfum/mens",
     label: "Erkek Kokuları",
-    kicker: "Men’s",
+    kicker: "Erkek",
     image: BRAND_MEDIA.men,
     alt: "Lucien Perrin erkek extrait portresi",
   },
   {
     href: "/cok-satanlar",
     label: "Çok Satanlar",
-    kicker: "Bestsellers",
+    kicker: "Çok Satanlar",
     image: BRAND_MEDIA.stillLife,
     alt: "Kumda Lucien Perrin extrait şişesi",
   },
@@ -54,7 +54,7 @@ export function HomeShopPaths() {
           Koleksiyona gir
         </h2>
         <p className="mt-4 max-w-xl text-16 text-charcoal">
-          Maison’un extrait’leri. Cilde yakın imzalar, günün ritüeline sakin bir
+          Lucien Perrin parfümleri. Cilde yakın imzalar, günün ritüeline sakin bir
           iz.
         </p>
 

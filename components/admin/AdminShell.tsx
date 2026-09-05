@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { LayoutDashboard, LogOut, Package, Store, Tag, Truck, Users, Warehouse } from "lucide-react";
+import { LayoutDashboard, LogOut, Mail, Package, Store, Tag, Truck, Users, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -15,6 +15,7 @@ const links = [
   { href: "/admin/kategoriler", label: "Kategoriler", icon: Tag },
   { href: "/admin/siparisler", label: "Siparişler", icon: Truck },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", icon: Users },
+  { href: "/admin/eposta", label: "E-posta", icon: Mail },
   { href: "/admin/stok", label: "Stok", icon: Warehouse },
 ] as const;
 
@@ -46,7 +47,7 @@ export function AdminShell({
           <p className="font-heading text-18 tracking-[0.24em] text-black">
             {BRAND_NAME}
           </p>
-          <p className="mt-2 text-12 tracking-label text-taupe">Admin</p>
+          <p className="mt-2 text-12 tracking-label text-taupe">Yönetim</p>
         </div>
         <nav className="flex flex-1 flex-col gap-1 px-4 py-6" aria-label="Admin">
           {links.map((link) => {

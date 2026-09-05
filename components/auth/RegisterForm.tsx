@@ -60,7 +60,7 @@ export function RegisterForm() {
     return (
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-md">
-          <p className="text-12 tracking-label text-taupe">Account</p>
+          <p className="text-12 tracking-label text-taupe">Hesap</p>
           <h1 className="mt-3 font-heading text-32 text-black lg:text-48">
             E-postanızı doğrulayın
           </h1>
@@ -85,7 +85,7 @@ export function RegisterForm() {
   return (
     <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
       <div className="mx-auto max-w-md">
-        <p className="text-12 tracking-label text-taupe">Account</p>
+        <p className="text-12 tracking-label text-taupe">Hesap</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Kayıt</h1>
         <p className="mt-4 text-14 text-taupe">
           Gerçek bir e-posta kullanın. Hesap, doğrulama bağlantısına tıklayınca

@@ -1,10 +1,13 @@
 import { OrderStatus, Prisma } from "@prisma/client";
 
+import { GIFT_WRAP_FEE } from "@/lib/cart";
+import { toPerfumeDetails } from "@/lib/mappers/product";
+import { displayPricing } from "@/lib/pricing";
 import { badRequest, conflict, notFound } from "@/server/api/errors";
 import { getPrisma } from "@/server/db/prisma";
-import { decimalToNumber, toProductSummaryDto } from "@/server/dto/catalog";
+import { decimalToNumber, toDecimal, toProductSummaryDto } from "@/server/dto/catalog";
 import { decrementStockForSale } from "@/server/services/inventory";
-import { requireId } from "@/server/utils/validation";
+import { optionalBoolean, requireId } from "@/server/utils/validation";
 import type { OrderDto, OrderItemDto } from "@/types/api";
 
 const orderInclude = {
@@ -32,6 +35,7 @@ function toOrderItemDto(
     quantity: item.quantity,
     unitPrice,
     lineTotal: Number((unitPrice * item.quantity).toFixed(2)),
+    variant: item.variant,
     product: toProductSummaryDto(item.product),
     createdAt: item.createdAt.toISOString(),
   };
@@ -42,6 +46,7 @@ function toOrderDto(order: OrderWithItems): OrderDto {
     id: order.id,
     status: order.status,
     total: decimalToNumber(order.total),
+    giftWrap: order.giftWrap,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
     items: order.items.map(toOrderItemDto),
@@ -71,7 +76,18 @@ export async function getOrder(userId: string, orderId: string): Promise<OrderDt
   return toOrderDto(order);
 }
 
-export async function createOrder(userId: string): Promise<OrderDto> {
+export function parseCreateOrder(body: Record<string, unknown>): {
+  giftWrap: boolean;
+} {
+  return {
+    giftWrap: optionalBoolean(body, "giftWrap") ?? false,
+  };
+}
+
+export async function createOrder(
+  userId: string,
+  input: { giftWrap: boolean } = { giftWrap: false },
+): Promise<OrderDto> {
   return getPrisma().$transaction(async (tx) => {
     const cart = await tx.cart.findUnique({
       where: { userId },
@@ -103,24 +119,41 @@ export async function createOrder(userId: string): Promise<OrderDto> {
       if (!product) {
         conflict("One or more products are not available");
       }
-      total = total.add(product.price.mul(item.quantity));
+      const unit = displayPricing(
+        {
+          price: decimalToNumber(product.price),
+          oldPrice: product.oldPrice ? decimalToNumber(product.oldPrice) : null,
+          campaignPercent: product.campaignPercent,
+          perfumeDetails: toPerfumeDetails(product.perfumeDetails),
+        },
+        item.variant,
+      ).price;
+      const unitPrice = toDecimal(unit);
+      total = total.add(unitPrice.mul(item.quantity));
       return {
         productId: product.id,
         quantity: item.quantity,
-        unitPrice: product.price,
+        unitPrice,
+        variant: item.variant,
       };
     });
+
+    if (input.giftWrap) {
+      total = total.add(toDecimal(GIFT_WRAP_FEE));
+    }
 
     const created = await tx.order.create({
       data: {
         userId,
         status: OrderStatus.PENDING,
         total,
+        giftWrap: input.giftWrap,
         items: {
           create: lines.map((line) => ({
             productId: line.productId,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
+            variant: line.variant,
           })),
         },
       },

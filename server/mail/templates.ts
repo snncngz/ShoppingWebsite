@@ -37,3 +37,60 @@ function escapeHtml(value: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+export function passwordResetEmailContent(input: {
+  name: string;
+  resetUrl: string;
+}): { subject: string; text: string; html: string } {
+  const subject = `${BRAND_NAME} — Şifrenizi yenileyin`;
+  const text = [
+    `Merhaba ${input.name},`,
+    "",
+    "Şifrenizi yenilemek için bu bağlantıya tıklayın:",
+    input.resetUrl,
+    "",
+    "Bağlantı 24 saat geçerlidir. Bu isteği siz yapmadıysanız iletiyi yok sayın.",
+  ].join("\n");
+
+  const html = `
+    <div style="font-family:Georgia,serif;background:#F7F5F0;padding:32px;color:#2A2825;">
+      <p style="letter-spacing:0.28em;text-transform:uppercase;font-size:12px;color:#A8998A;">${BRAND_NAME}</p>
+      <h1 style="font-size:28px;font-weight:400;color:#0B0B0B;">Şifrenizi yenileyin</h1>
+      <p>Merhaba ${escapeHtml(input.name)},</p>
+      <p>Hesabınız için bir şifre sıfırlama isteği aldık. Bağlantı 24 saat geçerlidir.</p>
+      <p style="margin:28px 0;">
+        <a href="${escapeHtml(input.resetUrl)}" style="display:inline-block;background:#2A2825;color:#F7F5F0;text-decoration:none;padding:14px 24px;letter-spacing:0.16em;text-transform:uppercase;font-size:12px;">Şifreyi yenile</a>
+      </p>
+      <p style="font-size:13px;color:#A8998A;">Bu isteği siz yapmadıysanız bu iletiyi yok sayın.</p>
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
+export function campaignEmailContent(input: {
+  subject: string;
+  body: string;
+}): { subject: string; text: string; html: string } {
+  const paragraphs = input.body
+    .split(/\n{2,}/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const htmlBody = paragraphs
+    .map((part) => `<p>${escapeHtml(part).replaceAll("\n", "<br />")}</p>`)
+    .join("");
+
+  const html = `
+    <div style="font-family:Georgia,serif;background:#F7F5F0;padding:32px;color:#2A2825;">
+      <p style="letter-spacing:0.28em;text-transform:uppercase;font-size:12px;color:#A8998A;">${BRAND_NAME}</p>
+      <h1 style="font-size:28px;font-weight:400;color:#0B0B0B;">${escapeHtml(input.subject)}</h1>
+      ${htmlBody || `<p>${escapeHtml(input.body)}</p>`}
+    </div>
+  `;
+
+  return {
+    subject: `${BRAND_NAME} — ${input.subject}`,
+    text: input.body,
+    html,
+  };
+}

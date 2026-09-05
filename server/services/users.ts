@@ -7,7 +7,7 @@ import {
   parseQueryString,
   requireId,
 } from "@/server/utils/validation";
-import type { AdminUserListItemDto, PaginatedDto } from "@/types/api";
+import type { AdminUserDetailDto, AdminUserListItemDto, PaginatedDto } from "@/types/api";
 import type { UserRole as UserRoleDto } from "@/types/auth";
 
 const MAX_LIMIT = 50;
@@ -165,4 +165,51 @@ export async function adminDeleteUser(
   await assertNotLastAdmin(row.role);
   await getPrisma().$transaction((tx) => purgeUserById(tx, row.id));
   return { id: row.id };
+}
+
+export async function getAdminUser(
+  id: string,
+  actorId: string,
+): Promise<AdminUserDetailDto> {
+  const userId = requireId(id);
+  const [row, adminCount] = await getPrisma().$transaction([
+    getPrisma().user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        emailVerifiedAt: true,
+        phone: true,
+        addressTitle: true,
+        addressLine: true,
+        addressCity: true,
+        createdAt: true,
+        updatedAt: true,
+        _count: { select: { orders: true } },
+      },
+    }),
+    getPrisma().user.count({ where: { role: "ADMIN" } }),
+  ]);
+
+  if (!row) {
+    notFound("User not found");
+  }
+
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role as UserRoleDto,
+    emailVerified: Boolean(row.emailVerifiedAt),
+    orderCount: row._count.orders,
+    createdAt: row.createdAt.toISOString(),
+    canDelete: row.id !== actorId && !(row.role === "ADMIN" && adminCount <= 1),
+    phone: row.phone,
+    addressTitle: row.addressTitle,
+    addressLine: row.addressLine,
+    addressCity: row.addressCity,
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }

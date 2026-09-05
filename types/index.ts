@@ -1,5 +1,12 @@
+export type VolumePrice = {
+  volume: string;
+  price: number;
+  oldPrice?: number;
+};
+
 export type PerfumeDetails = {
   volume: string[];
+  volumePrices?: VolumePrice[];
   fragranceFamily: string;
   topNotes: string[];
   heartNotes: string[];
@@ -16,6 +23,7 @@ export type Product = {
   subcategory: string;
   price: number;
   oldPrice?: number;
+  campaignPercent?: number;
   description: string;
   images: string[];
   colors: string[];
@@ -52,6 +60,9 @@ export type User = {
   firstName: string;
   lastName: string;
   phone?: string;
+  addressTitle?: string;
+  addressLine?: string;
+  addressCity?: string;
   createdAt: string;
 };
 
@@ -105,6 +116,7 @@ export type {
   PaymentDto,
   PaymentCreateDto,
   AdminUserListItemDto,
+  AdminUserDetailDto,
 } from "@/types/api";
 export { API_ERROR_CODES } from "@/types/api";
 export type { AuthUser, RegisterPendingDto, SafeUser, SessionUser, UserRole } from "@/types/auth";

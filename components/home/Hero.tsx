@@ -18,9 +18,9 @@ export function Hero() {
 
       <div className="relative mx-auto flex min-h-[85vh] max-w-7xl flex-col justify-end px-6 pb-16 pt-32 lg:min-h-[92vh] lg:justify-center lg:px-8 lg:pb-24 lg:pt-28">
         <div className="max-w-xl">
-          <p className="text-12 tracking-label text-ivory/75">Extrait de Parfum</p>
+          <p className="text-12 tracking-label text-ivory/75">Parfüm özü</p>
           <h1 className="mt-4 font-heading text-48 leading-none text-ivory lg:text-64">
-            TIMELESS SCENT.
+            Zamansız koku.
           </h1>
           <p className="mt-6 max-w-md text-16 text-ivory/85">
             Özenle harmanlanmış extrait’ler — cilde yakın, her günün parçası

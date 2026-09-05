@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import Link from "next/link";
+
 import { ErrorState } from "@/components/ui/ErrorState";
 import { getAdminErrorMessage } from "@/lib/adminApi";
 import { deleteAdminUser, listAdminUsers } from "@/lib/adminUsers";
@@ -85,7 +87,7 @@ export function AdminUserList() {
   return (
     <div>
       <div>
-        <p className="text-12 tracking-label text-taupe">Members</p>
+        <p className="text-12 tracking-label text-taupe">Üyeler</p>
         <h1 className="mt-3 font-heading text-32 text-black">Kullanıcılar</h1>
         <p className="mt-3 max-w-xl text-14 text-taupe">
           Kayıtlı üyeleri görüntüleyin. Silinen hesabın siparişleri de kalkar.
@@ -146,7 +148,11 @@ export function AdminUserList() {
             <tbody>
               {rows.map((row) => (
                 <tr key={row.id} className="border-b border-border">
-                  <td className="px-4 py-4 text-charcoal">{row.name}</td>
+                  <td className="px-4 py-4 text-charcoal">
+                    <Link href={`/admin/kullanicilar/${row.id}`} className="hover:text-black">
+                      {row.name}
+                    </Link>
+                  </td>
                   <td className="px-4 py-4 text-taupe">{row.email}</td>
                   <td className="px-4 py-4">{ROLE_LABELS[row.role]}</td>
                   <td className="px-4 py-4">

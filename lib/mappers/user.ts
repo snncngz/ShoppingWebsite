@@ -11,6 +11,10 @@ export function toStorefrontUser(user: SafeUser): User {
     email: user.email,
     firstName,
     lastName,
+    phone: user.phone || undefined,
+    addressTitle: user.addressTitle || undefined,
+    addressLine: user.addressLine || undefined,
+    addressCity: user.addressCity || undefined,
     createdAt: user.createdAt,
   };
 }

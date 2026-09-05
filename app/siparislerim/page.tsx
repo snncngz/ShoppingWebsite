@@ -4,7 +4,7 @@ import { OrderList } from "@/components/orders/OrderList";
 
 export const metadata: Metadata = {
   title: "Siparişlerim",
-  description: "Lucien Perrin demo sipariş geçmişinizi görüntüleyin.",
+  description: "Lucien Perrin sipariş geçmişinizi görüntüleyin.",
 };
 
 export default function OrdersPage() {
