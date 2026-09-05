@@ -74,8 +74,9 @@ export function applyCampaign(
 
 export type DisplayPricing = {
   price: number;
+  listPrice: number;
   oldPrice?: number;
-  campaignPercent?: number;
+  discountPercent?: number;
 };
 
 export function displayPricing(
@@ -83,22 +84,17 @@ export function displayPricing(
   variant?: string,
 ): DisplayPricing {
   const list = volumeListPrice(product, variant);
-  const campaign =
+  const discountPercent =
     product.campaignPercent && product.campaignPercent > 0
       ? Math.min(90, product.campaignPercent)
       : undefined;
-  const price = applyCampaign(list.price, campaign);
-  const compareAt =
-    list.oldPrice && list.oldPrice > price
-      ? list.oldPrice
-      : campaign && list.price > price
-        ? list.price
-        : undefined;
+  const price = applyCampaign(list.price, discountPercent);
 
   return {
     price,
-    oldPrice: compareAt,
-    campaignPercent: campaign,
+    listPrice: list.price,
+    oldPrice: list.oldPrice,
+    discountPercent: discountPercent && price < list.price ? discountPercent : undefined,
   };
 }
 

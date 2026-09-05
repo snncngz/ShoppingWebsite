@@ -40,10 +40,16 @@ export function CartView() {
   }, 0);
   const discount = lines.reduce((total, line) => {
     const pricing = displayPricing(toPricedProduct(line.product), line.item.size);
-    if (!pricing.oldPrice || pricing.oldPrice <= pricing.price) {
+    const compareAt =
+      pricing.oldPrice && pricing.oldPrice > pricing.price
+        ? pricing.oldPrice
+        : pricing.discountPercent && pricing.listPrice > pricing.price
+          ? pricing.listPrice
+          : undefined;
+    if (!compareAt) {
       return total;
     }
-    return total + (pricing.oldPrice - pricing.price) * line.item.quantity;
+    return total + (compareAt - pricing.price) * line.item.quantity;
   }, 0);
   const shipping = getShippingFee(subtotal);
   const total = subtotal + shipping;

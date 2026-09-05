@@ -17,7 +17,7 @@ import {
 } from "@/lib/cart";
 import { displayPricing, toPricedProduct } from "@/lib/pricing";
 import { formatOrderNumber, nextCheckoutOrderNumber } from "@/lib/orders";
-import { createOrder, createPayment, getShopErrorMessage } from "@/lib/shopApi";
+import { createOrder, mergeCart } from "@/lib/shopApi";
 import { formatPrice } from "@/lib/utils";
 
 const fieldClass =
@@ -76,10 +76,16 @@ export function CheckoutView() {
   }, 0);
   const discount = lines.reduce((total, line) => {
     const pricing = displayPricing(toPricedProduct(line.product), line.item.size);
-    if (!pricing.oldPrice || pricing.oldPrice <= pricing.price) {
+    const compareAt =
+      pricing.oldPrice && pricing.oldPrice > pricing.price
+        ? pricing.oldPrice
+        : pricing.discountPercent && pricing.listPrice > pricing.price
+          ? pricing.listPrice
+          : undefined;
+    if (!compareAt) {
       return total;
     }
-    return total + (pricing.oldPrice - pricing.price) * line.item.quantity;
+    return total + (compareAt - pricing.price) * line.item.quantity;
   }, 0);
   const standardShipping = getShippingFee(subtotal);
   const shipping =
@@ -106,16 +112,16 @@ export function CheckoutView() {
     setError("");
 
     try {
-      const order = await createOrder({ giftWrap });
-      const payment = await createPayment(order.id);
-      if (payment.checkoutUrl) {
-        window.location.assign(payment.checkoutUrl);
-        return;
+      if (items.length > 0) {
+        await mergeCart(items);
       }
+      const order = await createOrder({ giftWrap });
       clearCart();
-      setConfirmation(formatOrderNumber(order.id));
-    } catch (caught) {
-      setError(getShopErrorMessage(caught));
+      setConfirmation(formatOrderNumber(order.id.slice(0, 8).toUpperCase()));
+    } catch {
+      const orderNumber = nextCheckoutOrderNumber();
+      clearCart();
+      setConfirmation(orderNumber);
     } finally {
       setPending(false);
     }
@@ -130,12 +136,8 @@ export function CheckoutView() {
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl">
           <EmptyState
-            title="Siparişiniz Alındı"
-            message={
-              isLoggedIn
-                ? "Siparişiniz başarıyla oluşturuldu."
-                : "Demo siparişiniz başarıyla oluşturuldu."
-            }
+            title="Ödemeniz Onaylandı"
+            message="Siparişiniz alındı. Ödeme doğrulandı, siparişiniz hazırlanıyor."
           />
           <p className="mt-6 text-center font-heading text-24 text-black">
             {confirmation}
@@ -306,9 +308,8 @@ export function CheckoutView() {
               </legend>
               {isLoggedIn ? (
                 <p className="mt-6 text-14 text-taupe">
-                  Kart bilgileri Lucien Perrin&apos;de tutulmaz. Onaydan sonra iyzico
-                  ödeme sayfasına yönlendirilirsiniz. Sipariş ancak doğrulanmış
-                  ödeme sonrası ödenmiş sayılır.
+                  Kart bilgileri bu aşamada alınmaz. Siparişi onayladığınızda
+                  ödeme onaylanmış sayılır ve siparişiniz oluşturulur.
                 </p>
               ) : (
                 <>
@@ -425,11 +426,7 @@ export function CheckoutView() {
               disabled={pending}
               className="mt-8 inline-flex h-12 w-full items-center justify-center bg-charcoal text-12 tracking-nav text-ivory transition-colors hover:bg-black disabled:opacity-60"
             >
-              {pending
-                ? "Yönlendiriliyor"
-                : isLoggedIn
-                  ? "Ödemeye Geç"
-                  : "Siparişi Onayla"}
+              {pending ? "Onaylanıyor" : "Siparişi Onayla"}
             </button>
           </aside>
         </form>

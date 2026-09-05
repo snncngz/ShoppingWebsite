@@ -12,22 +12,29 @@ export function ProductPrice({
   size?: "sm" | "md" | "lg";
 }) {
   const pricing = displayPricing(toPricedProduct(product), variant);
-  const priceClass =
-    size === "lg" ? "text-24 text-black" : size === "sm" ? "text-14 text-charcoal" : "text-14 text-charcoal";
-  const oldClass = size === "lg" ? "text-14 text-taupe line-through" : "text-12 text-taupe line-through";
+  const saleClass =
+    size === "lg" ? "text-24 text-black" : "text-14 text-charcoal";
+  const mutedClass =
+    size === "lg" ? "text-14 text-taupe line-through" : "text-12 text-taupe line-through";
+  const hasDiscount = Boolean(pricing.discountPercent);
 
   return (
-    <span className="inline-flex flex-wrap items-baseline gap-2">
-      <span className={priceClass}>{formatPrice(pricing.price)}</span>
+    <span className="inline-flex flex-col items-start gap-0.5">
       {pricing.oldPrice ? (
-        <span className={oldClass}>{formatPrice(pricing.oldPrice)}</span>
+        <span className={mutedClass}>{formatPrice(pricing.oldPrice)}</span>
       ) : null}
-      {pricing.campaignPercent ? (
-        <span className="text-12 tracking-label text-accent">
-          Kampanya · %{pricing.campaignPercent}
-        </span>
-      ) : product.discount ? (
-        <span className="text-12 tracking-label text-accent">%{product.discount}</span>
+      {hasDiscount ? (
+        <span className={mutedClass}>{formatPrice(pricing.listPrice)}</span>
+      ) : (
+        <span className={saleClass}>{formatPrice(pricing.listPrice)}</span>
+      )}
+      {hasDiscount ? (
+        <>
+          <span className={saleClass}>{formatPrice(pricing.price)}</span>
+          <span className="text-12 tracking-label text-accent">
+            İndirim · %{pricing.discountPercent}
+          </span>
+        </>
       ) : null}
     </span>
   );

@@ -495,7 +495,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
       sizes: sizeList,
       isPopular,
       isNew,
-      badge: badge.trim() || (campaign ? "Kampanya" : null),
+      badge: badge.trim() || (campaign ? "İndirim" : null),
       campaignPercent: campaign,
       categoryId: leafCategory.id,
       categoryName,
@@ -599,7 +599,7 @@ function AdminProductFormFields({ product }: { product?: ProductDto | null }) {
           </>
         ) : null}
         <label className="text-12 tracking-label text-charcoal">
-          Kampanya indirimi (%)
+          İndirim (%)
           <input
             type="number"
             min={0}

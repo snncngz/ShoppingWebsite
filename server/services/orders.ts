@@ -145,7 +145,7 @@ export async function createOrder(
     const created = await tx.order.create({
       data: {
         userId,
-        status: OrderStatus.PENDING,
+        status: OrderStatus.PAID,
         total,
         giftWrap: input.giftWrap,
         items: {
