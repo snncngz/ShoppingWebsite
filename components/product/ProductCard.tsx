@@ -125,7 +125,6 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           <span className="pointer-events-none absolute left-3 top-3 z-10 bg-accent px-2 py-1 text-12 tracking-label text-ivory">
             İndirim
           </span>
-          </span>
         ) : product.badge ? (
           <span className="pointer-events-none absolute left-3 top-3 z-10 bg-ivory/90 px-2 py-1 text-12 tracking-label text-charcoal">
             {product.badge}
