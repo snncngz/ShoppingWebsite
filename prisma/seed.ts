@@ -107,10 +107,14 @@ async function main() {
 
   await prisma.cartItem.upsert({
     where: {
-      cartId_productId: { cartId: cart.id, productId: product.id },
+      cartId_productId_variant: {
+        cartId: cart.id,
+        productId: product.id,
+        variant: "",
+      },
     },
     update: { quantity: 1 },
-    create: { cartId: cart.id, productId: product.id, quantity: 1 },
+    create: { cartId: cart.id, productId: product.id, quantity: 1, variant: "" },
   });
 
   const wishlist = await prisma.wishlist.upsert({

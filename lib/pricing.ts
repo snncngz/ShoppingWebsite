@@ -22,7 +22,7 @@ export function parseVolumePrices(details?: PerfumeDetails): VolumePrice[] {
     );
   }
 
-  return (details.volume ?? []).map((volume) => ({ volume }));
+  return [];
 }
 
 export function catalogVolumes(product: {

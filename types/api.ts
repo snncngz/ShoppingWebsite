@@ -212,6 +212,17 @@ export type PaymentCreateDto = PaymentDto & {
   orderStatus: OrderStatusDto;
 };
 
+export type AdminUserListItemDto = {
+  id: string;
+  name: string;
+  email: string;
+  role: "USER" | "ADMIN";
+  emailVerified: boolean;
+  orderCount: number;
+  createdAt: string;
+  canDelete: boolean;
+};
+
 export type AdminUserDetailDto = AdminUserListItemDto & {
   phone: string;
   addressTitle: string;
