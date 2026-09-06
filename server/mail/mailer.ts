@@ -63,6 +63,7 @@ async function sendWithSmtp(mail: OutboundMail): Promise<void> {
     subject: mail.subject,
     text: mail.text,
     html: mail.html,
+    textEncoding: "base64",
   });
 }
 

@@ -10,10 +10,10 @@ import { getAuthErrorMessage, resetPasswordRequest } from "@/lib/authApi";
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none placeholder:text-taupe focus:border-taupe";
 
-export function ResetPasswordForm() {
+export function ResetPasswordForm({ token: tokenFromPath }: { token?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+  const token = (tokenFromPath ?? searchParams.get("token") ?? "").trim();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");

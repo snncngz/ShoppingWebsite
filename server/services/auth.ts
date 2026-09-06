@@ -153,7 +153,7 @@ export function parseDeleteOwnAccountInput(body: Record<string, unknown>): {
 }
 
 function verifyUrl(token: string): string {
-  return `${getPublicOrigin()}/dogrula?token=${encodeURIComponent(token)}`;
+  return `${getPublicOrigin()}/dogrula/${encodeURIComponent(token)}`;
 }
 
 async function issueVerification(user: {
@@ -390,7 +390,7 @@ export function parseUpdateProfileInput(body: Record<string, unknown>): {
 }
 
 function resetUrl(token: string): string {
-  return `${getPublicOrigin()}/sifre-yenile?token=${encodeURIComponent(token)}`;
+  return `${getPublicOrigin()}/sifre-yenile/${encodeURIComponent(token)}`;
 }
 
 export async function requestPasswordReset(email: string): Promise<{ ok: true }> {

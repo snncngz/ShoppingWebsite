@@ -99,12 +99,6 @@ export function LoginForm() {
             />
           </label>
 
-          <p className="text-14">
-            <Link href="/sifremi-unuttum" className="text-charcoal underline-offset-4 hover:underline">
-              Şifremi unuttum
-            </Link>
-          </p>
-
           {error ? <p className="text-14 text-accent">{error}</p> : null}
           {notice ? <p className="text-14 text-charcoal">{notice}</p> : null}
 
@@ -128,7 +122,14 @@ export function LoginForm() {
           </button>
         </form>
 
-        <p className="mt-8 text-14 text-taupe">
+        <Link
+          href="/sifremi-unuttum"
+          className="relative z-10 mt-4 inline-flex min-h-12 w-full items-center justify-center text-16 text-charcoal underline underline-offset-4"
+        >
+          Şifremi unuttum
+        </Link>
+
+        <p className="mt-8 text-center text-14 text-taupe">
           Hesabınız yok mu?{" "}
           <Link href="/register" className="text-charcoal underline-offset-4 hover:underline">
             Kayıt ol

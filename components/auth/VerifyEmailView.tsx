@@ -8,11 +8,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage } from "@/lib/authApi";
 
-export function VerifyEmailView() {
+export function VerifyEmailView({ token: tokenFromPath }: { token?: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { verifyEmail } = useAuth();
-  const token = searchParams.get("token")?.trim() ?? "";
+  const token = (tokenFromPath ?? searchParams.get("token") ?? "").trim();
   const [error, setError] = useState("");
   const [status, setStatus] = useState<"working" | "error">(
     token ? "working" : "error",

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { CategoryPage } from "@/components/category/CategoryPage";
+import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
+import { LoginForm } from "@/components/auth/LoginForm";
 import { CATEGORY_SLUGS, getCategoryPage } from "@/lib/category-pages";
 import { BRAND_NAME } from "@/lib/constants";
 
@@ -41,6 +43,14 @@ export default async function CategoryRoute({
   params: Promise<{ category: string }>;
 }) {
   const { category } = await params;
+
+  if (category === "sifremi-unuttum") {
+    return <ForgotPasswordForm />;
+  }
+  if (category === "giris" || category === "login") {
+    return <LoginForm />;
+  }
+
   const config = getCategoryPage(category);
 
   return (

@@ -40,16 +40,14 @@ function emailCta(href: string, label: string): string {
   const safeHref = escapeHtml(href);
   const safeLabel = escapeHtml(label);
   return `
-      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
-        <tr>
-          <td bgcolor="#2A2825" style="background:#2A2825;">
-            <a href="${safeHref}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 24px;font-family:Georgia,serif;font-size:14px;line-height:1.4;color:#F7F5F0;text-decoration:none;">${safeLabel}</a>
-          </td>
-        </tr>
-      </table>
-      <p style="font-size:13px;color:#A8998A;word-break:break-all;">
-        Buton açılmazsa bu bağlantıya dokunun:<br />
-        <a href="${safeHref}" target="_blank" rel="noopener noreferrer" style="color:#2A2825;text-decoration:underline;">${safeHref}</a>
+      <p style="margin:32px 0;font-size:18px;line-height:28px;">
+        <a href="${safeHref}">${safeLabel}</a>
+      </p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:24px;">
+        Telefonda açılmazsa bu adresi kopyalayıp tarayıcıya yapıştırın:
+      </p>
+      <p style="margin:0;font-size:14px;line-height:22px;color:#2A2825;">
+        ${safeHref}
       </p>
   `;
 }

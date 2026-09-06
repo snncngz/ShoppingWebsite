@@ -69,8 +69,11 @@ export function ForgotPasswordForm() {
           </button>
         </form>
 
-        <p className="mt-8 text-14 text-taupe">
-          <Link href="/login" className="text-charcoal underline-offset-4 hover:underline">
+        <p className="mt-8 text-center">
+          <Link
+            href="/login"
+            className="inline-flex min-h-12 items-center justify-center text-16 text-charcoal underline underline-offset-4"
+          >
             Girişe dön
           </Link>
         </p>

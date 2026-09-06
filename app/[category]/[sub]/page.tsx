@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 
 import { CategoryPage } from "@/components/category/CategoryPage";
 import { ProductView } from "@/components/product/ProductView";
+import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
+import { VerifyEmailView } from "@/components/auth/VerifyEmailView";
 import { getCategoryPage } from "@/lib/category-pages";
 import { BRAND_NAME } from "@/lib/constants";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 export const dynamicParams = true;
@@ -37,6 +40,22 @@ export default async function SubcategoryRoute({
 
   if (category === "urun") {
     return <ProductView slug={sub} />;
+  }
+
+  if (category === "sifre-yenile") {
+    return (
+      <Suspense fallback={null}>
+        <ResetPasswordForm token={sub} />
+      </Suspense>
+    );
+  }
+
+  if (category === "dogrula") {
+    return (
+      <Suspense fallback={null}>
+        <VerifyEmailView token={sub} />
+      </Suspense>
+    );
   }
 
   const parent = getCategoryPage(category);
