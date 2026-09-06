@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { SlidersHorizontal } from "lucide-react";
-import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/category/Breadcrumbs";
 import { EmptyState } from "@/components/category/EmptyState";
@@ -15,17 +14,19 @@ import { ProductCard } from "@/components/product/ProductCard";
 import { CategorySkeleton } from "@/components/ui/Skeleton";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { useCatalog } from "@/context/CatalogContext";
-import { VIRTUAL_CATEGORY_SLUGS } from "@/lib/catalog";
-import { type BreadcrumbItem } from "@/lib/category-pages";
+import {
+  getCategoryPage,
+  getPerfumeGender,
+  perfumeGenderFromSlug,
+  type BreadcrumbItem,
+} from "@/lib/category-pages";
 import {
   createEmptyFilters,
   filterProducts,
   getFilterOptions,
-  toApiSort,
+  sortProducts,
   type SortValue,
 } from "@/lib/filters";
-import { getAdminErrorMessage } from "@/lib/adminApi";
-import { fetchStorefrontProductList } from "@/lib/storefrontApi";
 import type { Product } from "@/types";
 
 export type CategoryPageProps = {
@@ -37,6 +38,48 @@ export type CategoryPageProps = {
   showClothingSizes: boolean;
 };
 
+function leafSlug(slug: string): string {
+  return slug.split("/").filter(Boolean).pop() ?? slug;
+}
+
+function matchesCategory(
+  product: Product,
+  slug: string,
+  resolvedMatch?: (item: Product) => boolean,
+): boolean {
+  if (resolvedMatch) {
+    if (!resolvedMatch(product)) {
+      return false;
+    }
+    const gender = perfumeGenderFromSlug(slug);
+    if (gender && slug.includes("/")) {
+      return getPerfumeGender(product) === gender;
+    }
+    return true;
+  }
+
+  const parts = slug.split("/").filter(Boolean);
+  const leaf = parts[parts.length - 1] ?? slug;
+  const root = parts[0] ?? leaf;
+  const config = getCategoryPage(root) ?? getCategoryPage(leaf);
+  if (config) {
+    if (!config.match(product)) {
+      return false;
+    }
+    const gender = perfumeGenderFromSlug(leaf);
+    if (gender && parts.length > 1) {
+      return getPerfumeGender(product) === gender;
+    }
+    return true;
+  }
+
+  return (
+    product.categorySlug === leaf ||
+    product.categoryLeafSlug === leaf ||
+    product.subcategory.toLocaleLowerCase("tr-TR") === leaf.toLocaleLowerCase("tr-TR")
+  );
+}
+
 export function CategoryPage({
   slug,
   title,
@@ -45,8 +88,15 @@ export function CategoryPage({
   showPerfumeFilters,
   showClothingSizes,
 }: CategoryPageProps) {
-  const { hydrated, getResolvedCategory, error: catalogError, refresh } = useCatalog();
-  const resolved = getResolvedCategory(slug);
+  const {
+    products,
+    hydrated,
+    getResolvedCategory,
+    error: catalogError,
+    refresh,
+  } = useCatalog();
+  const resolved =
+    getResolvedCategory(slug) ?? getResolvedCategory(leafSlug(slug));
   const heading = resolved?.title ?? title;
   const copy = resolved?.description ?? description;
   const crumbs = resolved?.breadcrumbs ?? breadcrumbs;
@@ -55,79 +105,30 @@ export function CategoryPage({
   const [filters, setFilters] = useState(createEmptyFilters);
   const [sort, setSort] = useState<SortValue>("recommended");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [apiProducts, setApiProducts] = useState<Product[]>([]);
-  const [listLoading, setListLoading] = useState(true);
-  const [listError, setListError] = useState("");
-  const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => {
-    const media = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => {
-      if (media.matches) {
-        setDrawerOpen(false);
-      }
-    };
-
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated || !resolved || resolved.hidden) {
-      return;
-    }
-
-    let cancelled = false;
-    setListLoading(true);
-    setListError("");
-
-    const category = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
-      ? undefined
-      : resolved.slug;
-
-    void fetchStorefrontProductList({
-      category,
-      sort: toApiSort(sort),
-    })
-      .then((items) => {
-        if (cancelled) {
-          return;
-        }
-        const scoped = VIRTUAL_CATEGORY_SLUGS.has(resolved.slug)
-          ? items.filter(resolved.match)
-          : items;
-        setApiProducts(scoped);
-        setListLoading(false);
-      })
-      .catch((caught) => {
-        if (cancelled) {
-          return;
-        }
-        setApiProducts([]);
-        setListError(getAdminErrorMessage(caught));
-        setListLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [hydrated, resolved, sort, reloadKey]);
+  const scopedProducts = useMemo(
+    () =>
+      products.filter((product) =>
+        matchesCategory(product, slug, resolved?.match),
+      ),
+    [products, resolved, slug],
+  );
 
   const options = useMemo(
     () =>
-      getFilterOptions(apiProducts, {
+      getFilterOptions(scopedProducts, {
         showClothingSizes: clothingSizes,
         showPerfumeFilters: perfumeFilters,
       }),
-    [apiProducts, clothingSizes, perfumeFilters],
+    [scopedProducts, clothingSizes, perfumeFilters],
   );
 
   const visibleProducts = useMemo(
-    () => filterProducts(apiProducts, filters),
-    [apiProducts, filters],
+    () => sortProducts(filterProducts(scopedProducts, filters), sort, scopedProducts),
+    [scopedProducts, filters, sort],
   );
 
-  const catalogIsEmpty = apiProducts.length === 0;
+  const catalogIsEmpty = scopedProducts.length === 0;
   const noFilterResults = !catalogIsEmpty && visibleProducts.length === 0;
   const showSizeFilter = !perfumeFilters;
 
@@ -150,7 +151,7 @@ export function CategoryPage({
     return <CategorySkeleton />;
   }
 
-  if (catalogError) {
+  if (catalogError && products.length === 0) {
     return (
       <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-7xl">
@@ -158,10 +159,6 @@ export function CategoryPage({
         </div>
       </section>
     );
-  }
-
-  if (!resolved || resolved.hidden) {
-    notFound();
   }
 
   return (
@@ -175,9 +172,7 @@ export function CategoryPage({
         </header>
 
         <div className="mt-8 flex items-center justify-between gap-4 border-y border-border py-4">
-          <p className="text-14 text-taupe">
-            {listLoading ? "Yükleniyor" : `${visibleProducts.length} ürün`}
-          </p>
+          <p className="text-14 text-taupe">{`${visibleProducts.length} ürün`}</p>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -202,11 +197,7 @@ export function CategoryPage({
           </aside>
 
           <div>
-            {listLoading ? (
-              <CategorySkeleton />
-            ) : listError ? (
-              <ErrorState message={listError} onRetry={() => setReloadKey((key) => key + 1)} />
-            ) : catalogIsEmpty ? (
+            {catalogIsEmpty ? (
               <EmptyState
                 title="Bu kategoride henüz ürün bulunmuyor"
                 message="Koleksiyon yakında Lucien Perrin dilinde tamamlanacak."

@@ -12,6 +12,7 @@ import { isDisposableEmail } from "@/server/mail/disposable-domains";
 import { isMailConfigured, sendMail } from "@/server/mail/mailer";
 import { verificationEmailContent, passwordResetEmailContent } from "@/server/mail/templates";
 import { assertRateLimit } from "@/server/security/http-guards";
+import { sendWelcomeEmail } from "@/server/services/settings";
 import { assertNotLastAdmin, purgeUserById } from "@/server/services/users";
 import { hasField } from "@/server/utils/validation";
 import type { RegisterPendingDto, SafeUser } from "@/types/auth";
@@ -243,6 +244,9 @@ export async function registerUser(input: {
         });
 
     const token = await issueVerification(user);
+    if (!existing) {
+      await sendWelcomeEmail(user);
+    }
     return pendingPayload(user.email, token);
   } catch (error) {
     if (isUniqueEmailError(error)) {

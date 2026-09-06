@@ -8,8 +8,10 @@ import Link from "next/link";
 
 import { ProductPrice } from "@/components/product/ProductPrice";
 import { QuickAddModal } from "@/components/product/QuickAddModal";
+import { ShareProductButton } from "@/components/product/ShareProductButton";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
+import { displayPricing, toPricedProduct } from "@/lib/pricing";
 import { getDefaultCartVariant, getVariantConfig } from "@/lib/variants";
 import type { Product } from "@/types";
 
@@ -34,6 +36,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   const primary = product.images[0];
   const secondary = product.images[1] ?? product.images[0];
   const href = `/urun/${product.slug}`;
+  const discountPercent = displayPricing(toPricedProduct(product)).discountPercent;
 
   useEffect(() => {
     return () => {
@@ -121,9 +124,9 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           />
         </Link>
 
-        {product.campaignPercent ? (
+        {discountPercent ? (
           <span className="pointer-events-none absolute left-3 top-3 z-10 bg-accent px-2 py-1 text-12 tracking-label text-ivory">
-            İndirim
+            İndirim %{discountPercent}
           </span>
         ) : product.badge ? (
           <span className="pointer-events-none absolute left-3 top-3 z-10 bg-ivory/90 px-2 py-1 text-12 tracking-label text-charcoal">
@@ -131,29 +134,37 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           </span>
         ) : null}
 
-        <button
-          type="button"
-          aria-label={wished ? "Favorilerden çıkar" : "Favorilere ekle"}
-          aria-pressed={wished}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            toggleItem(product.id);
-          }}
-          className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
-        >
-          <motion.span
-            animate={reduceMotion ? undefined : { scale: wished ? 1.08 : 1 }}
-            transition={{ duration: reduceMotion ? 0 : 0.18 }}
-            className="inline-flex"
+        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
+          <button
+            type="button"
+            aria-label={wished ? "Favorilerden çıkar" : "Favorilere ekle"}
+            aria-pressed={wished}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              toggleItem(product.id);
+            }}
+            className="flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
           >
-            <Heart
-              size={16}
-              strokeWidth={1.4}
-              className={wished ? "fill-charcoal" : ""}
-            />
-          </motion.span>
-        </button>
+            <motion.span
+              animate={reduceMotion ? undefined : { scale: wished ? 1.08 : 1 }}
+              transition={{ duration: reduceMotion ? 0 : 0.18 }}
+              className="inline-flex"
+            >
+              <Heart
+                size={16}
+                strokeWidth={1.4}
+                className={wished ? "fill-charcoal" : ""}
+              />
+            </motion.span>
+          </button>
+          <ShareProductButton
+            name={product.name}
+            slug={product.slug}
+            label=""
+            className="flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+          />
+        </div>
 
         <button
           type="button"

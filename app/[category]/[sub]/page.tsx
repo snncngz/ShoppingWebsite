@@ -38,7 +38,7 @@ export default async function SubcategoryRoute({
   return (
     <CategoryPage
       key={`${category}-${sub}`}
-      slug={sub}
+      slug={`${category}/${sub}`}
       title={sub}
       description={parent?.description ?? ""}
       breadcrumbs={

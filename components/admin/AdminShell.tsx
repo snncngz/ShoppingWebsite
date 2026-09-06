@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from "react";
 
-import { LayoutDashboard, LogOut, Mail, Package, Store, Tag, Truck, Users, Warehouse } from "lucide-react";
+import { LayoutDashboard, LogOut, Mail, MessageSquareHeart, Package, Store, Tag, Truck, Users, Warehouse } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
@@ -16,6 +16,7 @@ const links = [
   { href: "/admin/siparisler", label: "Siparişler", icon: Truck },
   { href: "/admin/kullanicilar", label: "Kullanıcılar", icon: Users },
   { href: "/admin/eposta", label: "E-posta", icon: Mail },
+  { href: "/admin/hosgeldin", label: "Hoş geldin mesajı", icon: MessageSquareHeart },
   { href: "/admin/stok", label: "Stok", icon: Warehouse },
 ] as const;
 

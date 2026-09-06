@@ -7,9 +7,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 type ProductGalleryProps = {
   images: string[];
   name: string;
+  discountPercent?: number;
 };
 
-export function ProductGallery({ images, name }: ProductGalleryProps) {
+export function ProductGallery({
+  images,
+  name,
+  discountPercent,
+}: ProductGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const gallery = images.length > 0 ? images : [];
   const active = gallery[activeIndex] ?? gallery[0];
@@ -33,6 +38,11 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
           alt={name}
           className="h-full w-full object-cover object-center"
         />
+        {discountPercent ? (
+          <span className="pointer-events-none absolute left-3 top-3 z-10 bg-accent px-2 py-1 text-12 tracking-label text-ivory">
+            İndirim %{discountPercent}
+          </span>
+        ) : null}
 
         {hasMultiple ? (
           <>

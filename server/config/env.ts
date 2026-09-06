@@ -25,6 +25,8 @@ export type ServerEnv = {
   smtpUser: string | undefined;
   smtpPassword: string | undefined;
   resendApiKey: string | undefined;
+  googleClientId: string | undefined;
+  googleClientSecret: string | undefined;
 };
 
 export class EnvValidationError extends Error {
@@ -76,6 +78,8 @@ export function getServerEnv(): ServerEnv {
     smtpUser: readOptional("SMTP_USER"),
     smtpPassword: readOptional("SMTP_PASS"),
     resendApiKey: readOptional("RESEND_API_KEY"),
+    googleClientId: readOptional("GOOGLE_CLIENT_ID"),
+    googleClientSecret: readOptional("GOOGLE_CLIENT_SECRET"),
   };
 }
 

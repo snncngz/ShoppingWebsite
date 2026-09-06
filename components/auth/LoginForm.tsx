@@ -5,18 +5,19 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage, isUnverifiedEmailError } from "@/lib/authApi";
 
 const fieldClass =
   "mt-2 h-12 w-full border border-border bg-ivory px-4 text-14 text-charcoal outline-none placeholder:text-taupe focus:border-taupe";
 
-export function LoginForm() {
+export function LoginForm({ oauthError }: { oauthError?: string }) {
   const router = useRouter();
   const { login, resendVerification } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(oauthError ?? "");
   const [notice, setNotice] = useState("");
   const [unverified, setUnverified] = useState(false);
   const [pending, setPending] = useState(false);
@@ -72,10 +73,16 @@ export function LoginForm() {
         <p className="text-12 tracking-label text-taupe">Hesap</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Giriş</h1>
         <p className="mt-4 text-14 text-taupe">
-          Lucien Perrin hesabınıza e-posta ve şifrenizle giriş yapın.
+          Lucien Perrin hesabınıza e-posta ve şifrenizle veya Google ile giriş
+          yapın.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">
+        <div className="mt-10">
+          <GoogleAuthButton label="Google ile giriş yap" />
+        </div>
+        <p className="mt-6 text-center text-12 tracking-label text-taupe">veya</p>
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
           <label className="text-12 tracking-label text-charcoal">
             E-posta
             <input

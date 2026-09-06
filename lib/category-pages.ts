@@ -57,7 +57,8 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     ],
     showPerfumeFilters: true,
     showClothingSizes: false,
-    match: (product) => product.category === "Parfüm",
+    match: (product) =>
+      product.category === "Parfüm" || product.categorySlug === "parfum",
   },
   tshirt: {
     slug: "tshirt",
@@ -196,9 +197,27 @@ export function getCategoryPage(slug: string): CategoryPageConfig | undefined {
   return categoryPages[slug];
 }
 
+export const PERFUME_GENDER_SLUGS: Record<string, (typeof PERFUME_GENDERS)[number]> = {
+  womens: "Women's",
+  kadin: "Women's",
+  "kadin-parfum": "Women's",
+  mens: "Men's",
+  erkek: "Men's",
+  "erkek-parfum": "Men's",
+  unisex: "Unisex",
+};
+
+export function perfumeGenderFromSlug(
+  slug: string,
+): (typeof PERFUME_GENDERS)[number] | null {
+  const leaf = slug.split("/").pop()?.toLocaleLowerCase("tr-TR") ?? "";
+  return PERFUME_GENDER_SLUGS[leaf] ?? null;
+}
+
 export function getPerfumeGender(product: Product): (typeof PERFUME_GENDERS)[number] | null {
+  const subcategory = typeof product.subcategory === "string" ? product.subcategory : "";
   const fromSub = PERFUME_GENDERS.find(
-    (gender) => gender.toLocaleLowerCase("tr-TR") === product.subcategory.toLocaleLowerCase("tr-TR"),
+    (gender) => gender.toLocaleLowerCase("tr-TR") === subcategory.toLocaleLowerCase("tr-TR"),
   );
   if (fromSub) {
     return fromSub;

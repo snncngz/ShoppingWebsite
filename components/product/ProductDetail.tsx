@@ -9,11 +9,12 @@ import { FragranceProfile } from "@/components/product/FragranceProfile";
 import { ProductAccordion } from "@/components/product/ProductAccordion";
 import { ProductGallery } from "@/components/product/ProductGallery";
 import { ProductPrice } from "@/components/product/ProductPrice";
+import { ShareProductButton } from "@/components/product/ShareProductButton";
 import { SizeGuideModal } from "@/components/product/SizeGuideModal";
 import { StarRating } from "@/components/product/StarRating";
 import { useCart } from "@/context/CartContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { catalogVolumes } from "@/lib/pricing";
+import { catalogVolumes, displayPricing, toPricedProduct } from "@/lib/pricing";
 import { getAccordionContent } from "@/lib/product-detail";
 import type { Product } from "@/types";
 
@@ -40,6 +41,8 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
 
   const accordionItems = getAccordionContent(product);
   const maxQuantity = Math.max(1, product.stock);
+  const discountPercent = displayPricing(toPricedProduct(product), option)
+    .discountPercent;
 
   useEffect(() => {
     return () => {
@@ -66,7 +69,11 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
   return (
     <>
     <div className="mt-8 grid gap-12 lg:grid-cols-2 lg:gap-16">
-      <ProductGallery images={product.images} name={product.name} />
+      <ProductGallery
+        images={product.images}
+        name={product.name}
+        discountPercent={discountPercent}
+      />
 
       <div>
         <p className="text-12 tracking-label text-taupe">
@@ -206,6 +213,11 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
             />
             {favorited ? "Favorilerde" : "Favorilerime Ekle"}
           </button>
+          <ShareProductButton
+            name={product.name}
+            slug={product.slug}
+            className="inline-flex h-12 items-center justify-center gap-2 border border-border px-8 text-12 tracking-nav text-charcoal transition-colors hover:border-charcoal"
+          />
         </div>
 
         {product.perfumeDetails ? (

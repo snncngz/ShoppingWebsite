@@ -237,6 +237,12 @@ export type NewsletterSubscriberDto = {
   createdAt: string;
 };
 
+export type WelcomeSettingsDto = {
+  welcomeSubject: string;
+  welcomeBody: string;
+  updatedAt: string;
+};
+
 export type AdminMailSendResultDto = {
   sent: number;
   failed: number;

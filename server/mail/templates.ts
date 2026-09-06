@@ -94,3 +94,35 @@ export function campaignEmailContent(input: {
     html,
   };
 }
+
+export const DEFAULT_WELCOME_SUBJECT = "Hoş geldiniz";
+
+export const DEFAULT_WELCOME_BODY = `Merhaba {{name}},
+
+Lucien Perrin ailesine hoş geldiniz. Hesabınız hazır; koleksiyonu keşfetmeye başlayabilirsiniz.
+
+Sevgiyle,
+${BRAND_NAME}`;
+
+export function interpolateWelcomeTemplate(
+  template: string,
+  input: { name: string; email: string },
+): string {
+  return template
+    .replaceAll("{{name}}", input.name)
+    .replaceAll("{{email}}", input.email);
+}
+
+export function welcomeEmailContent(input: {
+  name: string;
+  email: string;
+  subject: string;
+  body: string;
+}): { subject: string; text: string; html: string } {
+  const subject = interpolateWelcomeTemplate(input.subject, input).trim() || DEFAULT_WELCOME_SUBJECT;
+  const body =
+    interpolateWelcomeTemplate(input.body, input).trim() ||
+    interpolateWelcomeTemplate(DEFAULT_WELCOME_BODY, input);
+
+  return campaignEmailContent({ subject, body });
+}

@@ -59,6 +59,13 @@ model User {
   passwordResetTokens PasswordResetToken[]
 }
 
+model SiteSetting {
+  id              String   @id @default("site")
+  welcomeSubject  String   @default("Hoş geldiniz")
+  welcomeBody     String   @default("")
+  updatedAt       DateTime @updatedAt
+}
+
 model EmailVerificationToken {
   id        String   @id @default(uuid())
   userId    String

@@ -6,15 +6,17 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Heart, Menu, Search, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 
+import { CartDrawer } from "@/components/cart/CartDrawer";
 import { MegaMenu } from "@/components/layout/MegaMenu";
 import { MobileMenu } from "@/components/layout/MobileMenu";
 import { SearchOverlay } from "@/components/search/SearchOverlay";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
-import { BRAND_MEDIA } from "@/lib/brandMedia";
+import { FREE_SHIPPING_THRESHOLD } from "@/lib/cart";
 import { BRAND_NAME } from "@/lib/constants";
 import { buildStorefrontNav } from "@/lib/catalog";
+import { formatPrice } from "@/lib/utils";
 
 const iconButtonClass =
   "relative flex h-11 w-11 items-center justify-center text-charcoal transition-colors hover:text-black";
@@ -26,11 +28,10 @@ export function Navbar() {
   const navItems = buildStorefrontNav(categories);
   const reduceMotion = useReducedMotion();
   const [scrolled, setScrolled] = useState(false);
-  const [openMegaId, setOpenMegaId] = useState<string | null>(
-    null,
-  );
+  const [openMegaId, setOpenMegaId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement>(null);
   const megaOpenedAt = useRef(0);
@@ -65,6 +66,7 @@ export function Navbar() {
         setOpenMegaId(null);
         setMobileOpen(false);
         setSearchOpen(false);
+        setCartOpen(false);
       }
     };
 
@@ -108,10 +110,19 @@ export function Navbar() {
   const openSearch = () => {
     setOpenMegaId(null);
     setMobileOpen(false);
+    setCartOpen(false);
     setSearchOpen(true);
   };
 
+  const openCart = () => {
+    setOpenMegaId(null);
+    setMobileOpen(false);
+    setSearchOpen(false);
+    setCartOpen(true);
+  };
+
   const openMega = navItems.find((item) => item.id === openMegaId)?.mega ?? null;
+  const shippingCopy = `${formatPrice(FREE_SHIPPING_THRESHOLD)} ve üzeri alışverişlerde ücretsiz kargo`;
 
   return (
     <>
@@ -123,17 +134,15 @@ export function Navbar() {
           }
         }}
         className={`sticky top-0 z-50 border-b border-border transition-[padding,background-color,box-shadow,backdrop-filter] duration-300 motion-reduce:transition-none ${
-          scrolled
-            ? "bg-ivory/85 shadow-sm backdrop-blur-md"
-            : "bg-ivory"
+          scrolled ? "bg-ivory/85 shadow-sm backdrop-blur-md" : "bg-ivory"
         }`}
       >
         <div
-          className={`mx-auto grid max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-4 sm:px-6 lg:px-8 ${
-            scrolled ? "py-2.5 lg:py-3" : "py-4 lg:py-6"
+          className={`relative mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+            scrolled ? "py-2.5 lg:py-3" : "py-3 lg:py-5"
           }`}
         >
-          <div className="flex items-center justify-start">
+          <div className="flex w-12 shrink-0 items-center lg:w-72">
             <button
               type="button"
               className={`${iconButtonClass} lg:hidden`}
@@ -143,106 +152,39 @@ export function Navbar() {
             >
               <Menu size={20} strokeWidth={1.4} />
             </button>
-            <Link
-              href="/"
-              className="hidden items-center gap-3 lg:inline-flex"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={BRAND_MEDIA.logo}
-                alt=""
-                className="h-9 w-9 object-contain"
-              />
-              <span className="font-heading text-24 tracking-[0.32em] text-black">
-                {BRAND_NAME}
-              </span>
-            </Link>
           </div>
 
           <Link
             href="/"
-            className="inline-flex items-center gap-2 font-heading text-24 tracking-[0.32em] text-black lg:hidden"
+            className="absolute left-1/2 max-w-[46vw] -translate-x-1/2 truncate font-heading text-18 tracking-[0.18em] text-black sm:max-w-none sm:text-24 sm:tracking-[0.28em]"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={BRAND_MEDIA.logo}
-              alt=""
-              className="h-8 w-8 object-contain"
-            />
             {BRAND_NAME}
           </Link>
-
-          <nav
-            className="hidden items-center justify-center gap-8 lg:flex"
-            aria-label="Ana menü"
-            onMouseLeave={scheduleClose}
-            onMouseEnter={cancelClose}
-          >
-            {navItems.map((item) => {
-              const mega = item.mega;
-              const isActive = openMegaId === item.id;
-
-              if (!mega) {
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="text-12 tracking-nav text-charcoal transition-colors hover:text-black"
-                  >
-                    {item.label}
-                  </Link>
-                );
-              }
-
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`text-12 tracking-nav transition-colors ${
-                    isActive ? "text-black" : "text-charcoal hover:text-black"
-                  }`}
-                  aria-expanded={isActive}
-                  aria-haspopup="menu"
-                  onMouseEnter={() => {
-                    cancelClose();
-                    setOpenMegaId((current) => {
-                      if (current !== mega.id) {
-                        megaOpenedAt.current = Date.now();
-                      }
-                      return mega.id;
-                    });
-                  }}
-                  onFocus={() => {
-                    cancelClose();
-                    setOpenMegaId(mega.id);
-                  }}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
 
           <div className="flex items-center justify-end gap-0.5 sm:gap-1">
             <button
               type="button"
-              className={iconButtonClass}
+              className="hidden h-10 min-w-48 items-center gap-2 rounded-full bg-off-white px-4 text-12 text-taupe lg:inline-flex"
+              onClick={openSearch}
+            >
+              <Search size={16} strokeWidth={1.4} />
+              Ne aramıştınız?
+            </button>
+            <button
+              type="button"
+              className={`${iconButtonClass} lg:hidden`}
               aria-label="Ara"
               aria-expanded={searchOpen}
               onClick={openSearch}
             >
               <Search size={18} strokeWidth={1.4} />
             </button>
-            <Link
-              href="/hesabim"
-              className={`${iconButtonClass} hidden lg:flex`}
-              aria-label="Hesabım"
-            >
+            <Link href="/hesabim" className={iconButtonClass} aria-label="Hesabım">
               <User size={18} strokeWidth={1.4} />
             </Link>
             <Link
               href="/favoriler"
-              className={iconButtonClass}
+              className={`${iconButtonClass} hidden sm:flex`}
               aria-label={
                 wishlistCount > 0
                   ? `Favoriler, ${wishlistCount} ürün`
@@ -263,10 +205,11 @@ export function Navbar() {
                 </motion.span>
               ) : null}
             </Link>
-            <Link
-              href="/sepet"
+            <button
+              type="button"
               className={iconButtonClass}
               aria-label={itemCount > 0 ? `Sepet, ${itemCount} ürün` : "Sepet"}
+              onClick={openCart}
             >
               <ShoppingBag size={18} strokeWidth={1.4} />
               {itemCount > 0 ? (
@@ -275,15 +218,66 @@ export function Navbar() {
                   initial={reduceMotion ? false : { scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: reduceMotion ? 0 : 0.18 }}
-                  className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-md bg-charcoal px-1 text-[10px] leading-none text-ivory"
+                  className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-charcoal px-1 text-[10px] leading-none text-ivory"
                   aria-live="polite"
                 >
                   {itemCount}
                 </motion.span>
               ) : null}
-            </Link>
+            </button>
           </div>
         </div>
+
+        <nav
+          className="hidden items-center justify-center gap-8 border-t border-border px-8 py-3 lg:flex"
+          aria-label="Ana menü"
+          onMouseLeave={scheduleClose}
+          onMouseEnter={cancelClose}
+        >
+          {navItems.map((item) => {
+            const mega = item.mega;
+            const isActive = openMegaId === item.id;
+
+            if (!mega) {
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="text-12 tracking-nav text-charcoal transition-colors hover:text-black"
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className={`text-12 tracking-nav transition-colors ${
+                  isActive ? "text-black" : "text-charcoal hover:text-black"
+                }`}
+                aria-expanded={isActive}
+                aria-haspopup="menu"
+                onMouseEnter={() => {
+                  cancelClose();
+                  setOpenMegaId((current) => {
+                    if (current !== mega.id) {
+                      megaOpenedAt.current = Date.now();
+                    }
+                    return mega.id;
+                  });
+                }}
+                onFocus={() => {
+                  cancelClose();
+                  setOpenMegaId(mega.id);
+                }}
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
         <MegaMenu
           menu={openMega}
@@ -291,10 +285,17 @@ export function Navbar() {
           onMouseEnter={cancelClose}
           onMouseLeave={scheduleClose}
         />
+
+        <div className="overflow-hidden bg-warm-beige/55 py-2">
+          <p className="text-center text-12 tracking-label text-charcoal">
+            {shippingCopy}
+          </p>
+        </div>
       </header>
 
       <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
       <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );
 }
