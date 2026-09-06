@@ -52,7 +52,9 @@ ${inner}
 function emailCta(href: string, label: string): string {
   const safeHref = escapeHtml(href);
   const safeLabel = escapeHtml(label);
-  return `<p style="margin:28px 0;"><a href="${safeHref}" style="display:inline-block;padding:15px 25px;background-color:#2A2825;color:#F7F5F0;font-size:16px;line-height:20px;text-align:center;text-decoration:none;">${safeLabel}</a></p><p style="margin:0 0 16px;font-size:14px;line-height:22px;"><a href="${safeHref}">${safeHref}</a></p>`;
+  // A single <a href> only. A second <a> with the same URL makes Gmail/iPhone
+  // strip href from the button and leave only the plain URL clickable.
+  return `<p style="margin:28px 0;"><a href="${safeHref}" style="display:inline-block;padding:15px 25px;background-color:#d9d6d2;color:#3e3d39;font-size:16px;line-height:20px;text-align:center;text-decoration:none;font-family:Arial, Helvetica, sans-serif;">${safeLabel}</a></p>`;
 }
 
 export function passwordResetEmailContent(input: {
