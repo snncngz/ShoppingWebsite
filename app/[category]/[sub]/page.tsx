@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CategoryPage } from "@/components/category/CategoryPage";
+import { ProductView } from "@/components/product/ProductView";
 import { getCategoryPage } from "@/lib/category-pages";
 import { BRAND_NAME } from "@/lib/constants";
 
@@ -33,6 +34,11 @@ export default async function SubcategoryRoute({
   params: Promise<{ category: string; sub: string }>;
 }) {
   const { category, sub } = await params;
+
+  if (category === "urun") {
+    return <ProductView slug={sub} />;
+  }
+
   const parent = getCategoryPage(category);
 
   return (

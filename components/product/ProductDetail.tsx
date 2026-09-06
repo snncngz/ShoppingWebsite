@@ -27,11 +27,12 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
   const { addItem } = useCart();
   const { hasItem, toggleItem } = useWishlist();
   const isPerfume = Boolean(product.perfumeDetails);
+  const colors = product.colors ?? [];
   const optionValues = isPerfume
     ? catalogVolumes(product)
-    : product.sizes;
+    : (product.sizes ?? []);
 
-  const [color, setColor] = useState(product.colors[0] ?? "");
+  const [color, setColor] = useState(colors[0] ?? "");
   const [option, setOption] = useState(optionValues[0] ?? "");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
@@ -94,11 +95,11 @@ export function ProductDetail({ product, categoryHref }: ProductDetailProps) {
           <ProductPrice product={product} variant={option} size="lg" />
         </div>
 
-        {product.colors.length > 0 ? (
+        {colors.length > 0 ? (
           <fieldset className="mt-8">
             <legend className="text-12 tracking-label text-black">Renk</legend>
             <div className="mt-3 flex flex-wrap gap-2">
-              {product.colors.map((value) => {
+              {colors.map((value) => {
                 const selected = color === value;
 
                 return (

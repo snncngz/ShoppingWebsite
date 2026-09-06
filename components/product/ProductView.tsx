@@ -19,11 +19,11 @@ import type { Product } from "@/types";
 
 type ProductViewProps = {
   slug: string;
-  fallback: Product | null;
 };
 
 export function ProductView({ slug }: ProductViewProps) {
-  const { categoryHref } = useCatalog();
+  const { getBySlug, categoryHref, hydrated } = useCatalog();
+  const catalogProduct = getBySlug(slug);
   const [product, setProduct] = useState<Product | null>(null);
   const [related, setRelated] = useState<Product[]>([]);
   const [status, setStatus] = useState<"loading" | "ready" | "missing" | "error">(
@@ -84,7 +84,9 @@ export function ProductView({ slug }: ProductViewProps) {
     };
   }, [slug]);
 
-  if (status === "loading") {
+  const shown = product ?? catalogProduct;
+
+  if (!shown && status === "loading") {
     return (
       <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-7xl">
@@ -94,7 +96,7 @@ export function ProductView({ slug }: ProductViewProps) {
     );
   }
 
-  if (status === "error") {
+  if (!shown && status === "error") {
     return (
       <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-7xl">
@@ -104,7 +106,7 @@ export function ProductView({ slug }: ProductViewProps) {
     );
   }
 
-  if (status === "missing" || !product) {
+  if (!shown && (status === "missing" || (hydrated && !catalogProduct))) {
     return (
       <section className="bg-ivory px-6 py-16 lg:px-8 lg:py-24">
         <div className="mx-auto max-w-3xl">
@@ -119,10 +121,20 @@ export function ProductView({ slug }: ProductViewProps) {
     );
   }
 
+  if (!shown) {
+    return (
+      <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
+        <div className="mx-auto max-w-7xl">
+          <ProductDetailSkeleton />
+        </div>
+      </section>
+    );
+  }
+
   const categoryLink =
-    categoryHref(product.category) === "/"
-      ? getCategoryHref(product.category)
-      : categoryHref(product.category);
+    categoryHref(shown.category) === "/"
+      ? getCategoryHref(shown.category)
+      : categoryHref(shown.category);
 
   return (
     <section className="bg-ivory px-6 py-12 lg:px-8 lg:py-16">
@@ -130,11 +142,11 @@ export function ProductView({ slug }: ProductViewProps) {
         <Breadcrumbs
           items={[
             { label: "Anasayfa", href: "/" },
-            { label: product.category, href: categoryLink },
-            { label: product.name, href: `/urun/${product.slug}` },
+            { label: shown.category, href: categoryLink },
+            { label: shown.name, href: `/urun/${shown.slug}` },
           ]}
         />
-        <ProductDetail product={product} categoryHref={categoryLink} />
+        <ProductDetail product={shown} categoryHref={categoryLink} />
         <RelatedProducts products={related} />
       </div>
     </section>

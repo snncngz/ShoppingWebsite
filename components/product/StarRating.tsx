@@ -6,11 +6,12 @@ type StarRatingProps = {
 };
 
 export function StarRating({ rating, reviewCount }: StarRatingProps) {
-  const rounded = Math.round(rating);
+  const safeRating = Number.isFinite(rating) ? rating : 0;
+  const rounded = Math.round(safeRating);
 
   return (
     <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1" role="img" aria-label={`${rating} / 5`}>
+      <div className="flex items-center gap-1" role="img" aria-label={`${safeRating} / 5`}>
         {Array.from({ length: 5 }, (_, index) => (
           <Star
             key={index}
@@ -25,7 +26,7 @@ export function StarRating({ rating, reviewCount }: StarRatingProps) {
         ))}
       </div>
       <span className="text-12 text-taupe">
-        {rating.toFixed(1)} · {reviewCount} değerlendirme
+        {safeRating.toFixed(1)} · {reviewCount} değerlendirme
       </span>
     </div>
   );

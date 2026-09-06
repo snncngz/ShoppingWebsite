@@ -37,7 +37,7 @@ export function getAccordionContent(product: Product): {
     {
       id: "details",
       title: "Ürün Detayları",
-      body: `${product.name}, ${product.category} koleksiyonunun ${product.subcategory.toLowerCase()} hattında yer alır. ${product.colors.join(", ")} seçenekleriyle sunulur. Her parça Lucien Perrin atölye standartlarında, sınırlı adetlerle üretilir.`,
+      body: `${product.name}, ${product.category} koleksiyonunun ${(product.subcategory || product.category).toLocaleLowerCase("tr-TR")} hattında yer alır. ${(product.colors ?? []).join(", ") || "standart"} seçenekleriyle sunulur. Her parça Lucien Perrin atölye standartlarında, sınırlı adetlerle üretilir.`,
     },
     {
       id: "material",

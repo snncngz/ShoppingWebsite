@@ -108,7 +108,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   return (
     <article className="group min-w-0">
       <div className={`relative overflow-hidden bg-off-white ${aspectClass[variant]}`}>
-        <Link href={href} className="absolute inset-0 block" aria-label={product.name}>
+        <Link href={href} className="absolute inset-0 z-[1] block" aria-label={product.name}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={primary}
@@ -134,7 +134,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
           </span>
         ) : null}
 
-        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1">
+        <div className="absolute right-2 top-2 z-10 flex flex-col gap-1 pointer-events-none">
           <button
             type="button"
             aria-label={wished ? "Favorilerden çıkar" : "Favorilere ekle"}
@@ -144,7 +144,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
               event.stopPropagation();
               toggleItem(product.id);
             }}
-            className="flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
           >
             <motion.span
               animate={reduceMotion ? undefined : { scale: wished ? 1.08 : 1 }}
@@ -162,7 +162,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             name={product.name}
             slug={product.slug}
             label=""
-            className="flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+            className="pointer-events-auto flex h-11 w-11 items-center justify-center bg-ivory/90 text-charcoal opacity-100 transition-opacity duration-300 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
           />
         </div>
 
