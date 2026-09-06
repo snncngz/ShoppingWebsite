@@ -197,7 +197,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
       <div className="mt-4 min-w-0">
         <p className="text-12 tracking-label text-taupe">{product.category}</p>
         <Link href={href} className="mt-1 block">
-          <h3 className="font-heading text-18 text-black transition-colors group-hover:text-accent lg:text-24">
+          <h3 className="font-heading text-18 font-semibold text-black transition-colors group-hover:text-accent lg:text-24">
             {product.name}
           </h3>
         </Link>

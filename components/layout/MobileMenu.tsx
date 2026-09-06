@@ -148,7 +148,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </button>
               <p
                 id={titleId}
-                className="font-heading text-24 tracking-[0.12em] text-black"
+                className="font-heading text-24 font-semibold tracking-[0.08em] text-black"
               >
                 {BRAND_NAME}
               </p>
@@ -167,7 +167,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                         <Link
                           href={section.href}
                           onClick={onClose}
-                          className="min-w-0 flex-1 font-heading text-32 tracking-[0.08em] text-black"
+                className="min-w-0 flex-1 py-1 font-heading text-32 font-semibold tracking-[0.06em] text-black"
                         >
                           {section.label}
                         </Link>
@@ -219,7 +219,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                     <Link
                       href={item.href}
                       onClick={onClose}
-                      className="flex w-full items-center py-5 font-heading text-32 tracking-[0.08em] text-black"
+                      className="flex w-full items-center py-5 font-heading text-32 font-semibold tracking-[0.06em] text-black"
                     >
                       {item.label}
                     </Link>

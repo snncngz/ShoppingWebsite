@@ -38,7 +38,7 @@ function MegaLinkList({ items }: { items: NavLink[] }) {
                 role="menuitem"
                 aria-haspopup={hasChildren ? "menu" : undefined}
                 aria-expanded={hasChildren ? isActive : undefined}
-                className={`inline-flex items-center gap-2 font-heading text-24 transition-colors duration-200 ${
+                className={`inline-flex items-center gap-2 font-heading text-24 font-semibold transition-colors duration-200 ${
                   isActive ? "text-accent" : "text-black hover:text-accent"
                 }`}
               >

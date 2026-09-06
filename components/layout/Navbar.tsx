@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { Heart, Menu, Search, ShoppingBag, User } from "lucide-react";
+import { Heart, Menu, ShoppingBag, User } from "lucide-react";
 import Link from "next/link";
 
 import { CartDrawer } from "@/components/cart/CartDrawer";
 import { MegaMenu } from "@/components/layout/MegaMenu";
 import { MobileMenu } from "@/components/layout/MobileMenu";
-import { SearchOverlay } from "@/components/search/SearchOverlay";
+import { HeaderSearch } from "@/components/search/HeaderSearch";
 import { useCart } from "@/context/CartContext";
 import { useCatalog } from "@/context/CatalogContext";
 import { useWishlist } from "@/context/WishlistContext";
@@ -30,7 +30,6 @@ export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [openMegaId, setOpenMegaId] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const closeTimer = useRef<number | null>(null);
   const headerRef = useRef<HTMLElement>(null);
@@ -65,7 +64,6 @@ export function Navbar() {
       if (event.key === "Escape") {
         setOpenMegaId(null);
         setMobileOpen(false);
-        setSearchOpen(false);
         setCartOpen(false);
       }
     };
@@ -107,17 +105,9 @@ export function Navbar() {
     }, 140);
   };
 
-  const openSearch = () => {
-    setOpenMegaId(null);
-    setMobileOpen(false);
-    setCartOpen(false);
-    setSearchOpen(true);
-  };
-
   const openCart = () => {
     setOpenMegaId(null);
     setMobileOpen(false);
-    setSearchOpen(false);
     setCartOpen(true);
   };
 
@@ -138,59 +128,44 @@ export function Navbar() {
         }`}
       >
         <div
-          className={`relative mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+          className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${
             scrolled ? "py-2.5 lg:py-3" : "py-3 lg:py-5"
           }`}
         >
-          <div className="flex w-12 shrink-0 items-center lg:w-72">
-            <button
-              type="button"
-              className={`${iconButtonClass} lg:hidden`}
-              aria-label="Menüyü aç"
-              aria-expanded={mobileOpen}
-              onClick={() => setMobileOpen(true)}
-            >
-              <Menu size={20} strokeWidth={1.4} />
-            </button>
-          </div>
+          <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-2 lg:grid-cols-[1fr_auto_1fr]">
+            <div className="flex items-center">
+              <button
+                type="button"
+                className={`${iconButtonClass} lg:hidden`}
+                aria-label="Menüyü aç"
+                aria-expanded={mobileOpen}
+                onClick={() => setMobileOpen(true)}
+              >
+                <Menu size={20} strokeWidth={1.8} />
+              </button>
+            </div>
 
-          <Link
-            href="/"
-            className="absolute left-1/2 max-w-[62vw] -translate-x-1/2 truncate font-heading text-24 tracking-[0.12em] text-black sm:max-w-none sm:tracking-[0.28em]"
-          >
-            {BRAND_NAME}
-          </Link>
-
-          <div className="flex items-center justify-end gap-0.5 sm:gap-1">
-            <button
-              type="button"
-              className="hidden h-10 min-w-48 items-center gap-2 rounded-full bg-off-white px-4 text-12 text-taupe lg:inline-flex"
-              onClick={openSearch}
-            >
-              <Search size={16} strokeWidth={1.4} />
-              Ne aramıştınız?
-            </button>
-            <button
-              type="button"
-              className={`${iconButtonClass} lg:hidden`}
-              aria-label="Ara"
-              aria-expanded={searchOpen}
-              onClick={openSearch}
-            >
-              <Search size={18} strokeWidth={1.4} />
-            </button>
-            <Link href="/hesabim" className={iconButtonClass} aria-label="Hesabım">
-              <User size={18} strokeWidth={1.4} />
-            </Link>
             <Link
-              href="/favoriler"
-              className={`${iconButtonClass} hidden sm:flex`}
-              aria-label={
-                wishlistCount > 0
-                  ? `Favoriler, ${wishlistCount} ürün`
-                  : "Favoriler"
-              }
+              href="/"
+              className="min-w-0 justify-self-center truncate text-center font-heading text-[22px] font-semibold tracking-[0.08em] text-black sm:text-24 sm:tracking-[0.16em] lg:text-32 lg:font-bold lg:tracking-[0.2em]"
             >
+              {BRAND_NAME}
+            </Link>
+
+            <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+              <HeaderSearch className="hidden w-56 lg:block lg:w-64" />
+              <Link href="/hesabim" className={iconButtonClass} aria-label="Hesabım">
+                <User size={18} strokeWidth={1.8} />
+              </Link>
+              <Link
+                href="/favoriler"
+                className={`${iconButtonClass} hidden sm:flex`}
+                aria-label={
+                  wishlistCount > 0
+                    ? `Favoriler, ${wishlistCount} ürün`
+                    : "Favoriler"
+                }
+              >
               <Heart size={18} strokeWidth={1.4} />
               {wishlistCount > 0 ? (
                 <motion.span
@@ -226,6 +201,10 @@ export function Navbar() {
               ) : null}
             </button>
           </div>
+          </div>
+          <div className="pt-2 lg:hidden">
+            <HeaderSearch />
+          </div>
         </div>
 
         <nav
@@ -243,7 +222,7 @@ export function Navbar() {
                 <Link
                   key={item.id}
                   href={item.href}
-                  className="text-12 tracking-nav text-charcoal transition-colors hover:text-black"
+                  className="text-14 font-semibold tracking-nav text-charcoal transition-colors hover:text-black"
                 >
                   {item.label}
                 </Link>
@@ -254,7 +233,7 @@ export function Navbar() {
               <Link
                 key={item.id}
                 href={item.href}
-                className={`text-12 tracking-nav transition-colors ${
+                className={`text-14 font-semibold tracking-nav transition-colors ${
                   isActive ? "text-black" : "text-charcoal hover:text-black"
                 }`}
                 aria-expanded={isActive}
@@ -294,7 +273,6 @@ export function Navbar() {
       </header>
 
       <MobileMenu isOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
       <CartDrawer isOpen={cartOpen} onClose={() => setCartOpen(false)} />
     </>
   );

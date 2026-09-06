@@ -167,7 +167,7 @@ export function CategoryPage({
         <Breadcrumbs items={crumbs} />
 
         <header className="mt-8 max-w-2xl">
-          <h1 className="font-heading text-32 text-black lg:text-48">{heading}</h1>
+          <h1 className="font-heading text-32 font-bold text-black lg:text-48">{heading}</h1>
           <p className="mt-4 text-16 text-charcoal">{copy}</p>
         </header>
 
