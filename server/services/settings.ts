@@ -76,10 +76,19 @@ export async function sendWelcomeEmail(user: {
   email: string;
 }): Promise<void> {
   try {
+    const verified = await getPrisma().user.findUnique({
+      where: { email: user.email },
+      select: { emailVerifiedAt: true, name: true, email: true },
+    });
+    if (!verified?.emailVerifiedAt) {
+      logger.info("welcome email skipped; address is not verified");
+      return;
+    }
+
     const settings = await getWelcomeSettings();
     const content = welcomeEmailContent({
-      name: user.name,
-      email: user.email,
+      name: verified.name,
+      email: verified.email,
       subject: settings.welcomeSubject,
       body: settings.welcomeBody,
     });

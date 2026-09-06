@@ -60,20 +60,11 @@ function emailDocument(inner: string): string {
 function emailCta(href: string, label: string): string {
   const safeHref = escapeHtml(href);
   const safeLabel = escapeHtml(label);
-  // Gmail/Apple Mail on phones strip padding on <a> and ignore td background taps.
-  // Borders stay, so the whole dark rectangle is the link. No target=_blank (iOS Mail).
-  return `
-<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
-  <tr>
-    <td>
-      <a href="${safeHref}" style="background-color:#2A2825;border-top:16px solid #2A2825;border-right:28px solid #2A2825;border-bottom:16px solid #2A2825;border-left:28px solid #2A2825;color:#F7F5F0;display:inline-block;font-family:Georgia,serif;font-size:16px;line-height:20px;text-align:center;text-decoration:none;">${safeLabel}</a>
-    </td>
-  </tr>
-</table>
-<p style="margin:0 0 8px;font-size:16px;line-height:28px;">
-  <a href="${safeHref}" style="color:#2A2825;font-size:16px;line-height:28px;text-decoration:underline;">${safeLabel} bağlantısı</a>
-</p>
-  `;
+  // Keep href on a single concatenated line. No target=_blank (iOS Mail ignores taps).
+  // The colored <a> is the whole button; the raw URL below is a second tap target.
+  const button = `<a href="${safeHref}" style="background-color:#2A2825;color:#F7F5F0;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:48px;min-width:220px;text-align:center;text-decoration:none;padding:0 28px;">${safeLabel}</a>`;
+  const raw = `<a href="${safeHref}" style="color:#1a0dab;font-size:15px;line-height:24px;text-decoration:underline;word-break:break-all;">${safeHref}</a>`;
+  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;"><tr><td>${button}</td></tr></table><p style="margin:0 0 16px;font-size:14px;line-height:22px;color:#2A2825;">Çalışmazsa bu adrese dokunun:<br />${raw}</p>`;
 }
 
 export function passwordResetEmailContent(input: {

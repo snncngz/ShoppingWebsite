@@ -1,4 +1,5 @@
 import { forbidden, tooManyRequests } from "@/server/api/errors";
+import { getPublicOrigin } from "@/server/config/env";
 
 type Bucket = {
   count: number;
@@ -115,6 +116,12 @@ export function assertSameOrigin(request: Request, pathname: string): void {
     } catch {
       // ignore invalid API_BASE_URL
     }
+  }
+
+  try {
+    allowed.add(getPublicOrigin());
+  } catch {
+    // ignore invalid public origin
   }
 
   if (allowed.has(origin)) {

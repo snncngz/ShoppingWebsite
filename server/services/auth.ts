@@ -177,6 +177,7 @@ async function issueVerification(user: {
     name: user.name,
     verifyUrl: verifyUrl(token),
   });
+  logger.info("verification email link origin", { origin: getPublicOrigin() });
   await sendMail({
     to: user.email,
     subject: content.subject,
@@ -243,9 +244,6 @@ export async function registerUser(input: {
         });
 
     const token = await issueVerification(user);
-    if (!existing) {
-      await sendWelcomeEmail(user);
-    }
     return pendingPayload(user.email, token);
   } catch (error) {
     if (isUniqueEmailError(error)) {
@@ -294,6 +292,7 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
     badRequest("Verification link is invalid or expired");
   }
 
+  const firstVerification = !row.user.emailVerifiedAt;
   const user = await getPrisma().$transaction(async (tx) => {
     await tx.emailVerificationToken.deleteMany({ where: { userId: row.userId } });
     return tx.user.update({
@@ -301,6 +300,10 @@ export async function verifyEmail(token: string): Promise<SafeUser> {
       data: { emailVerifiedAt: row.user.emailVerifiedAt ?? new Date() },
     });
   });
+
+  if (firstVerification) {
+    await sendWelcomeEmail(user);
+  }
 
   await createSession(user.id, user.role);
   return toSafeUser(user);

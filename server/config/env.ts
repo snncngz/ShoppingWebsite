@@ -93,29 +93,67 @@ export function isProduction(): boolean {
   return getServerEnv().nodeEnv === "production";
 }
 
-function isLocalHost(value: string): boolean {
-  return value.includes("localhost") || value.includes("127.0.0.1");
+function isLocalHostname(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return (
+    host === "localhost" ||
+    host === "127.0.0.1" ||
+    host === "::1" ||
+    host === "0.0.0.0"
+  );
 }
+
+function isLocalHost(value: string): boolean {
+  try {
+    const raw = value.includes("://") ? value : `http://${value}`;
+    return isLocalHostname(new URL(raw).hostname);
+  } catch {
+    return value.includes("localhost") || value.includes("127.0.0.1");
+  }
+}
+
+function toOrigin(value: string): string | undefined {
+  try {
+    const raw = value.includes("://") ? value : `https://${value}`;
+    const url = new URL(raw);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return undefined;
+    }
+    if (!isLocalHostname(url.hostname) && url.protocol === "http:") {
+      url.protocol = "https:";
+    }
+    return url.origin;
+  } catch {
+    return undefined;
+  }
+}
+
+const PRODUCTION_SITE_ORIGIN = "https://lucien-perrin.onrender.com";
 
 /** Public site origin for emails and redirects (never an internal host). */
 export function getPublicOrigin(): string {
+  const renderHost = readOptional("RENDER_EXTERNAL_HOSTNAME");
   const candidates = [
     readOptional("NEXT_PUBLIC_SITE_URL"),
     readOptional("API_BASE_URL"),
     readOptional("RENDER_EXTERNAL_URL"),
-  ].filter((value): value is string => Boolean(value));
+    renderHost ? `https://${renderHost}` : undefined,
+  ];
 
-  const publicHost = candidates.find((value) => !isLocalHost(value));
-  const chosen = (publicHost ?? candidates[0] ?? "http://localhost:3000").replace(
-    /\/$/,
-    "",
-  );
+  const origins = candidates
+    .map((value) => (value ? toOrigin(value) : undefined))
+    .filter((value): value is string => Boolean(value));
 
-  if (isProduction() && isLocalHost(chosen) && !publicHost) {
-    return chosen;
+  const publicOrigin = origins.find((origin) => !isLocalHost(origin));
+  if (publicOrigin) {
+    return publicOrigin;
   }
 
-  return chosen;
+  if (isProduction()) {
+    return PRODUCTION_SITE_ORIGIN;
+  }
+
+  return origins[0] ?? "http://localhost:3000";
 }
 
 export function requireAuthSecret(): string {
