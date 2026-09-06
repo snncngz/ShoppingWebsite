@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 
 import Link from "next/link";
 
-import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { useAuth } from "@/context/AuthContext";
 import { getAuthErrorMessage } from "@/lib/authApi";
 
@@ -89,16 +88,11 @@ export function RegisterForm() {
         <p className="text-12 tracking-label text-taupe">Hesap</p>
         <h1 className="mt-3 font-heading text-32 text-black lg:text-48">Kayıt</h1>
         <p className="mt-4 text-14 text-taupe">
-          Google ile hemen üye olabilir veya e-posta ile kayıt olabilirsiniz.
-          E-posta kaydında hesap, doğrulama bağlantısına tıklayınca açılır.
+          Gerçek bir e-posta kullanın. Hesap, doğrulama bağlantısına tıklayınca
+          açılır.
         </p>
 
-        <div className="mt-10">
-          <GoogleAuthButton label="Google ile kayıt ol" />
-        </div>
-        <p className="mt-6 text-center text-12 tracking-label text-taupe">veya</p>
-
-        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="mt-10 flex flex-col gap-5">
           <label className="text-12 tracking-label text-charcoal">
             Ad Soyad
             <input

@@ -156,7 +156,7 @@ export function Navbar() {
 
           <Link
             href="/"
-            className="absolute left-1/2 max-w-[46vw] -translate-x-1/2 truncate font-heading text-18 tracking-[0.18em] text-black sm:max-w-none sm:text-24 sm:tracking-[0.28em]"
+            className="absolute left-1/2 max-w-[62vw] -translate-x-1/2 truncate font-heading text-24 tracking-[0.12em] text-black sm:max-w-none sm:tracking-[0.28em]"
           >
             {BRAND_NAME}
           </Link>

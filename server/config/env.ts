@@ -25,8 +25,6 @@ export type ServerEnv = {
   smtpUser: string | undefined;
   smtpPassword: string | undefined;
   resendApiKey: string | undefined;
-  googleClientId: string | undefined;
-  googleClientSecret: string | undefined;
 };
 
 export class EnvValidationError extends Error {
@@ -78,8 +76,6 @@ export function getServerEnv(): ServerEnv {
     smtpUser: readOptional("SMTP_USER"),
     smtpPassword: readOptional("SMTP_PASS"),
     resendApiKey: readOptional("RESEND_API_KEY"),
-    googleClientId: readOptional("GOOGLE_CLIENT_ID"),
-    googleClientSecret: readOptional("GOOGLE_CLIENT_SECRET"),
   };
 }
 
@@ -95,6 +91,31 @@ export function requireDatabaseUrl(): string {
 
 export function isProduction(): boolean {
   return getServerEnv().nodeEnv === "production";
+}
+
+function isLocalHost(value: string): boolean {
+  return value.includes("localhost") || value.includes("127.0.0.1");
+}
+
+/** Public site origin for emails and redirects (never an internal host). */
+export function getPublicOrigin(): string {
+  const candidates = [
+    readOptional("NEXT_PUBLIC_SITE_URL"),
+    readOptional("API_BASE_URL"),
+    readOptional("RENDER_EXTERNAL_URL"),
+  ].filter((value): value is string => Boolean(value));
+
+  const publicHost = candidates.find((value) => !isLocalHost(value));
+  const chosen = (publicHost ?? candidates[0] ?? "http://localhost:3000").replace(
+    /\/$/,
+    "",
+  );
+
+  if (isProduction() && isLocalHost(chosen) && !publicHost) {
+    return chosen;
+  }
+
+  return chosen;
 }
 
 export function requireAuthSecret(): string {

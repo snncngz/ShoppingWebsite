@@ -5,7 +5,7 @@ import { getCurrentUser, requireAuth, toSafeUser } from "@/server/auth/authoriza
 import { createEmailToken, hashEmailToken } from "@/server/auth/email-token";
 import { hashPassword, verifyPassword } from "@/server/auth/password";
 import { clearSession, createSession } from "@/server/auth/session";
-import { getServerEnv } from "@/server/config/env";
+import { getPublicOrigin } from "@/server/config/env";
 import { getPrisma } from "@/server/db/prisma";
 import { logger } from "@/server/logging/logger";
 import { isDisposableEmail } from "@/server/mail/disposable-domains";
@@ -153,8 +153,7 @@ export function parseDeleteOwnAccountInput(body: Record<string, unknown>): {
 }
 
 function verifyUrl(token: string): string {
-  const origin = getServerEnv().apiBaseUrl.replace(/\/$/, "");
-  return `${origin}/dogrula?token=${encodeURIComponent(token)}`;
+  return `${getPublicOrigin()}/dogrula?token=${encodeURIComponent(token)}`;
 }
 
 async function issueVerification(user: {
@@ -391,8 +390,7 @@ export function parseUpdateProfileInput(body: Record<string, unknown>): {
 }
 
 function resetUrl(token: string): string {
-  const origin = getServerEnv().apiBaseUrl.replace(/\/$/, "");
-  return `${origin}/sifre-yenile?token=${encodeURIComponent(token)}`;
+  return `${getPublicOrigin()}/sifre-yenile?token=${encodeURIComponent(token)}`;
 }
 
 export async function requestPasswordReset(email: string): Promise<{ ok: true }> {

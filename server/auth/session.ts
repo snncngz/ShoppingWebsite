@@ -1,5 +1,4 @@
 import { cookies } from "next/headers";
-import type { NextResponse } from "next/server";
 
 import { SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/server/auth/constants";
 import { signSessionToken, verifySessionToken } from "@/server/auth/token";
@@ -16,18 +15,10 @@ function cookieOptions(maxAge: number) {
   };
 }
 
-export async function createSession(
-  userId: string,
-  role: UserRole,
-  response?: NextResponse,
-): Promise<void> {
+export async function createSession(userId: string, role: UserRole): Promise<void> {
   const secret = requireAuthSecret();
   const exp = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE_SECONDS;
   const token = await signSessionToken({ userId, role, exp }, secret);
-  if (response) {
-    response.cookies.set(SESSION_COOKIE, token, cookieOptions(SESSION_MAX_AGE_SECONDS));
-    return;
-  }
   const store = await cookies();
   store.set(SESSION_COOKIE, token, cookieOptions(SESSION_MAX_AGE_SECONDS));
 }

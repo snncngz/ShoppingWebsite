@@ -20,9 +20,7 @@ export function verificationEmailContent(input: {
       <h1 style="font-size:28px;font-weight:400;color:#0B0B0B;">E-postanızı doğrulayın</h1>
       <p>Merhaba ${escapeHtml(input.name)},</p>
       <p>Hesabınızı açmak için aşağıdaki bağlantıya tıklayın. Bağlantı 24 saat geçerlidir.</p>
-      <p style="margin:28px 0;">
-        <a href="${escapeHtml(input.verifyUrl)}" style="display:inline-block;background:#2A2825;color:#F7F5F0;text-decoration:none;padding:14px 24px;letter-spacing:0.16em;text-transform:uppercase;font-size:12px;">Doğrula</a>
-      </p>
+      ${emailCta(input.verifyUrl, "E-postayı doğrula")}
       <p style="font-size:13px;color:#A8998A;">Siz kayıt olmadıysanız bu iletiyi yok sayın.</p>
     </div>
   `;
@@ -36,6 +34,24 @@ function escapeHtml(value: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function emailCta(href: string, label: string): string {
+  const safeHref = escapeHtml(href);
+  const safeLabel = escapeHtml(label);
+  return `
+      <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;">
+        <tr>
+          <td bgcolor="#2A2825" style="background:#2A2825;">
+            <a href="${safeHref}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:14px 24px;font-family:Georgia,serif;font-size:14px;line-height:1.4;color:#F7F5F0;text-decoration:none;">${safeLabel}</a>
+          </td>
+        </tr>
+      </table>
+      <p style="font-size:13px;color:#A8998A;word-break:break-all;">
+        Buton açılmazsa bu bağlantıya dokunun:<br />
+        <a href="${safeHref}" target="_blank" rel="noopener noreferrer" style="color:#2A2825;text-decoration:underline;">${safeHref}</a>
+      </p>
+  `;
 }
 
 export function passwordResetEmailContent(input: {
@@ -58,9 +74,7 @@ export function passwordResetEmailContent(input: {
       <h1 style="font-size:28px;font-weight:400;color:#0B0B0B;">Şifrenizi yenileyin</h1>
       <p>Merhaba ${escapeHtml(input.name)},</p>
       <p>Hesabınız için bir şifre sıfırlama isteği aldık. Bağlantı 24 saat geçerlidir.</p>
-      <p style="margin:28px 0;">
-        <a href="${escapeHtml(input.resetUrl)}" style="display:inline-block;background:#2A2825;color:#F7F5F0;text-decoration:none;padding:14px 24px;letter-spacing:0.16em;text-transform:uppercase;font-size:12px;">Şifreyi yenile</a>
-      </p>
+      ${emailCta(input.resetUrl, "Şifreyi yenile")}
       <p style="font-size:13px;color:#A8998A;">Bu isteği siz yapmadıysanız bu iletiyi yok sayın.</p>
     </div>
   `;

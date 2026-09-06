@@ -148,7 +148,7 @@ export function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
               </button>
               <p
                 id={titleId}
-                className="font-heading text-18 tracking-[0.28em] text-black"
+                className="font-heading text-24 tracking-[0.12em] text-black"
               >
                 {BRAND_NAME}
               </p>
