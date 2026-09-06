@@ -2,8 +2,7 @@
 
 import { ErrorState } from "@/components/ui/ErrorState";
 import { FeaturedCollection } from "@/components/home/FeaturedCollection";
-import { HomeBestsellersRail } from "@/components/home/HomeBestsellersRail";
-import { ProductSection } from "@/components/home/ProductSection";
+import { HomeProductRail } from "@/components/home/HomeProductRail";
 import { Reveal } from "@/components/home/Reveal";
 import { useCatalog } from "@/context/CatalogContext";
 import { pickDiverse } from "@/lib/catalog";
@@ -47,7 +46,7 @@ export function HomeProductFeed() {
   const popular = products.filter((product) => product.isPopular).slice(0, 16);
   const arrivals = pickDiverse(
     products.filter((product) => product.isNew),
-    8,
+    16,
   );
   const perfumes = products.filter(isPerfume);
   const featured = featuredIds
@@ -60,18 +59,19 @@ export function HomeProductFeed() {
 
   return (
     <>
-      <HomeBestsellersRail products={popular} />
-      {arrivals.length > 0 ? (
-        <Reveal>
-          <ProductSection
-            title="Yeni Gelenler"
-            products={arrivals}
-            viewAllHref="/yeni-gelenler"
-            viewAllLabel="Tüm yeni ürünler →"
-            variant="editorial"
-          />
-        </Reveal>
-      ) : null}
+      <HomeProductRail
+        eyebrow="Koleksiyon"
+        title="Çok Satanlar"
+        products={popular}
+        viewAllHref="/cok-satanlar"
+      />
+      <HomeProductRail
+        eyebrow="Yeni"
+        title="Yeni Gelenler"
+        products={arrivals}
+        viewAllHref="/yeni-gelenler"
+        tone="muted"
+      />
       {featuredProducts.length > 0 ? (
         <Reveal>
           <FeaturedCollection products={featuredProducts} />

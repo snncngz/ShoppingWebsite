@@ -108,11 +108,17 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
   return (
     <article className="group min-w-0">
       <div className={`relative overflow-hidden bg-off-white ${aspectClass[variant]}`}>
-        <Link href={href} className="absolute inset-0 z-[1] block" aria-label={product.name}>
+        <Link
+          href={href}
+          draggable={false}
+          className="absolute inset-0 z-[1] block"
+          aria-label={product.name}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={primary}
             alt={product.name}
+            draggable={false}
             className="absolute inset-0 h-full w-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-105 group-hover:opacity-0 motion-reduce:transition-none motion-reduce:group-hover:scale-100 motion-reduce:group-hover:opacity-100"
           />
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -120,6 +126,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
             src={secondary}
             alt=""
             aria-hidden
+            draggable={false}
             className="absolute inset-0 h-full w-full object-cover object-[center_18%] scale-105 opacity-0 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-100 motion-reduce:hidden"
           />
         </Link>
