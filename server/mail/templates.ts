@@ -18,8 +18,8 @@ export function verificationEmailContent(input: {
     <p style="letter-spacing:0.28em;text-transform:uppercase;font-size:12px;color:#A8998A;">${BRAND_NAME}</p>
     <h1 style="font-size:28px;font-weight:400;color:#0B0B0B;margin:12px 0 20px;">E-postanızı doğrulayın</h1>
     <p style="font-size:16px;line-height:24px;">Merhaba ${escapeHtml(input.name)},</p>
-    <p style="font-size:16px;line-height:24px;">Hesabınızı açmak için aşağıdaki düğmeye dokunun. Bağlantı 24 saat geçerlidir.</p>
-    ${emailCta(input.verifyUrl, "E-postayı doğrula")}
+    <p style="font-size:16px;line-height:24px;">Hesabınızı açmak için aşağıdaki bağlantıya dokunun. Bağlantı 24 saat geçerlidir.</p>
+    ${emailCta(input.verifyUrl, "E-postamı Doğrula")}
     <p style="font-size:13px;line-height:20px;color:#A8998A;">Siz kayıt olmadıysanız bu iletiyi yok sayın.</p>
   `);
 
@@ -41,18 +41,10 @@ function emailDocument(inner: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="x-apple-disable-message-reformatting">
-<meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no">
 <title>${BRAND_NAME}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#F7F5F0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#F7F5F0;">
-    <tr>
-      <td style="padding:32px 24px;font-family:Georgia,serif;color:#2A2825;">
-        ${inner}
-      </td>
-    </tr>
-  </table>
+<body style="margin:0;padding:24px;background-color:#F7F5F0;font-family:Arial,Helvetica,sans-serif;color:#2A2825;">
+${inner}
 </body>
 </html>`;
 }
@@ -60,11 +52,7 @@ function emailDocument(inner: string): string {
 function emailCta(href: string, label: string): string {
   const safeHref = escapeHtml(href);
   const safeLabel = escapeHtml(label);
-  // Keep href on a single concatenated line. No target=_blank (iOS Mail ignores taps).
-  // The colored <a> is the whole button; the raw URL below is a second tap target.
-  const button = `<a href="${safeHref}" style="background-color:#2A2825;color:#F7F5F0;display:inline-block;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:48px;min-width:220px;text-align:center;text-decoration:none;padding:0 28px;">${safeLabel}</a>`;
-  const raw = `<a href="${safeHref}" style="color:#1a0dab;font-size:15px;line-height:24px;text-decoration:underline;word-break:break-all;">${safeHref}</a>`;
-  return `<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:28px 0;"><tr><td>${button}</td></tr></table><p style="margin:0 0 16px;font-size:14px;line-height:22px;color:#2A2825;">Çalışmazsa bu adrese dokunun:<br />${raw}</p>`;
+  return `<p style="margin:28px 0;"><a href="${safeHref}" style="display:inline-block;padding:15px 25px;background-color:#2A2825;color:#F7F5F0;font-size:16px;line-height:20px;text-align:center;text-decoration:none;">${safeLabel}</a></p><p style="margin:0 0 16px;font-size:14px;line-height:22px;"><a href="${safeHref}">${safeHref}</a></p>`;
 }
 
 export function passwordResetEmailContent(input: {
