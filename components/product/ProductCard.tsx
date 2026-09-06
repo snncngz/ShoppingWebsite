@@ -168,7 +168,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
 
         <button
           type="button"
-          aria-label={added ? `${product.name} sepete eklendi` : `${product.name} hızlı ekle`}
+          aria-label={added ? `${product.name} sepete eklendi` : `${product.name} sepete ekle`}
           onClick={handleQuickAdd}
           className="absolute inset-x-3 bottom-3 z-10 hidden h-12 bg-ivory text-12 tracking-nav text-black opacity-0 translate-y-2 transition-all duration-300 md:block md:group-hover:translate-y-0 md:group-hover:opacity-100 md:focus-visible:translate-y-0 md:focus-visible:opacity-100"
         >
@@ -187,7 +187,7 @@ export function ProductCard({ product, variant = "default" }: ProductCardProps) 
                   <Check size={14} strokeWidth={1.6} />
                 </>
               ) : (
-                "Hızlı Ekle"
+                "Sepete Ekle"
               )}
             </motion.span>
           </AnimatePresence>

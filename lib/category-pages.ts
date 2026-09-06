@@ -5,6 +5,9 @@ export const CATEGORY_SLUGS = [
   "tshirt",
   "pantolon",
   "gomlek",
+  "esofman",
+  "sort",
+  "sweatshirt",
   "ceket",
   "aksesuar",
   "kemer",
@@ -72,7 +75,8 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     ],
     showPerfumeFilters: false,
     showClothingSizes: true,
-    match: (product) => product.category === "T-Shirt",
+    match: (product) =>
+      product.category === "T-Shirt" || product.categorySlug === "tshirt",
   },
   pantolon: {
     slug: "pantolon",
@@ -85,14 +89,15 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
       { label: "Pantolon", href: "/pantolon" },
     ],
     showPerfumeFilters: false,
-    showClothingSizes: false,
-    match: (product) => product.category === "Pantolon",
+    showClothingSizes: true,
+    match: (product) =>
+      product.category === "Pantolon" || product.categorySlug === "pantolon",
   },
   gomlek: {
     slug: "gomlek",
     title: "Gömlek",
     description:
-      "Temiz yakalar, ölçülü dokumalar ve sakin bir duruş. Gömlek koleksiyonu Lucien Perrin dilinde tamamlanmak üzere.",
+      "Temiz yakalar, ölçülü dokumalar ve sakin bir duruş.",
     breadcrumbs: [
       { label: "Anasayfa", href: "/" },
       { label: "Giyim", href: "/gomlek" },
@@ -100,7 +105,50 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     ],
     showPerfumeFilters: false,
     showClothingSizes: true,
-    match: (product) => product.category === "Gömlek",
+    match: (product) =>
+      product.category === "Gömlek" || product.categorySlug === "gomlek",
+  },
+  esofman: {
+    slug: "esofman",
+    title: "Eşofman",
+    description: "Rahat paça, bel lastiği ve günlük eşofman altları.",
+    breadcrumbs: [
+      { label: "Anasayfa", href: "/" },
+      { label: "Giyim", href: "/esofman" },
+      { label: "Eşofman", href: "/esofman" },
+    ],
+    showPerfumeFilters: false,
+    showClothingSizes: true,
+    match: (product) =>
+      product.category === "Eşofman" || product.categorySlug === "esofman",
+  },
+  sort: {
+    slug: "sort",
+    title: "Şort",
+    description: "Yazlık ve günlük şort siluetleri.",
+    breadcrumbs: [
+      { label: "Anasayfa", href: "/" },
+      { label: "Giyim", href: "/sort" },
+      { label: "Şort", href: "/sort" },
+    ],
+    showPerfumeFilters: false,
+    showClothingSizes: true,
+    match: (product) =>
+      product.category === "Şort" || product.categorySlug === "sort",
+  },
+  sweatshirt: {
+    slug: "sweatshirt",
+    title: "Sweatshirt",
+    description: "Boxy ve oversize sweatshirt’ler.",
+    breadcrumbs: [
+      { label: "Anasayfa", href: "/" },
+      { label: "Giyim", href: "/sweatshirt" },
+      { label: "Sweatshirt", href: "/sweatshirt" },
+    ],
+    showPerfumeFilters: false,
+    showClothingSizes: true,
+    match: (product) =>
+      product.category === "Sweatshirt" || product.categorySlug === "sweatshirt",
   },
   ceket: {
     slug: "ceket",
@@ -114,7 +162,8 @@ export const categoryPages: Record<CategorySlug, CategoryPageConfig> = {
     ],
     showPerfumeFilters: false,
     showClothingSizes: true,
-    match: (product) => product.category === "Ceket",
+    match: (product) =>
+      product.category === "Ceket" || product.categorySlug === "ceket",
   },
   aksesuar: {
     slug: "aksesuar",

@@ -2,6 +2,7 @@
 
 import { ErrorState } from "@/components/ui/ErrorState";
 import { FeaturedCollection } from "@/components/home/FeaturedCollection";
+import { HomeBestsellersRail } from "@/components/home/HomeBestsellersRail";
 import { ProductSection } from "@/components/home/ProductSection";
 import { Reveal } from "@/components/home/Reveal";
 import { useCatalog } from "@/context/CatalogContext";
@@ -22,7 +23,7 @@ export function HomeProductFeed() {
 
   if (!hydrated) {
     return (
-      <section className="bg-ivory px-6 py-24 lg:px-8 lg:py-32">
+      <section className="bg-ivory px-6 py-16 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <p className="text-12 tracking-label text-taupe">Yükleniyor</p>
         </div>
@@ -43,15 +44,12 @@ export function HomeProductFeed() {
     );
   }
 
-  const perfumes = products.filter(isPerfume);
-  const popular = pickDiverse(
-    perfumes.filter((product) => product.isPopular),
-    4,
-  );
+  const popular = products.filter((product) => product.isPopular).slice(0, 16);
   const arrivals = pickDiverse(
-    perfumes.filter((product) => product.isNew),
-    6,
+    products.filter((product) => product.isNew),
+    8,
   );
+  const perfumes = products.filter(isPerfume);
   const featured = featuredIds
     .map((id) => getById(id))
     .filter((product): product is NonNullable<typeof product> =>
@@ -62,31 +60,23 @@ export function HomeProductFeed() {
 
   return (
     <>
-      {popular.length > 0 ? (
-        <Reveal>
-          <ProductSection
-            title="Çok Satanlar"
-            products={popular}
-            viewAllHref="/cok-satanlar"
-            viewAllLabel="Tüm çok satan parfümler →"
-            variant="standard"
-          />
-        </Reveal>
-      ) : null}
+      <HomeBestsellersRail products={popular} />
       {arrivals.length > 0 ? (
         <Reveal>
           <ProductSection
             title="Yeni Gelenler"
             products={arrivals}
             viewAllHref="/yeni-gelenler"
-            viewAllLabel="Tüm yeni extrait’ler →"
+            viewAllLabel="Tüm yeni ürünler →"
             variant="editorial"
           />
         </Reveal>
       ) : null}
-      <Reveal>
-        <FeaturedCollection products={featuredProducts} />
-      </Reveal>
+      {featuredProducts.length > 0 ? (
+        <Reveal>
+          <FeaturedCollection products={featuredProducts} />
+        </Reveal>
+      ) : null}
     </>
   );
 }

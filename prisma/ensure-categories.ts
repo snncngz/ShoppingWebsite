@@ -33,6 +33,21 @@ const DEFAULT_CATEGORIES = [
     description: "Temiz yakalar, ölçülü dokumalar ve sakin bir duruş.",
   },
   {
+    name: "Eşofman",
+    slug: "esofman",
+    description: "Rahat paça, bel lastiği ve günlük eşofman altları.",
+  },
+  {
+    name: "Şort",
+    slug: "sort",
+    description: "Yazlık ve günlük şort siluetleri.",
+  },
+  {
+    name: "Sweatshirt",
+    slug: "sweatshirt",
+    description: "Boxy ve oversize sweatshirt’ler.",
+  },
+  {
     name: "Ceket",
     slug: "ceket",
     description: "Katmanlı siluetler için ölçülü ceketler.",

@@ -40,7 +40,7 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
     id: "look-bomber",
     src: "/home/hero/05-look-bomber.jpg",
     alt: "Look 1",
-    href: "/t-shirt",
+    href: "/tshirt",
   },
   {
     id: "look-pantolon",
@@ -52,12 +52,12 @@ export const HOME_HERO_SLIDES: HomeHeroSlide[] = [
     id: "look-esofman",
     src: "/home/hero/07-look-esofman.jpg",
     alt: "Look 3",
-    href: "/pantolon",
+    href: "/esofman",
   },
   {
     id: "look-tisort",
     src: "/home/hero/08-look-tisort.jpg",
     alt: "Look 4",
-    href: "/t-shirt",
+    href: "/tshirt",
   },
 ];
